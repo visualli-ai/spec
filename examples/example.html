@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualli - Navigate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #050505; /* Deep dark space background */
+            --primary-blue: #6366f1; /* Indigo 500 */
+            --highlight-blue: #a5b4fc; /* Indigo 300 */ 
+            --node-bg-default: rgba(30, 27, 75, 0.95); /* Fallback */
+            --node-border-default: #818cf8; /* Fallback */
+            --zoom-duration: 1000ms; /* Global zoom speed */
+        }
+        body {
+            font-family: 'Quicksand', sans-serif; 
+            background-color: var(--dark-bg);
+            color: #e2e8f0; /* Slate 200 */
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: white;
+            /* Centering elements */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            transition: background-color var(--zoom-duration) cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Canvas for the dynamic particle background */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Keep behind the main content */
+        }
+
+        /* Main Container for the Graph */
+        #graph-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+            z-index: 10;
+        }
+
+        /* Node Styling - Generic Class */
+        .graph-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1.2rem;
+            width: 160px;
+            height: 100px;
+            
+            /* Dynamic Styles via Variables */
+            background-color: var(--node-bg, var(--node-bg-default));
+            border-radius: var(--node-radius, 50%);
+            
+            /* No standard border, using pseudo-element */
+            border: none;
+            
+            /* Outer Glow - Dynamic color based on bg (approximated by using same hue or white) */
+            /* REDUCED SHADOW RADIUS FOR PERFORMANCE */
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.15); 
+            
+            color: #1e1b4b; /* Dark text for pastel background */
+            font-weight: 500;
+            font-style: normal;
+            font-size: 1.1rem;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            
+            /* Center the node on its coordinate */
+            transform: translate(-50%, -50%);
+            
+            /* Prevent text selection */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            
+            /* Hint to browser for promotion */
+            will-change: transform;
+        }
+
+        /* The "Hand-drawn" Mismatched Border */
+        .graph-node::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border: 2px solid transparent;
+            pointer-events: none;
+            
+            /* Dynamic Styles */
+            border-color: var(--node-border, var(--node-border-default));
+            border-radius: var(--node-after-radius, 50%);
+            transform: rotate(var(--node-rotation, 0deg));
+        }
+
+        .graph-node:hover {
+            transform: translate(-50%, -50%) scale(1.05); /* Maintain centering on hover */
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+            transition: none; /* Instant pop-out */
+            z-index: 50; /* Ensure node and its bubble are on top */
+        }
+
+        .graph-node:active {
+            transform: translate(-50%, -50%) scale(0.95); /* Tactile press feedback */
+            transition: transform 0.05s ease-out; /* Instant response */
+        }
+
+        /* Layer Containers for Animation */
+        .layer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: 50% 50%;
+            /* Faster perceived speed (controlled by variable) with punchier start */
+            transition: opacity var(--zoom-duration) cubic-bezier(0.2, 0.8, 0.2, 1), transform var(--zoom-duration) cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none; /* Allow events to pass through to nodes */
+            
+            /* Performance Optimizations */
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: subpixel-antialiased;
+            transform: translateZ(0); /* Hardware acceleration trigger */
+            
+            /* Reduce paint area */
+            contain: layout style;
+        }
+        
+        /* Ensure nodes and SVGs are clickable inside the layer container */
+        .layer-container > * {
+            pointer-events: auto;
+        }
+
+        .layer-enter-forward {
+            opacity: 0;
+            transform: scale(0.9); /* Start closer to 1 for a slighter, more stable entry */
+        }
+        
+        .layer-exit-forward {
+            opacity: 0;
+            /* transform set by JS */
+        }
+        
+        .layer-enter-backward {
+            opacity: 0;
+            transform: scale(5); /* Comes from outside */
+        }
+        
+        .layer-exit-backward {
+            opacity: 0;
+            /* Zoom out into darkness: shrink slightly and fade out */
+            transform: scale(0.6); 
+        }
+        
+        .layer-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+
+        /* Graph Group Container Labels */
+        .group-label-text {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #cbd5e1; /* Slate 300 */
+            text-anchor: middle;
+            pointer-events: none;
+            background-color: var(--dark-bg); /* Not applied to SVG text, handled via filter or bg rect if needed */
+            /* For SVG text halo to simulate bg */
+            paint-order: stroke;
+            stroke: var(--dark-bg);
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* SVG Layer for Lines */
+        #containers-svg,
+        #connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through */
+        }
+        
+        #containers-svg {
+            z-index: 5;
+        }
+        
+        #connections-svg {
+            z-index: 15; /* Below nodes but above background */
+        }
+
+        .connection-path {
+            fill: none;
+            stroke: #e2e8f0; /* Softer white (Slate 200) */
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            opacity: 0.9;
+        }
+        
+        /* Line Labels (SVG) */
+        .connection-label-svg {
+            font-size: 0.9rem;
+            fill: #e2e8f0;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .graph-node {
+                width: 110px;
+                height: 70px;
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            .connection-label-svg {
+                font-size: 0.8rem;
+            }
+            #watermark {
+                width: 100px; /* Smaller watermark on mobile */
+                bottom: 10px;
+            }
+        }
+
+        /* Watermark */
+        #watermark {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px; /* Reduced size */
+            opacity: 1.0; /* Increased opacity to stand out */
+            z-index: 999; /* Ensure it stays above all layers (nodes are ~20, containers ~5) */
+            pointer-events: none; /* Non-interactive */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Intro Animation Classes */
+        .fast-transition {
+            transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        }
+
+        @keyframes bounce-settle {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            40% { transform: translate(-50%, -50%) scale(1.15); }
+            70% { transform: translate(-50%, -50%) scale(0.95); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .bounce-effect {
+            animation: bounce-settle 0.3s ease-out forwards;
+        }
+
+        /* Semantic Peak Bubble (iMessage Style) */
+        .semantic-peak-bubble {
+            position: absolute;
+            bottom: 120%; /* Position above the node */
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background-color: rgba(255, 255, 255, 0.95); /* High contrast white */
+            color: #1e1b4b; /* Dark text */
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            text-align: center;
+            width: max-content;
+            max-width: 220px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            pointer-events: auto; /* Allow interaction with Semantic Anchors inside */
+        }
+
+        /* Semantic Anchor Styles */
+        .semantic-anchors {
+            text-decoration: underline dotted;
+            text-decoration-color: var(--primary-blue);
+            /* Custom Book Icon Cursor (Grayscale Emoji) */
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cfilter id='g'%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Ctext x='16' y='16' font-size='24' text-anchor='middle' dominant-baseline='central' filter='url(%23g)'%3E📖%3C/text%3E%3C/svg%3E") 16 16, help;
+            position: relative;
+            font-weight: normal; /* Normal weight */
+            font-style: normal; /* Normal style (non-italic) */
+            color: var(--primary-blue);
+        }
+
+        .semantic-anchors-modal {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 140%; /* Slightly higher to accommodate arrow */
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            width: 320px; /* Wider to utilize space */
+            background: rgba(15, 23, 42, 0.95); /* Slate 900 */
+            color: #e2e8f0;
+            padding: 16px; /* More padding */
+            border-radius: 12px; /* Softer corners */
+            font-size: 0.85rem;
+            line-height: 1.6;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); /* Deep shadow */
+            z-index: 1001;
+            text-align: left;
+            border: 1px solid rgba(99, 102, 241, 0.3); /* Subtle primary border */
+            transition: all 0.2s ease;
+            pointer-events: none; /* Default none */
+            
+            /* Flex layout for content */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .semantic-anchors:hover .semantic-anchors-modal {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto; /* Allow interaction when visible */
+        }
+        
+        .modal-definition-text {
+            font-style: italic;
+            color: #cbd5e1; /* Slate 300 */
+        }
+
+        .know-more-link {
+            align-self: flex-end; /* Align right without full width */
+            color: var(--highlight-blue);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0; /* Remove padding */
+            background: none; /* Remove background */
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .know-more-link:hover {
+            background: none; /* Ensure no background on hover */
+            color: #fff;
+            transform: translateX(2px);
+        }
+        
+        /* Modal Arrow */
+        .semantic-anchors-modal::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+        }
+
+        .semantic-peak-bubble.visible {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* Bubble Tail */
+        .semantic-peak-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid rgba(255, 255, 255, 0.95);
+        }
+
+
+        /* Breadcrumbs (Left Side Navigation) */
+        #breadcrumb-bar {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px; /* Very tight gap for traffic-light look */
+            padding: 8px 6px; /* Tighter container padding */
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.3s ease;
+            align-items: center; /* Ensure dots are centered regardless of size */
+        }
+
+        .breadcrumb-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #333; /* Default placeholder */
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.8); /* Thinner border */
+            position: relative;
+            /* overflow: hidden; Removed to allow tooltips to pop out */
+        }
+
+        /* Ensure hovered dot comes to front */
+        .breadcrumb-dot:hover {
+            z-index: 1000;
+        }
+        
+        /* Breadcrumb Tooltip (Pop-out effect) */
+        .breadcrumb-tooltip {
+            position: absolute;
+            /* Use a fixed left offset relative to the dot's center to ensure alignment */
+            left: 50%; 
+            margin-left: 20px; /* Increased margin for better separation */
+            top: 50%;
+            transform: translateY(-50%) translateX(-10px) scale(0.9);
+            
+            background-color: rgba(10, 10, 10, 0.95);
+            color: rgba(255, 255, 255, 1);
+            
+            /* Ultra-compact dimensions for tight spacing */
+            height: 20px; /* Reduced height from 24px */
+            padding: 0 8px; /* Reduced padding from 10px */
+            min-width: 40px; /* Reduced min-width from 50px */
+            
+            border-radius: 4px;
+            
+            /* Typography */
+            font-size: 11px; /* Reduced from 11.5px */
+            font-weight: 600; 
+            font-family: 'Quicksand', sans-serif;
+            white-space: nowrap;
+            line-height: 1; 
+            
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: auto; 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            
+            /* Flexbox for consistent alignment */
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .breadcrumb-tooltip::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 4px 4px 4px 0;
+            border-style: solid;
+            border-color: transparent rgba(255, 255, 255, 0.15) transparent transparent;
+        }
+
+        /* Show all tooltips when the entire bar is hovered */
+        #breadcrumb-bar:hover .breadcrumb-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0) scale(1);
+        }
+        
+        /* Make dots clickable */
+        .breadcrumb-dot {
+            cursor: pointer;
+        }
+
+        /* Starry effect for the root breadcrumb */
+        .breadcrumb-dot.is-root {
+            background-color: #050505;
+            background-image: 
+                radial-gradient(circle at 30% 40%, rgba(255,255,255,0.9) 1px, transparent 1.5px),
+                radial-gradient(circle at 70% 20%, rgba(255,255,255,0.7) 1px, transparent 1.5px),
+                radial-gradient(circle at 50% 75%, rgba(255,255,255,0.6) 0.5px, transparent 1px);
+            box-shadow: 0 0 8px rgba(100, 100, 255, 0.15); /* Slight cosmic glow */
+        }
+        
+        .breadcrumb-dot.active {
+            /* Keep size same as others for perfect grid alignment */
+            width: 14px; 
+            height: 14px;
+            border-color: #ffffff;
+            border-width: 1.5px;
+            box-shadow: 0 0 15px rgba(255,255,255,0.6);
+        }
+
+        /* Magnitude Marker Badge */
+        .magnitude-badge {
+            position: absolute;
+            top: 12%;
+            right: 12%;
+            transform: translate(50%, -50%); /* Center on the calculated boundary point */
+            width: 28px;
+            height: 28px;
+            background-color: #fbbf24; /* Amber 400 */
+            color: #1e1b4b; /* Dark text */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 30; /* Above node content */
+            pointer-events: none; /* Let clicks pass to node */
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+    <!-- Marked.js for Markdown Rendering - REMOVED -->
+</head>
+<body>
+    <!-- Spec Panel Trigger - REMOVED -->
+
+    <!-- Spec Panel - REMOVED -->
+
+    <!-- Breadcrumb Navigation Bar -->
+    <div id="breadcrumb-bar"></div>
+
+    <!-- Dynamic Particle Background (Stardust Effect) -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Graph UI -->
+    <div id="graph-container">
+        <!-- Content will be injected by JS -->
+    </div>
+
+    <!-- Watermark -->
+    <img id="watermark" src="https://visualli-ai.pages.dev/assets/Vi-logo-rgb-darkmode-DC7zTMTz.png" alt="Visualli.AI">
+
+    <script>
+        // --- Configuration ---
+        // Top-level variable containing only data (content/structure).
+        let graphConfig = {
+            layers: [],
+            extensions: {}
+        };
+
+        async function initGraph() {
+            try {
+                const response = await fetch('example.visualli');
+                const text = await response.text();
+                const lines = text.split('\n');
+                const layers = [];
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type === 'extension') {
+                            graphConfig.extensions[data.id] = data.data;
+                        } else if (data.type === 'layer') {
+                             if (data.nodes) {
+                                data.nodes = data.nodes.map(node => ({
+                                    ...node,
+                                    label: node.data ? node.data.label : node.label,
+                                    summary: node.data ? node.data.summary : node.summary
+                                }));
+                            }
+                            if (data.parentNodeId) {
+                                data.parentId = data.parentNodeId;
+                            }
+                            layers.push(data);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSONL line', e);
+                    }
+                });
+                
+                layers.sort((a, b) => (a.level || 0) - (b.level || 0));
+                graphConfig.layers = layers;
+
+                // --- Initialization Logic ---
+                document.documentElement.style.setProperty('--zoom-duration', `${ANIMATION_CONFIG.zoomDuration}ms`);
+
+                activeLayerIndex = 0;
+                
+                renderGraph(activeLayerIndex);
+                setTimeout(() => drawConnectionsForLayer(activeLayerIndex), 10);
+                setTimeout(() => drawContainersForLayer(activeLayerIndex), 20);
+                
+                updateBreadcrumbs(activeLayerIndex);
+                
+                initInteractions();
+                initParticles();
+                animateParticles();
+                
+                const layerContainer = document.getElementById(`layer-container-${activeLayerIndex}`);
+                if (layerContainer) {
+                    layerContainer.style.transition = 'none';
+                    layerContainer.style.transform = 'scale(2.5)';
+                    layerContainer.style.opacity = '0';
+                    
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            layerContainer.style.transition = 'transform 1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 1s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                            layerContainer.style.transform = 'scale(1)';
+                            layerContainer.style.opacity = '1';
+                            
+                            setTimeout(() => {
+                                const nodes = layerContainer.querySelectorAll('.graph-node');
+                                nodes.forEach((node, index) => {
+                                    setTimeout(() => {
+                                        node.classList.add('bounce-effect');
+                                        setTimeout(() => {
+                                            node.classList.remove('bounce-effect');
+                                        }, 250);
+                                    }, index); 
+                                });
+                            }, 1000);
+                        });
+                    });
+                }
+
+            } catch (err) {
+                console.error("Failed to load graph config", err);
+            }
+        }
+
+        window.addEventListener('load', initGraph);
+
+        // --- Branding Colors ---
+        // Pastel palettes based on Visualli branding (Purple, Orange, Teal, Pink, Blue, Yellow).
+        // Each entry has a fill color (bg) and a slightly darker border color.
+        const brandPalettes = [
+            { bg: '#eedeff', border: '#d8b4fe' }, // Purple
+            { bg: '#ffe2bf', border: '#fdba74' }, // Orange
+            { bg: '#b2f8ea', border: '#5eead4' }, // Teal
+            { bg: '#ffcdd2', border: '#e57373' }, // Pink/Red
+            { bg: '#bbdefb', border: '#64b5f6' }, // Blue
+            { bg: '#fff9c4', border: '#fff176' }, // Yellow
+        ];
+
+        // --- Configuration ---
+        // Global variables for animation control
+        const ANIMATION_CONFIG = {
+            zoomDuration: 500, // ms - Total duration of the zoom transition
+        };
+
+
+
+
+        // --- State ---
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let activeLayerIndex = 0; // Start with layer-0 (Top Level)
+        let isTransitioning = false;
+        let clickTimeout = null;
+        let transitionHistory = {}; // Store zoom-in details per layer { origin, transform }
+        
+
+        
+        // Dragging State
+        let isPanningContainer = false;
+        let containerPanStartX = 0;
+        let containerPanStartY = 0;
+
+        let activeNode = null;
+        let nodeDragStartX = 0;
+        let nodeDragStartY = 0;
+        let nodeInitialLeft = 0;
+        let nodeInitialTop = 0;
+
+
+
+        function drawConnectionsForLayer(layerIndex) {
+            const layer = graphConfig.layers[layerIndex];
+            if (!layer || !layer.connections) return;
+            
+            const svg = document.getElementById(`connections-svg-${layerIndex}`);
+            const container = document.getElementById('graph-container'); // Used for center calc
+            if (!svg) return;
+
+            // Clear paths first (except defs)
+            // Actually, better to just append if empty, or clear.
+            // Let's remove existing paths
+            const existingPaths = svg.querySelectorAll('path:not(defs path)');
+            existingPaths.forEach(p => p.remove());
+            const existingTexts = svg.querySelectorAll('text');
+            existingTexts.forEach(t => t.remove());
+
+            const graphCenterX = container.offsetWidth / 2;
+            const graphCenterY = container.offsetHeight / 2;
+
+            layer.connections.forEach(conn => {
+                // Ensure we only draw if both nodes exist in this layer (rendered)
+                const nodeFrom = document.getElementById(`node-${conn.from}`);
+                const nodeTo = document.getElementById(`node-${conn.to}`);
+
+                if (nodeFrom && nodeTo) {
+                    // Check if they are in the same layer container?
+                    // IDs are unique, so getElementById works.
+                    
+                    // Create Elements
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.id = `path-${conn.from}-${conn.to}`;
+                    path.setAttribute("class", "connection-path");
+                    path.setAttribute("marker-end", `url(#arrowhead-${layerIndex})`);
+                    svg.appendChild(path);
+
+                    const labelPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    labelPath.id = `path-label-${conn.from}-${conn.to}`;
+                    labelPath.setAttribute("fill", "none");
+                    labelPath.setAttribute("stroke", "none");
+                    svg.appendChild(labelPath);
+
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("dy", "-10");
+                    const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+                    textPath.setAttribute("href", `#path-label-${conn.from}-${conn.to}`);
+                    textPath.setAttribute("startOffset", "50%");
+                    textPath.setAttribute("text-anchor", "middle");
+                    textPath.setAttribute("class", "connection-label-svg");
+                    textPath.textContent = conn.label;
+                    text.appendChild(textPath);
+                    svg.appendChild(text);
+
+                    // Calculation logic (same as before)
+                    const c1 = { x: nodeFrom.offsetLeft, y: nodeFrom.offsetTop };
+                    const c2 = { x: nodeTo.offsetLeft, y: nodeTo.offsetTop };
+                    const midX = (c1.x + c2.x) / 2;
+                    const midY = (c1.y + c2.y) / 2;
+                    let vx = midX - graphCenterX;
+                    let vy = midY - graphCenterY;
+                    const len = Math.sqrt(vx*vx + vy*vy) || 1;
+                    const bulgeDistance = 60;
+                    const controlX = midX + (vx / len) * bulgeDistance;
+                    const controlY = midY + (vy / len) * bulgeDistance;
+
+                    const angleStart = Math.atan2(controlY - c1.y, controlX - c1.x);
+                    const startPoint = getEllipseBoundaryPoint(c1.x, c1.y, angleStart, nodeFrom.offsetWidth, nodeFrom.offsetHeight);
+                    
+                    const angleEnd = Math.atan2(controlY - c2.y, controlX - c2.x);
+                    const endPoint = getEllipseBoundaryPoint(c2.x, c2.y, angleEnd, nodeTo.offsetWidth, nodeTo.offsetHeight);
+
+                    const d = `M ${startPoint.x} ${startPoint.y} Q ${controlX} ${controlY} ${endPoint.x} ${endPoint.y}`;
+                    path.setAttribute('d', d);
+
+                    if (startPoint.x > endPoint.x) {
+                        const dLabel = `M ${endPoint.x} ${endPoint.y} Q ${controlX} ${controlY} ${startPoint.x} ${startPoint.y}`;
+                        labelPath.setAttribute('d', dLabel);
+                    } else {
+                        labelPath.setAttribute('d', d);
+                    }
+                }
+            });
+        }
+        
+        // --- Helper: Darken Color ---
+        function getDarkenedColor(color, opacity = 0.3) {
+            let r, g, b;
+            
+            // Clean up string
+            color = color.trim();
+
+            // Handle hex (#RRGGBB)
+            if (color.startsWith('#')) {
+                r = parseInt(color.substring(1, 3), 16);
+                g = parseInt(color.substring(3, 5), 16);
+                b = parseInt(color.substring(5, 7), 16);
+            } 
+            // Handle rgb(r, g, b)
+            else if (color.startsWith('rgb')) {
+                const parts = color.match(/\d+/g);
+                if (parts && parts.length >= 3) {
+                    r = parseInt(parts[0]);
+                    g = parseInt(parts[1]);
+                    b = parseInt(parts[2]);
+                } else {
+                    return color;
+                }
+            } else {
+                return color; // Fallback
+            }
+            
+            // Mix with black (0,0,0)
+            r = Math.floor(r * opacity);
+            g = Math.floor(g * opacity);
+            b = Math.floor(b * opacity);
+            
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // --- Transition Logic ---
+        function handleZoomIn(e, nodeElement, currentLayerIndex) {
+            if (isTransitioning) return;
+            
+            // Logic to find the next layer based on parentId
+            const clickedNodeId = nodeElement.dataset.id;
+            const nextLayerIndex = graphConfig.layers.findIndex(l => l.parentId === clickedNodeId);
+            
+            if (nextLayerIndex === -1) {
+                 console.log("No deeper layers available for this node.");
+                 return;
+            }
+            
+            isTransitioning = true;
+            
+            const container = document.getElementById('graph-container');
+            const currentLayerContainer = document.getElementById(`layer-container-${currentLayerIndex}`);
+            
+            // Calculate Transform to Zoom into Node
+            const style = window.getComputedStyle(nodeElement);
+            const leftPx = parseFloat(style.left); 
+            const topPx = parseFloat(style.top);   
+            const containerW = container.offsetWidth;
+            const containerH = container.offsetHeight;
+            
+            const leftPct = (leftPx / containerW) * 100;
+            const topPct = (topPx / containerH) * 100;
+            
+            const tx = 50 - leftPct;
+            const ty = 50 - topPct;
+            
+            // Dynamic Scale Calculation for Mobile/Desktop consistency
+            // Goal: Make the node cover roughly 50% of the viewport min dimension, 
+            // but ensure a minimum "zoom" feeling (e.g. min 5x).
+            const viewportMin = Math.min(containerW, containerH);
+            const nodeWidth = nodeElement.offsetWidth; // approx width
+            const targetWidth = viewportMin * 1.5; // Target 150% coverage to ensure it fills screen ("stretches to boundaries")
+            const calculatedScale = targetWidth / nodeWidth;
+            
+            // On mobile, we might need less extreme scale to keep context, 
+            // but the request is to "zoom in". 
+            // Let's cap the minimum to ensure it feels like a transition.
+            const scaleVal = Math.max(4, calculatedScale); 
+            
+            // Get the node's background color (CSS variable) for history and bg update
+            const nodeBgVar = nodeElement.style.getPropertyValue('--node-bg');
+            
+            // Get the node's title for breadcrumb tooltip
+            const labelEls = nodeElement.querySelectorAll('.node-label');
+            const nodeLabel = labelEls.length > 0 
+                ? Array.from(labelEls).map(el => el.textContent.trim()).join(' ') 
+                : 'Layer ' + currentLayerIndex;
+
+            // Store Transition History
+            const historyEntry = {
+                origin: `${leftPct}% ${topPct}%`,
+                transform: `translate(${tx}%, ${ty}%) scale(${scaleVal})`,
+                backgroundColor: window.getComputedStyle(document.body).backgroundColor, // Store current bg
+                nodeColor: nodeBgVar ? nodeBgVar.trim() : '#ffffff', // Store vivid node color
+                nodeLabel: nodeLabel // Store label for breadcrumb
+            };
+            transitionHistory[currentLayerIndex] = historyEntry;
+            
+            // Update Background Color to "Bubble" Color
+            if (nodeBgVar) {
+                const newBg = getDarkenedColor(nodeBgVar.trim());
+                document.body.style.backgroundColor = newBg;
+            }
+
+            // Update Breadcrumbs for the new level
+            updateBreadcrumbs(nextLayerIndex);
+
+            // Apply Class for Exit (Forward)
+            currentLayerContainer.classList.remove('layer-active');
+            currentLayerContainer.classList.add('layer-exit-forward');
+            
+            // Set transform origin to the node's position so scaling happens "into" the node
+            currentLayerContainer.style.transformOrigin = `${leftPct}% ${topPct}%`;
+
+            // Apply dynamic transform to zoom into the specific node
+            currentLayerContainer.style.transform = `translate(${tx}%, ${ty}%) scale(${scaleVal})`;
+            
+            // DELAY the entire rendering and entrance of the next layer.
+            // This prevents performance hit at the start of the zoom (0ms) and ensures
+            // we only do the heavy work when the new layer is about to appear.
+            setTimeout(() => {
+                // 1. Render the DOM for the next layer
+                renderGraph(nextLayerIndex);
+                
+                // 2. Draw Connections (since renderGraph might not do it for all paths)
+                drawConnectionsForLayer(nextLayerIndex);
+                
+                // 3. Ensure Containers are drawn (renderGraph does this, but being safe)
+                // drawContainersForLayer(nextLayerIndex); // already in renderGraph
+                
+                const nextLayerContainer = document.getElementById(`layer-container-${nextLayerIndex}`);
+                
+                // 4. Set Initial State (Invisible/Enter)
+                // renderGraph creates it with 'layer-active', so we must flip it instantly
+                nextLayerContainer.classList.remove('layer-active');
+                nextLayerContainer.classList.add('layer-enter-forward');
+                
+                // 5. Trigger Fade In Animation
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        nextLayerContainer.classList.remove('layer-enter-forward');
+                        nextLayerContainer.classList.add('layer-active');
+                    });
+                });
+            }, ANIMATION_CONFIG.zoomDuration * 0.5); // Trigger halfway through
+            
+            // Cleanup Old Layer using transitionend
+            const cleanup = () => {
+                if (currentLayerContainer.parentNode) {
+                    currentLayerContainer.remove();
+                }
+                activeLayerIndex = nextLayerIndex;
+                isTransitioning = false;
+                currentLayerContainer.removeEventListener('transitionend', cleanup);
+            };
+            
+            // Fallback timeout in case transitionend doesn't fire (e.g. tab backgrounded)
+            // Increased to match new duration + buffer
+            const fallbackTimeout = setTimeout(cleanup, ANIMATION_CONFIG.zoomDuration + 100);
+            
+            currentLayerContainer.addEventListener('transitionend', (e) => {
+                // Ignore bubbled events from nodes (e.g. click/hover animations)
+                if (e.target !== currentLayerContainer) return;
+                
+                if (e.propertyName === 'transform') { // Listen for transform specifically
+                    clearTimeout(fallbackTimeout);
+                    cleanup();
+                }
+            }); 
+        }
+
+        // --- Navigation Logic ---
+        function navigateToLayer(targetLayerIndex) {
+            if (isTransitioning) return;
+            if (targetLayerIndex >= activeLayerIndex) return; // Only backward nav for now
+
+            isTransitioning = true;
+            
+            const currentLayerIndex = activeLayerIndex;
+            const currentLayerContainer = document.getElementById(`layer-container-${currentLayerIndex}`);
+            
+            // 1. Animate OUT Current Layer (Zoom Out)
+            currentLayerContainer.classList.remove('layer-active');
+            
+            // Set explicit transform before changing class
+            currentLayerContainer.style.transform = window.getComputedStyle(currentLayerContainer).transform;
+            currentLayerContainer.style.opacity = '1';
+
+            // Attempt to find history for target layer to set origin
+            // (If jumping back multiple steps, we use the history of the *target* layer to zoom into)
+            // Actually, we want to zoom OUT towards the node in the Target Layer.
+            // The node in Target Layer that leads to Target+1 is at transitionHistory[targetLayerIndex].origin
+            // So we shrink towards that point.
+            
+            const history = transitionHistory[targetLayerIndex];
+            if (history) {
+                 currentLayerContainer.style.transformOrigin = history.origin;
+            }
+            
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    currentLayerContainer.style.transform = ''; 
+                    currentLayerContainer.style.opacity = '';
+                    currentLayerContainer.classList.add('layer-exit-backward');
+                });
+            });
+
+            // 2. Prepare Target Layer
+            renderGraph(targetLayerIndex);
+            setTimeout(() => drawConnectionsForLayer(targetLayerIndex), 10);
+            setTimeout(() => drawContainersForLayer(targetLayerIndex), 20);
+
+            const targetLayerContainer = document.getElementById(`layer-container-${targetLayerIndex}`);
+            
+            // 3. Animate IN Target Layer
+            if (history) {
+                // Restore Background Color
+                if (history.backgroundColor) {
+                    document.body.style.backgroundColor = history.backgroundColor;
+                }
+
+                // Start Zoomed IN at the node we are "exiting" from
+                targetLayerContainer.style.transformOrigin = history.origin;
+                targetLayerContainer.style.transform = history.transform;
+                targetLayerContainer.style.opacity = '0';
+                targetLayerContainer.classList.remove('layer-active');
+                
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        targetLayerContainer.style.opacity = '1';
+                        targetLayerContainer.style.transform = 'scale(1)';
+                        targetLayerContainer.classList.add('layer-active');
+                    });
+                });
+            } else {
+                // Fallback (e.g. jumping to root with no history?)
+                targetLayerContainer.classList.add('layer-enter-backward');
+                targetLayerContainer.classList.remove('layer-active');
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        targetLayerContainer.classList.remove('layer-enter-backward');
+                        targetLayerContainer.classList.add('layer-active');
+                    });
+                });
+            }
+
+            // 4. Update State
+            updateBreadcrumbs(targetLayerIndex);
+            
+            // 5. Cleanup
+            const cleanup = () => {
+                if (currentLayerContainer.parentNode) {
+                    currentLayerContainer.remove();
+                }
+                activeLayerIndex = targetLayerIndex;
+                isTransitioning = false;
+                currentLayerContainer.removeEventListener('transitionend', cleanup);
+            };
+            
+            const fallbackTimeout = setTimeout(cleanup, ANIMATION_CONFIG.zoomDuration + 100);
+            
+            currentLayerContainer.addEventListener('transitionend', (e) => {
+                if (e.target !== currentLayerContainer) return;
+                if (e.propertyName === 'transform') {
+                    clearTimeout(fallbackTimeout);
+                    cleanup();
+                }
+            });
+        }
+
+        function handleZoomOut(e, nodeElement, currentLayerIndex) {
+            if (isTransitioning) return;
+            
+            let prevLayerIndex = -1;
+            const currentLayer = graphConfig.layers[currentLayerIndex];
+
+            // 1. Try to find parent layer by looking for the layer containing the parent node
+            if (currentLayer && currentLayer.parentId) {
+                prevLayerIndex = graphConfig.layers.findIndex(l => 
+                    l.nodes && l.nodes.some(n => n.id === currentLayer.parentId)
+                );
+            }
+
+            // 2. Fallback to sequential index if parent lookup fails
+            if (prevLayerIndex === -1) {
+                 prevLayerIndex = currentLayerIndex - 1;
+            }
+            
+            // Check boundaries
+            if (prevLayerIndex < 0) {
+                 console.log("Already at top layer.");
+                 return;
+            }
+            
+            isTransitioning = true;
+            
+            // Retrieve History EARLY to configure the exit animation correctly
+            const history = transitionHistory[prevLayerIndex];
+
+            const container = document.getElementById('graph-container');
+            const currentLayerContainer = document.getElementById(`layer-container-${currentLayerIndex}`);
+            
+            // Apply Class for Exit (Backward)
+            // Shrink current layer into center (receding away)
+            currentLayerContainer.classList.remove('layer-active');
+            
+            // Explicitly set the start state to ensure browser acknowledges it before changing
+            currentLayerContainer.style.transform = window.getComputedStyle(currentLayerContainer).transform;
+            currentLayerContainer.style.opacity = '1';
+
+            // If we have history, we want to shrink back INTO the node we came from.
+            // So we must set the transform origin of the EXITING layer to match the ENTRY origin.
+            if (history) {
+                currentLayerContainer.style.transformOrigin = history.origin;
+            }
+            
+            // Use rAF to ensure class application happens in a paint frame
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // Clear inline styles so class styles can take effect for the transition
+                    currentLayerContainer.style.transform = ''; 
+                    currentLayerContainer.style.opacity = '';
+                    
+                    // Note: We keep the transformOrigin set above if history exists!
+                    // But wait, removing inline style clears it?
+                    // Yes, `currentLayerContainer.style.transform = ''` only clears transform.
+                    // We need to keep transformOrigin if we set it.
+                    
+                    currentLayerContainer.classList.add('layer-exit-backward');
+                });
+            });
+            
+            // Prepare Previous Layer
+            renderGraph(prevLayerIndex);
+            setTimeout(() => drawConnectionsForLayer(prevLayerIndex), 10);
+            // Draw containers immediately for zoom out (or slight delay)
+            setTimeout(() => drawContainersForLayer(prevLayerIndex), 20);
+
+            const prevLayerContainer = document.getElementById(`layer-container-${prevLayerIndex}`);
+            
+            if (history) {
+                // Restore Background Color
+                if (history.backgroundColor) {
+                    document.body.style.backgroundColor = history.backgroundColor;
+                }
+
+                // Set Initial State (Zoomed In on the node we came from)
+                prevLayerContainer.style.transformOrigin = history.origin;
+                prevLayerContainer.style.transform = history.transform;
+                prevLayerContainer.style.opacity = '0';
+                prevLayerContainer.classList.remove('layer-active');
+                
+                // Force Reflow via rAF
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        prevLayerContainer.style.opacity = '1';
+                        prevLayerContainer.style.transform = 'scale(1)';
+                        prevLayerContainer.classList.add('layer-active');
+                    });
+                });
+            } else {
+                // Fallback to Generic Zoom Out if no history (e.g. direct load)
+                prevLayerContainer.classList.add('layer-enter-backward');
+                prevLayerContainer.classList.remove('layer-active');
+                
+                // Use rAF for animation start
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        prevLayerContainer.classList.remove('layer-enter-backward');
+                        prevLayerContainer.classList.add('layer-active');
+                    });
+                });
+            }
+            
+            // Update Breadcrumbs
+            updateBreadcrumbs(prevLayerIndex);
+            
+            // Cleanup Old Layer using transitionend
+            const cleanup = () => {
+                if (currentLayerContainer.parentNode) {
+                    currentLayerContainer.remove();
+                }
+
+                // RESET Previous Layer to pristine state (matching Initial Load)
+                // This ensures subsequent zoom-ins behave exactly like the first one.
+                if (prevLayerContainer) {
+                    prevLayerContainer.style.transform = '';
+                    prevLayerContainer.style.transformOrigin = '';
+                    prevLayerContainer.style.opacity = '';
+                    // .layer-active class handles scale(1) and opacity:1
+                }
+
+                activeLayerIndex = prevLayerIndex;
+                isTransitioning = false;
+                currentLayerContainer.removeEventListener('transitionend', cleanup);
+            };
+            
+            const fallbackTimeout = setTimeout(cleanup, ANIMATION_CONFIG.zoomDuration + 100);
+            
+            currentLayerContainer.addEventListener('transitionend', (e) => {
+                // Ignore bubbled events from nodes (e.g. click/hover animations)
+                if (e.target !== currentLayerContainer) return;
+                
+                if (e.propertyName === 'transform') {
+                    clearTimeout(fallbackTimeout);
+                    cleanup();
+                }
+            }); 
+        }
+
+
+        // --- Helper: Calculate Node Depth (Magnitude) ---
+        function calculateNodeDepth(nodeId) {
+            // Find child layers for this node
+            const childLayers = graphConfig.layers.filter(l => l.parentId === nodeId);
+            
+            if (childLayers.length === 0) {
+                return 0;
+            }
+            
+            let maxChildDepth = 0;
+            
+            childLayers.forEach(layer => {
+                if (layer.nodes) {
+                    layer.nodes.forEach(node => {
+                        const d = calculateNodeDepth(node.id);
+                        if (d > maxChildDepth) {
+                            maxChildDepth = d;
+                        }
+                    });
+                }
+            });
+            
+            return 1 + maxChildDepth;
+        }
+
+        // --- Core Rendering Logic ---
+        function renderGraph(targetLayerIndex = activeLayerIndex) {
+            const container = document.getElementById('graph-container');
+            
+            // 1. Create Layer Container
+            let layerContainer = document.getElementById(`layer-container-${targetLayerIndex}`);
+            if (!layerContainer) {
+                layerContainer = document.createElement('div');
+                layerContainer.id = `layer-container-${targetLayerIndex}`;
+                layerContainer.className = 'layer-container';
+                layerContainer.classList.add('layer-active');
+                container.appendChild(layerContainer);
+            } else {
+                layerContainer.innerHTML = ''; // Clear existing
+            }
+
+            // 1.5 Create SVG Layer for Connections (Appended to Layer Container for transform sync)
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.id = `connections-svg-${targetLayerIndex}`;
+            svg.style.position = 'absolute';
+            svg.style.top = '0';
+            svg.style.left = '0';
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.zIndex = '15';
+            svg.style.pointerEvents = 'none';
+            
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrowhead-${targetLayerIndex}" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                        <path d="M 1 1 L 7 4 L 1 7 Z" fill="#e2e8f0" stroke="#e2e8f0" stroke-width="1.5" stroke-linejoin="round" />
+                    </marker>
+                </defs>
+            `;
+            layerContainer.appendChild(svg);
+
+            // 2. Render Nodes for the target layer
+            const layer = graphConfig.layers[targetLayerIndex];
+            if (!layer || !layer.nodes) return;
+
+            const nodeCount = layer.nodes.length;
+            // Center single node (radius 0). Default radius 28 otherwise.
+            const radiusPercent = nodeCount === 1 ? 0 : (layer.radius || 28); 
+            
+            // Adjust start angle: Top for most, Left for pairs (horizontal align)
+            let startAngle = -Math.PI / 2;
+            if (nodeCount === 2) startAngle = Math.PI;
+
+            layer.nodes.forEach((nodeData, index) => {
+                const angle = startAngle + (index * (2 * Math.PI / nodeCount));
+                
+                // Position
+                const leftPct = 50 + (Math.cos(angle) * radiusPercent);
+                const topPct = 50 + (Math.sin(angle) * radiusPercent); 
+
+                // Create Node Element
+                const node = document.createElement('div');
+                node.id = `node-${nodeData.id}`;
+                node.className = 'graph-node';
+                node.dataset.id = nodeData.id; 
+                node.dataset.layer = targetLayerIndex;
+
+                // Content
+                nodeData.label.forEach(text => {
+                    const div = document.createElement('div');
+                    div.className = 'node-label';
+                    div.textContent = text;
+                    node.appendChild(div);
+                });
+
+                // Assign Color Sequentially
+                const paletteIndex = index % brandPalettes.length;
+                const palette = brandPalettes[paletteIndex];
+                
+                node.style.setProperty('--node-bg', palette.bg);
+                node.style.setProperty('--node-border', palette.border);
+
+                // Generate Random Organic Shape
+                const randomPct = () => 45 + Math.random() * 10;
+                const r1 = randomPct(), r2 = randomPct(), r3 = randomPct(), r4 = randomPct();
+                const radiusString = `${r1}% ${100-r1}% ${r3}% ${100-r3}% / ${r2}% ${100-r2}% ${r4}% ${100-r4}%`;
+                node.style.setProperty('--node-radius', radiusString);
+
+                // Generate Mismatched Border Shape
+                const ar1 = randomPct(), ar2 = randomPct(), ar3 = randomPct(), ar4 = randomPct();
+                const afterRadiusString = `${ar1}% ${100-ar1}% ${ar3}% ${100-ar3}% / ${ar2}% ${100-ar2}% ${ar4}% ${100-ar4}%`;
+                node.style.setProperty('--node-after-radius', afterRadiusString);
+                
+                // Random Rotation
+                const rot = (Math.random() * 6 - 3);
+                node.style.setProperty('--node-rotation', `${rot}deg`);
+
+                // Position calculated above
+                node.style.left = `${leftPct}%`;
+                node.style.top = `${topPct}%`;
+
+                // Magnitude Badge (Cornered Numerical Indicator)
+                const depth = calculateNodeDepth(nodeData.id);
+                if (depth > 0) {
+                    const badge = document.createElement('div');
+                    badge.className = 'magnitude-badge';
+                    badge.textContent = depth;
+                    node.appendChild(badge);
+                }
+
+                // Semantic Peak Bubble (Hover Effect)
+                if (nodeData.summary) {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'semantic-peak-bubble';
+                    
+                    // Semantic Anchor Logic
+                    let summaryHtml = nodeData.summary;
+                    
+                    // Fetch from global extension "semantic-anchors"
+                    const semanticAnchors = graphConfig.extensions['semantic-anchors'] || [];
+                    
+                    if (semanticAnchors && Array.isArray(semanticAnchors)) {
+                        semanticAnchors.forEach(anchor => {
+                            const term = anchor.word;
+                            const definition = anchor.description;
+                            const url = anchor.knowMoreUrl || `https://www.google.com/search?q=${encodeURIComponent(term)}`;
+                            
+                            // Case insensitive replace, but keeping original case
+                            const regex = new RegExp(`(${term})`, 'gi');
+                            if (regex.test(summaryHtml)) {
+                                // Italicized definition with quotes and dots, plus "know more" link
+                                const modalContent = `<div class="modal-definition-text">“... ${definition} ...”</div><a href="${url}" target="_blank" class="know-more-link">know more →</a>`;
+                                summaryHtml = summaryHtml.replace(regex, `<span class="semantic-anchors">$1<span class="semantic-anchors-modal">${modalContent}</span></span>`);
+                            }
+                        });
+                    }
+                    
+                    bubble.innerHTML = summaryHtml;
+                    node.appendChild(bubble);
+
+                    // Add hover listeners to toggle visibility with delay
+                    let hideTimeout;
+
+                    node.addEventListener('mouseenter', () => {
+                        if (hideTimeout) clearTimeout(hideTimeout);
+                        bubble.classList.add('visible');
+                    });
+                    
+                    node.addEventListener('mouseleave', () => {
+                        hideTimeout = setTimeout(() => {
+                            bubble.classList.remove('visible');
+                        }, 150); // Grace period to move to bubble
+                    });
+
+                    // Keep visible if hovering the bubble itself
+                    bubble.addEventListener('mouseenter', () => {
+                        if (hideTimeout) clearTimeout(hideTimeout);
+                    });
+                    
+                    bubble.addEventListener('mouseleave', () => {
+                         hideTimeout = setTimeout(() => {
+                            bubble.classList.remove('visible');
+                        }, 150);
+                    });
+                }
+
+                // Add Click Event for Transition (Zoom In)
+                node.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                    } else {
+                        clickTimeout = setTimeout(() => {
+                            clickTimeout = null;
+                            handleZoomIn(e, node, targetLayerIndex);
+                        }, 200); 
+                    }
+                });
+
+                // Add Double Click Event (Zoom Out)
+                node.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                    }
+                    handleZoomOut(e, node, targetLayerIndex);
+                });
+
+                layerContainer.appendChild(node);
+            });
+
+            // 2.5 Draw Containers (After nodes are in DOM so we can measure them)
+            drawContainersForLayer(targetLayerIndex);
+        }
+
+        // --- Convex Hull & Container Logic ---
+        function getEllipseBoundaryPoints(cx, cy, width, height, numPoints = 16) {
+            const points = [];
+            const rx = (width / 2) + 20; // Add padding (20px)
+            const ry = (height / 2) + 20;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * 2 * Math.PI;
+                points.push({
+                    x: cx + rx * Math.cos(angle),
+                    y: cy + ry * Math.sin(angle)
+                });
+            }
+            return points;
+        }
+
+        function cross(o, a, b) {
+            return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+        }
+
+        function getConvexHull(points) {
+            points.sort((a, b) => a.x != b.x ? a.x - b.x : a.y - b.y);
+            const n = points.length;
+            if (n <= 2) return points;
+            const lower = [];
+            for (let i = 0; i < n; i++) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) {
+                    lower.pop();
+                }
+                lower.push(points[i]);
+            }
+            const upper = [];
+            for (let i = n - 1; i >= 0; i--) {
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) {
+                    upper.pop();
+                }
+                upper.push(points[i]);
+            }
+            upper.pop();
+            lower.pop();
+            return lower.concat(upper);
+        }
+
+        function getSmoothPath(points) {
+            if (points.length < 2) return "";
+            
+            // Catmull-Rom or Quadratic Midpoint Smoothing
+            // Midpoint approach creates a nice organic rounded polygon
+            let d = "";
+            
+            // Need at least 3 points for a closed shape
+            if (points.length < 3) {
+                 // Fallback to line
+                 return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+            }
+
+            // Midpoint helper
+            const mid = (p1, p2) => ({ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+
+            const startMid = mid(points[points.length - 1], points[0]);
+            d = `M ${startMid.x},${startMid.y} `;
+
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                const m = mid(p1, p2);
+                // Quadratic curve from current midpoint to next midpoint, using the vertex as control point
+                d += `Q ${p1.x},${p1.y} ${m.x},${m.y} `;
+            }
+            
+            d += "Z";
+            return d;
+        }
+
+        function drawContainersForLayer(layerIndex) {
+            const layer = graphConfig.layers[layerIndex];
+            if (!layer || !layer.containers) return;
+
+            const containerSvg = document.getElementById('containers-svg');
+            // Clear previous containers if any (though we usually clear layer container)
+            // Wait, containers-svg is GLOBAL or per layer?
+            // The structure is: graph-container -> layer-container-N -> nodes
+            // The SVGs are usually at the top level or inside the layer container?
+            // Current implementation: #connections-svg is child of #graph-container (global).
+            // But connections are drawn for ALL layers? No, drawn for active layer.
+            // If I put #containers-svg in #graph-container, I need to clear it on layer switch.
+            // OR I can put SVG inside layer-container-N.
+            // "layer-container-N" has the nodes. If I put SVG there, it transforms with the layer!
+            // That's MUCH better for zoom/pan/transition.
+            // BUT connections-svg is global (fixed).
+            
+            // Let's check where `connections-svg` is.
+            // It is a sibling of layer-containers in `graph-container`.
+            // When we zoom, we transform `layer-container-N`. 
+            // Do connections move? `drawConnections` is called in `renderGraph` and `handleZoom`.
+            // `drawConnections` recalculates positions based on DOM elements.
+            // Since `layer-container-N` transforms, the `offsetLeft/Top` of nodes changes relative to screen?
+            // No, `offsetLeft` relative to `offsetParent`.
+            // If `graph-container` is relative, and `layer-container` is absolute.
+            // `node.offsetLeft` is relative to `layer-container`.
+            // If `layer-container` is transformed, the visual position changes.
+            // If `connections-svg` is in `graph-container` (untransformed), we must project coordinates.
+            
+            // ACTUALLY: The current code for connections uses `nodeFrom.offsetLeft`.
+            // If `layer-container` is transformed, `nodeFrom` positions are static relative to `layer-container`.
+            // If `connections-svg` is NOT in `layer-container`, the lines won't move with the zoom unless we redraw every frame.
+            // AND the zoom uses CSS transform on `layer-container`.
+            // So if `connections-svg` is outside, lines will detach during zoom!
+            // Unless `connections-svg` is ALSO inside `layer-container`?
+            // Checking HTML structure...
+            // `graph-container` contains `layer-container-0`, `layer-container-1`, `connections-svg`.
+            // `connections-svg` is a sibling.
+            // When `layer-container` zooms (CSS transform), the nodes move visually.
+            // The SVG lines are static.
+            // THIS MEANS LINES DETACH DURING TRANSITION?
+            // Yes, user mentioned "zoom out... current layer disappear suddenly".
+            // During transition, lines might be broken or hidden?
+            // Actually, `drawConnections` is called after render.
+            // If `layer-container` scales, the lines (if fixed) won't scale.
+            // Unless `handleZoom` redraws them? No, it uses CSS transition.
+            // So lines are WRONG during zoom?
+            // Wait, `drawConnections` uses `node.offsetLeft`. 
+            // If `connections-svg` is in `graph-container`, it overlays everything.
+            // If `layer-container` has `transform: scale(2)`, the nodes are far apart.
+            // But `node.offsetLeft` (DOM property) doesn't change with CSS transform of parent.
+            // So the lines would draw at the UNTRANSFORMED positions.
+            // This implies the current app might have lines detaching during zoom if not careful.
+            // BUT, if `connections-svg` is INSIDE `layer-container`, it would scale with it.
+            // Let's check where `connections-svg` is created. It's in the HTML body static.
+            
+            // Ah, I see.
+            // I should put the container SVG *inside* the `layer-container` so it moves with the nodes.
+            // That way I can just draw it once based on % or pixel offsets and let CSS handle the zoom/pan.
+            // Same for connections if possible, but connections might cross layers?
+            // User requirement 2: "connectors can be drawn... between two nodes (like how it is now)".
+            // "like how it is now" implies the current solution works for them.
+            // The current solution puts `connections-svg` at the root.
+            
+            // For CONTAINERS (groupings), they are definitely PART of the layer.
+            // So I will append a `.containers-svg` (or just an SVG) *inside* the `layer-container-N`.
+            // This is cleaner and ensures they transform perfectly.
+            
+            const layerContainer = document.getElementById(`layer-container-${layerIndex}`);
+            if (!layerContainer) return;
+
+            // Create SVG for containers if not exists in this layer
+            let localSvg = layerContainer.querySelector('.layer-containers-svg');
+            if (!localSvg) {
+                localSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                localSvg.classList.add('layer-containers-svg');
+                localSvg.style.position = 'absolute';
+                localSvg.style.top = '0';
+                localSvg.style.left = '0';
+                localSvg.style.width = '100%';
+                localSvg.style.height = '100%';
+                localSvg.style.pointerEvents = 'none';
+                localSvg.style.zIndex = '5'; // Behind nodes (20)
+                
+                // Insert as first child so it is behind nodes
+                layerContainer.insertBefore(localSvg, layerContainer.firstChild);
+            } else {
+                localSvg.innerHTML = ''; // Clear
+            }
+            
+            // Get Container Dimensions (it's 100% of parent, but parent is usually 100% of graph-container)
+            // `layer-container` is usually absolute 100% width/height.
+            const w = layerContainer.offsetWidth;
+            const h = layerContainer.offsetHeight;
+
+            layer.containers.forEach(container => {
+                const points = [];
+                
+                // Gather points from all nodes
+                container.nodes.forEach(nodeId => {
+                    const node = document.getElementById(`node-${nodeId}`);
+                    // Note: Node might be in a different layer? No, container definition is inside layer.
+                    // But we render nodes first.
+                    if (node) {
+                        // Node center relative to layer container
+                        // We use `offsetLeft` and `offsetTop`.
+                        // Since `layer-container` is the offsetParent (positioned absolute), this works.
+                        const cx = node.offsetLeft;
+                        const cy = node.offsetTop;
+                        
+                        // Node dimensions
+                        // Mobile/Desktop variance handled by offsetWidth
+                        const nw = node.offsetWidth;
+                        const nh = node.offsetHeight;
+                        
+                        // Generate boundary points
+                        const nodePoints = getEllipseBoundaryPoints(cx, cy, nw, nh);
+                        points.push(...nodePoints);
+                    }
+                });
+
+                if (points.length === 0) return;
+
+                // Compute Hull
+                const hullPoints = getConvexHull(points);
+                
+                // Create irregular path by perturbing points
+                const irregularPoints = hullPoints.map(p => ({
+                    x: p.x + (Math.random() * 10 - 5),
+                    y: p.y + (Math.random() * 10 - 5)
+                }));
+                const d = getSmoothPath(irregularPoints);
+                
+                // Create Path Element
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", d);
+                
+                // Get color from first node
+                // Uniform color for all containers
+                const strokeColor = "#cbd5e1"; // Slate 300 to match text
+                
+                path.setAttribute("fill", "none");
+                path.setAttribute("stroke", strokeColor);
+                path.setAttribute("stroke-width", "1"); // Thin
+                path.setAttribute("stroke-dasharray", "3,5"); // Loose dots
+                path.setAttribute("opacity", "0.8"); 
+                path.setAttribute("stroke-linejoin", "round");
+                path.setAttribute("stroke-linecap", "round");
+                
+                localSvg.appendChild(path);
+                
+                // Label
+                if (container.label) {
+                    // Place label at the top-most point of the hull (min Y)
+                    // Or centroid? "right on top of the container's boundary line"
+                    // implies on the top edge.
+                    
+                    let minY = Infinity;
+                    let topPoint = null;
+                    
+                    hullPoints.forEach(p => {
+                        if (p.y < minY) {
+                            minY = p.y;
+                            topPoint = p;
+                        }
+                    });
+                    
+                    // Actually, top point might be off-center.
+                    // Let's find the point with min Y, but maybe average X of top points?
+                    // Simple: Min Y point.
+                    
+                    const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    labelText.textContent = container.label;
+                    labelText.setAttribute("x", topPoint.x);
+                    labelText.setAttribute("y", topPoint.y - 10); // slightly above
+                    labelText.setAttribute("class", "group-label-text");
+                    
+                    localSvg.appendChild(labelText);
+                }
+            });
+        }
+
+        // --- Connection Drawing Logic ---
+        function getEllipseBoundaryPoint(centerX, centerY, angle, width, height) {
+            // Add a small offset to stop the arrow before it overlaps with the border/marker
+            const markerOffset = 8; 
+            const a = (width / 2) + markerOffset;
+            const b = (height / 2) + markerOffset;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            // Ellipse polar equation
+            const r = 1 / Math.sqrt(Math.pow(cos/a, 2) + Math.pow(sin/b, 2));
+            return { x: centerX + r * cos, y: centerY + r * sin };
+        }
+
+        function drawConnections() {
+            const container = document.getElementById('graph-container');
+            // Graph Center (for outward bulging)
+            const graphCenterX = container.offsetWidth / 2;
+            const graphCenterY = container.offsetHeight / 2;
+
+            graphConfig.layers.forEach(layer => {
+                if (!layer.connections) return;
+                
+                layer.connections.forEach(conn => {
+                    const nodeFrom = document.getElementById(`node-${conn.from}`);
+                    const nodeTo = document.getElementById(`node-${conn.to}`);
+                    const pathElement = document.getElementById(`path-${conn.from}-${conn.to}`);
+                    const labelPathElement = document.getElementById(`path-label-${conn.from}-${conn.to}`);
+
+                    if (nodeFrom && nodeTo && pathElement) {
+                        const p1 = {
+                            x: nodeFrom.offsetLeft, // offsetLeft is the left edge? No, it's relative to parent
+                            y: nodeFrom.offsetTop
+                        };
+                        const p2 = {
+                            x: nodeTo.offsetLeft,
+                            y: nodeTo.offsetTop
+                        };
+                        // Note: offsetLeft/Top with transform translate(-50%, -50%) 
+                        // returns the *element's* top/left CSS position which is the center point in our logic.
+                        // Wait, offsetLeft is the distance from the left edge of offsetParent to the left edge of the element.
+                        // If element has `left: 50%` and `transform: translate(-50%)`, offsetLeft reflects the `left` property? 
+                        // No, offsetLeft is the calculated left position of the border box.
+                        // If `left: 500px` and `width: 100px` and `translate(-50%)` -> visual left is 450px.
+                        // offsetLeft returns 450px.
+                        // But our center logic assumed `left` CSS property is the center.
+                        // So Center = offsetLeft + offsetWidth/2.
+                        
+                        // Since we use transform: translate(-50%, -50%) and set left/top to center,
+                        // offsetLeft/Top represents the center point directly.
+                        const c1 = {
+                            x: nodeFrom.offsetLeft,
+                            y: nodeFrom.offsetTop
+                        };
+                        const c2 = {
+                            x: nodeTo.offsetLeft,
+                            y: nodeTo.offsetTop
+                        };
+
+                        // Midpoint
+                        const midX = (c1.x + c2.x) / 2;
+                        const midY = (c1.y + c2.y) / 2;
+
+                        // Calculate Vector from GraphCenter to Midpoint
+                        let vx = midX - graphCenterX;
+                        let vy = midY - graphCenterY;
+                        
+                        // Normalize and scale for bulge
+                        const len = Math.sqrt(vx*vx + vy*vy) || 1; // Avoid divide by zero
+                        const bulgeDistance = 60; // How much to curve outward
+                        
+                        // If nodes are on opposite sides of center, this might be weird. 
+                        // But for a ring, Midpoint is usually closer to center than the arc.
+                        // So we want to push OUT.
+                        const controlX = midX + (vx / len) * bulgeDistance;
+                        const controlY = midY + (vy / len) * bulgeDistance;
+
+                        // Calculate intersection with ellipses
+                        const angleStart = Math.atan2(controlY - c1.y, controlX - c1.x);
+                        const startPoint = getEllipseBoundaryPoint(c1.x, c1.y, angleStart, nodeFrom.offsetWidth, nodeFrom.offsetHeight);
+                        
+                        const angleEnd = Math.atan2(controlY - c2.y, controlX - c2.x);
+                        const endPoint = getEllipseBoundaryPoint(c2.x, c2.y, angleEnd, nodeTo.offsetWidth, nodeTo.offsetHeight);
+
+                        // Draw Curve
+                        const d = `M ${startPoint.x} ${startPoint.y} Q ${controlX} ${controlY} ${endPoint.x} ${endPoint.y}`;
+                        pathElement.setAttribute('d', d);
+
+                        // Draw Label Path
+                        if (labelPathElement) {
+                            // Ensure text is readable (Left-to-Right)
+                            if (startPoint.x > endPoint.x) {
+                                // Reverse path for text
+                                const dLabel = `M ${endPoint.x} ${endPoint.y} Q ${controlX} ${controlY} ${startPoint.x} ${startPoint.y}`;
+                                labelPathElement.setAttribute('d', dLabel);
+                            } else {
+                                labelPathElement.setAttribute('d', d);
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // --- Interaction Logic ---
+        function initInteractions() {
+            const container = document.getElementById('graph-container');
+
+            function updateTransform() {
+                container.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            }
+
+            // 1. Zoom (Wheel)
+            window.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.1;
+                const direction = e.deltaY > 0 ? -1 : 1;
+                const factor = 1 + (direction * zoomIntensity);
+                const newScale = scale * factor;
+                if (newScale >= 0.2 && newScale <= 5) {
+                    scale = newScale;
+                    updateTransform();
+                }
+            }, { passive: false });
+
+            // 2. Mouse Down (Start Pan or Drag)
+            window.addEventListener('mousedown', (e) => {
+                const node = e.target.closest('.graph-node');
+                
+                if (node) {
+                    // Start Node Drag
+                    activeNode = node;
+                    activeNode.classList.add('no-transition');
+                    nodeDragStartX = e.clientX;
+                    nodeDragStartY = e.clientY;
+                    
+                    // We need the current visual position to drag correctly.
+                    // Since we use % for left/top, dragging in pixels is tricky if we don't convert.
+                    // Easiest: Switch to pixel values upon drag start?
+                    // Or just add a translate transform?
+                    // The node already has `translate(-50%, -50%)`.
+                    // Let's modify `left` and `top` in pixels directly.
+                    
+                    // Get current computed left/top in pixels
+                    const rect = activeNode.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Relative to container (unscaled?)
+                    // left/top style is %, but we can read computed style.
+                    const style = window.getComputedStyle(activeNode);
+                    // This returns pixels if the browser computed it.
+                    nodeInitialLeft = parseFloat(style.left);
+                    nodeInitialTop = parseFloat(style.top);
+                    
+                    activeNode.style.cursor = 'grabbing';
+                    e.stopPropagation(); 
+                } else {
+                    // Start Container Pan
+                    isPanningContainer = true;
+                    containerPanStartX = e.clientX - panX;
+                    containerPanStartY = e.clientY - panY;
+                    document.body.style.cursor = 'grabbing';
+                }
+            });
+
+            // 3. Mouse Move
+            window.addEventListener('mousemove', (e) => {
+                if (activeNode) {
+                    e.preventDefault();
+                    // Drag Node
+                    const dx = (e.clientX - nodeDragStartX) / scale;
+                    const dy = (e.clientY - nodeDragStartY) / scale;
+                    
+                    // Set new position in pixels (overriding %)
+                    activeNode.style.left = `${nodeInitialLeft + dx}px`;
+                    activeNode.style.top = `${nodeInitialTop + dy}px`;
+                    
+                    // Update connections and containers
+                    requestAnimationFrame(() => {
+                        drawConnections();
+                        const layerIdx = parseInt(activeNode.dataset.layer);
+                        drawContainersForLayer(layerIdx);
+                    });
+                } else if (isPanningContainer) {
+                    e.preventDefault();
+                    panX = e.clientX - containerPanStartX;
+                    panY = e.clientY - containerPanStartY;
+                    updateTransform();
+                }
+            });
+
+            // 4. Mouse Up
+            window.addEventListener('mouseup', () => {
+                if (activeNode) {
+                    activeNode.style.cursor = 'pointer';
+                    activeNode.classList.remove('no-transition');
+                    activeNode = null;
+                }
+                if (isPanningContainer) {
+                    isPanningContainer = false;
+                    document.body.style.cursor = 'default';
+                }
+            });
+
+            // 5. Double Click (Zoom Out anywhere on canvas)
+            window.addEventListener('dblclick', (e) => {
+                // Ignore if clicking on a node (handled by node listener)
+                if (e.target.closest('.graph-node')) return;
+
+                // Trigger Zoom Out
+                handleZoomOut(e, null, activeLayerIndex);
+            });
+        }
+
+        // --- Particle Background Logic ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                initParticles();
+                
+                // Also redraw connections on resize
+                drawConnections();
+            }, 100); // Debounce 100ms
+        });
+
+        const particles = [];
+        const particleCount = 300; 
+        const colors = ['#ffffff', '#cccccc', '#999999', '#555555'];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.radius = Math.random() < 0.9 ? Math.random() * 0.5 + 0.5 : Math.random() * 1.2 + 0.5;
+                this.opacity = Math.random() * 0.5 + 0.3;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.vx = (Math.random() - 0.5) * 0.05; 
+                this.vy = (Math.random() - 0.5) * 0.05; 
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0) this.x += width;
+                if (this.x > width) this.x -= width;
+                if (this.y < 0) this.y += height;
+                if (this.y > height) this.y -= height;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.shadowBlur = this.radius * 2;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1; 
+            }
+        }
+
+        function initParticles() {
+            particles.length = 0;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        // --- Breadcrumbs Logic ---
+        function updateBreadcrumbs(currentLayerIndex) {
+            const breadcrumbBar = document.getElementById('breadcrumb-bar');
+            if (!breadcrumbBar) return;
+
+            breadcrumbBar.innerHTML = '';
+
+            // 1. Reconstruct Path from Root to Current
+            const pathIndices = [currentLayerIndex];
+            let tempIndex = currentLayerIndex;
+            
+            while (true) {
+                const layer = graphConfig.layers[tempIndex];
+                if (!layer || !layer.parentId) break;
+                
+                // Find parent layer
+                const parentLayerIndex = graphConfig.layers.findIndex(l => 
+                    l.nodes && l.nodes.some(n => n.id === layer.parentId)
+                );
+                
+                if (parentLayerIndex === -1 || parentLayerIndex === tempIndex) break;
+                
+                pathIndices.unshift(parentLayerIndex);
+                tempIndex = parentLayerIndex;
+            }
+
+            // 2. Render Breadcrumbs
+            pathIndices.forEach((layerIdx, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'breadcrumb-dot';
+                
+                // Click to navigate
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    if (layerIdx === activeLayerIndex) return;
+                    navigateToLayer(layerIdx);
+                };
+                
+                let color = '#000000'; 
+                let label = 'Home'; 
+
+                if (index === 0) {
+                    // Root
+                    color = '#050505'; 
+                    dot.classList.add('is-root');
+                } else {
+                    // Get history from the PREVIOUS layer in the path
+                    const prevLayerIdx = pathIndices[index - 1];
+                    const history = transitionHistory[prevLayerIdx];
+                    
+                    if (history) {
+                        if (history.nodeColor) color = history.nodeColor;
+                        if (history.nodeLabel) label = history.nodeLabel;
+                    }
+                }
+                
+                dot.style.backgroundColor = color;
+                
+                // Add Tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'breadcrumb-tooltip';
+                tooltip.textContent = label;
+                dot.appendChild(tooltip);
+                
+                // Highlight the active one
+                if (layerIdx === currentLayerIndex) {
+                    dot.classList.add('active');
+                }
+                
+                breadcrumbBar.appendChild(dot);
+            });
+        }
+
+        // --- Initialization ---
+        // Moved to initGraph()
+
+        
+        // (Old Intro Animation Logic Removed)
+
+    </script>
+</body>
+</html>
