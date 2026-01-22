@@ -1,7 +1,7 @@
 # Visualli Spec
-> Version: `0.1`
-> Status: `PROPOSED`
-> Date: `22-01-2026`
+> Version: `0.1`  
+> Status: `PROPOSED`  
+> Date: `22-01-2026`  
 
 # Table of Contents
 - [AS IS](#as-is)
@@ -97,30 +97,32 @@ classDiagram
 
 ## A Few Things To Think About
 
-1. Duplicate fields
+1. **Duplicate fields**
    - `created`, `lastModified`, `version` are duplicated in `metadata` and `nodes`
 
-2. Relationships are defined in multiple places
-     - **Recursively** via the `children` array within each node.
-     - **Explicitly** via the `topLevelConnections` array which lists all connections (`from_`, `to`, `label`).
+2. **Relationships are defined in multiple places**
+     - Recursively via the `children` array within each node.
+     - Explicitly via the `topLevelConnections` array which lists all connections (`from_`, `to`, `label`).
 
-3. Ambiguous hierarchy
+3. **Ambiguous hierarchy**
    - The structure attempts to be both a tree (via `children`) and a graph (via `topLevelConnections`).
 
-4. Id uniqueness
+4. **Id uniqueness**
    - Rely on a string-based `id` 
    - Renaming or moving a node requires updating multiple references across `children`, `parent` fields, and `topLevelConnections`.
    - Unsure what is `$oid` in `_id`
 
-5. Recursiveness
+5. **Recursiveness**
    - 'children' is too deeply nested to be useful (e.g. parsing and querying difficult compared to a flat list of nodes with edges) 
 
 
 # PROPOSED
 
-To address the above concerns and to support lazy loading, and flexible extensions capabilities, we propose a **JSONL (JSON Lines)** format, using the **`.visualli`** file extension, where **each line represents a self-contained Entity (Layer | Extension | Meta)**.
+To address the above concerns and to support lazy loading, and flexible extensions capabilities..   
 
-> Refer to `proposed.visualli`  
+We propose a **JSONL (JSON Lines)** format, uses the **`.visualli`** file extension, where **each line represents a self-contained Entity** (`Layer` | `Extension` | `Meta`).
+
+> Refer to `proposed-v0.1.visualli`  
 
 ## Key Design Elements
 
@@ -290,4 +292,6 @@ classDiagram
 
 To view the live example:
 
-- Clone the repo and run a local server (e.g., `python3 -m http.server`) in the root directory, then visit `http://localhost:8000/examples/example.html`.
+- Clone the repo and run a local server (e.g., `python3 -m http.server`) in the root directory.   
+- Visit `http://localhost:8000/examples/example.html`.
+- Modify `example.visualli` and refresh the web page to see the changes.
