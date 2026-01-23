@@ -13,6 +13,7 @@ Visualli is an open specification designed to turn structured/unstructured data 
 
 *   **Streamable (JSONL)**: Parse and render content line-by-line as it's generated. No need to wait for the full response.
 *   **Layered Architecture**: Independent layers allow for "Detail on Demand". Load the high-level summary first, then fetch details as the user explores.
+*   **Hierarchical**: Supports deeply nested structures while maintaining a flat serialization format.
 *   **Modern & Extensible**: Built-in support for semantic metadata, visual extensions, and custom payloads.
 
 ## The Specification

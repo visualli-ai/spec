@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://visualli.ai/schemas/visualli.schema.json",
+  "title": "Visualli Spec 0.1-DRAFT",
+  "description": "Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.",
+  "type": "object",
+  "discriminator": {
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/Meta"
+    },
+    {
+      "$ref": "#/definitions/Extension"
+    },
+    {
+      "$ref": "#/definitions/Layer"
+    }
+  ],
+  "definitions": {
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "meta"
+        },
+        "version": {
+          "type": "string",
+          "description": "Visualli spec version (e.g. '0.1')"
+        },
+        "title": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "type",
+        "version",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "Extension": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "extension"
+        },
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the extension (e.g., 'semantic-anchors')"
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration parameters for the extension"
+        },
+        "data": {
+          "type": "array",
+          "description": "Data payload for the extension",
+          "items": {}
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ]
+    },
+    "Layer": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "layer"
+        },
+        "id": {
+          "type": "string",
+          "description": "UUID of the layer"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Hierarchy level (0 is root)"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "UUID of the parent layer"
+        },
+        "parentNodeId": {
+          "type": "string",
+          "description": "UUID of the specific node in the parent layer this layer attaches to"
+        },
+        "description": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Node"
+          },
+          "default": []
+        },
+        "connections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Connection"
+          },
+          "default": []
+        },
+        "containers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Container"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "level"
+      ]
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "color": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "title"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "position",
+        "data"
+      ]
+    },
+    "Connection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source Node ID"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target Node ID"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to"
+      ]
+    },
+    "Container": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of Node IDs contained in this group"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "nodes"
+      ]
+    }
+  }
+}
