@@ -18,16 +18,19 @@ Visualli is an open specification designed to turn structured/unstructured data 
 
 ## The Specification
 
-The core specification is divided into conceptual and technical documents:
+The **Single Source of Truth** for the format is the JSON Schema:
+*   [**visualli.schema.json**](visualli.schema.json)
 
-*   [**Core Concepts**](spec/CORE.md): Understand the philosophy of Layers, Nodes, and the Infinite Canvas.
-*   [**Visualli Specification**](spec/SPEC.md): The technical reference for the `.visualli` interchange format.
+The documentation is divided into:
+
+*   [**Core Concepts**](docs/core.md): Understand the philosophy of Layers, Nodes, and the Infinite Canvas.
+*   [**Visualli Specification**](docs/spec.md): The technical reference for the `.visualli` interchange format.
 
 ## Ecosystem & Tooling
 
 We are building a comprehensive ecosystem around the specification:
 
-*   [**Parsers**](parsers/README.md): Reference implementations for TypeScript, Python, and more.
+*   **Bindings**: Reference implementations for [TypeScript](bindings/typescript/README.md) and [Python](bindings/python/README.md).
 *   [**Renderers**](renderers/README.md): Specifications for Web and Native renderers.
 *   [**Extensions**](extensions/README.md): Integrations for VS Code, Obsidian, and other tools.
 

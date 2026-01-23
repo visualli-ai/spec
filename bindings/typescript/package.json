@@ -1,0 +1,20 @@
+{
+  "name": "@visualli/models",
+  "version": "0.1.0",
+  "description": "Official Visualli TypeScript models and type definitions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "visualli",
+    "schema",
+    "types"
+  ],
+  "author": "Visualli AI",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

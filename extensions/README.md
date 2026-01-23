@@ -6,7 +6,6 @@ This directory tracks the ecosystem of editor extensions and tool integrations f
 
 - [ ] **VS Code Extension**: Syntax highlighting, preview, and visual editing for `.visualli` files.
 - [ ] **Obsidian Plugin**: Integration with knowledge bases.
-- [ ] **Browser Extension**: View `.visualli` files directly in GitHub/GitLab.
 
 ## Contributing
 

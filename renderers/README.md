@@ -5,7 +5,6 @@ This directory is reserved for specifications and reference implementations of V
 ## Roadmap
 
 - [ ] **Web Renderer**: A standard web component (React/Vue/Vanilla) for rendering `.visualli` files.
-- [ ] **Static Image Generator**: CLI tools to convert `.visualli` to PNG/SVG.
 
 ## Contributing
 

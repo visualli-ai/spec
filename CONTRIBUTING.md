@@ -9,9 +9,9 @@ Thank you for your interest in improving the Visualli Specification! We aim to c
 *   **RFCs**: For major changes, please submit a Request for Comments (RFC) in the form of a markdown file in a PR.
 
 ### 2. Updating the Spec
-*   The specification source is located in the `spec/` directory.
-*   Please ensure any changes to the schema are reflected in `spec/SPEC.md`.
-*   If you are adding a new concept, consider creating a new file in `spec/` or updating `spec/CORE.md`.
+*   The **Single Source of Truth** is `visualli.schema.json` at the root of the repository.
+*   Please ensure any changes to the schema are reflected in `docs/spec.md`.
+*   If you are adding a new concept, consider creating a new file in `docs/` or updating `docs/core.md`.
 
 ### 3. Adding Examples
 *   We love examples! Please add valid `.visualli` files to the `examples/` directory to demonstrate new features or edge cases.

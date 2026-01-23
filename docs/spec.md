@@ -3,7 +3,7 @@
 Visualli uses **JSONL (JSON Lines)** as its primary interchange format. 
 Each line in a `.visualli` file represents a distinct entity (`Meta`, `Extension`, or `Layer`).
 
-> **Source of Truth**: The formal validation rules are defined in [visualli.schema.json](./visualli.schema.json).
+> **Source of Truth**: The formal validation rules are defined in [visualli.schema.json](../visualli.schema.json).
 
 ## File Structure
 
