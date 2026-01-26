@@ -41,7 +41,7 @@ class Layer(BaseModel):
     type: Literal["layer"] = "layer"
     id: str = Field(..., description="Layer UUID")
     level: int = Field(..., ge=0, description="Hierarchy level (0 is root)")
-    parentId: Optional[str] = Field(None, description="Parent layer UUID")
+    parentLayerId: Optional[str] = Field(None, description="Parent layer UUID")
     parentNodeId: Optional[str] = Field(None, description="Attached node UUID")
     description: Optional[str] = None
     nodes: List[Node] = Field(default_factory=list)

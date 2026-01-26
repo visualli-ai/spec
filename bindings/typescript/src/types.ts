@@ -21,7 +21,7 @@ export interface Extension {
 export interface Node {
   id: string;
   position: { x: number; y: number };
-  data: { title: string; color?: string; [key: string]: any };
+  data: { title: string; label?: string; color?: string; [key: string]: any };
 }
 
 export interface Connection {
@@ -41,7 +41,7 @@ export interface Layer {
   type: 'layer';
   id: string;
   level: number;
-  parentId?: string;
+  parentLayerId?: string;
   parentNodeId?: string;
   description?: string;
   nodes: Node[];

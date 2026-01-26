@@ -51,7 +51,7 @@ interface Layer {
   type: "layer";
   id: string;            // UUID
   level: number;         // Depth level (0 = root)
-  parentId?: string;     // UUID of parent layer (optional for root)
+  parentLayerId?: string; // UUID of parent layer (optional for root)
   parentNodeId?: string; // UUID of parent node in parent layer (optional)
   description?: string;
   nodes: Node[];
@@ -64,6 +64,7 @@ interface Node {
   position: { x: number; y: number };
   data: {
     title: string;
+    label?: string;      // Label text
     color?: string;
     [key: string]: any;  // Extensible data
   };

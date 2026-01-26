@@ -65,7 +65,7 @@ classDiagram
         +type
         +id
         +level
-        +parentId [0..1]
+        +parentLayerId [0..1]
         +parentNodeId [0..1]
         +description
     }

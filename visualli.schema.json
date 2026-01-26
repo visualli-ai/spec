@@ -154,6 +154,10 @@
             "title": {
               "type": "string"
             },
+            "label": {
+              "type": "string",
+              "description": "Label text for the node"
+            },
             "color": {
               "type": "string"
             }
