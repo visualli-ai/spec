@@ -98,7 +98,7 @@ classDiagram
     layer "1" *-- "*" containers : contains
     
     %% Hierarchical Links
-    layer ..> layer : parentId (Child Layer -> Parent Layer)
+    layer ..> layer : parentLayerId (Child Layer -> Parent Layer)
     layer ..> nodes : parentNodeId (Layer attached to Node)
     
     %% Connection Links
