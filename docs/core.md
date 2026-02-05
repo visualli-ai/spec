@@ -19,7 +19,7 @@ This allows for "Detail on Demand". A high-level summary layer can load first, a
 ### Nodes
 Nodes represent discrete pieces of information.
 *   **Identity**: Unique ID (UUID).
-*   **Data**: Payload (Title, Description, Color, etc.).
+*   **Data**: Payload (Label, Description, Color, etc.).
 *   **Position**: (x, y) coordinates on the canvas.
 
 ### Connections

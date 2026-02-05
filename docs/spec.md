@@ -63,7 +63,6 @@ interface Node {
   id: string;            // UUID
   position: { x: number; y: number };
   data: {
-    title: string;
     label?: string;      // Label text
     color?: string;
     [key: string]: any;  // Extensible data
@@ -88,5 +87,5 @@ interface Container {
 
 ```jsonl
 {"type": "meta", "version": "2.0", "title": "Example Map", "created": "2024-05-21T10:00:00Z", "lastModified": "2024-05-22T15:30:00Z"}
-{"type": "layer", "id": "layer-1", "level": 0, "description": "Root", "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"title": "Root Node"}}], "connections": []}
+{"type": "layer", "id": "layer-1", "level": 0, "description": "Root", "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"label": "Root Node"}}], "connections": []}
 ```

@@ -24,7 +24,7 @@ class Extension(BaseModel):
 class Node(BaseModel):
     id: str = Field(..., description="Unique node ID")
     position: Dict[str, float] = Field(..., description="x/y coordinates")
-    data: Dict[str, Any] = Field(..., description="Node content/attributes")
+    data: Dict[str, Any] = Field(..., description="Node content (e.g. label, color)")
 
 class Connection(BaseModel):
     id: str = Field(..., description="Unique connection ID")

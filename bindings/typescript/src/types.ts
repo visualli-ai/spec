@@ -21,7 +21,7 @@ export interface Extension {
 export interface Node {
   id: string;
   position: { x: number; y: number };
-  data: { title: string; label?: string; color?: string; [key: string]: any };
+  data: { label?: string; color?: string; [key: string]: any };
 }
 
 export interface Connection {

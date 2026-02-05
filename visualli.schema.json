@@ -151,9 +151,6 @@
         "data": {
           "type": "object",
           "properties": {
-            "title": {
-              "type": "string"
-            },
             "label": {
               "type": "string",
               "description": "Label text for the node"
@@ -163,9 +160,7 @@
             }
           },
           "additionalProperties": true,
-          "required": [
-            "title"
-          ]
+          "required": []
         }
       },
       "required": [

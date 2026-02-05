@@ -19,7 +19,7 @@ import { Layer, Node, VisualliFragment } from '@visualli/models';
 const node: Node = {
   id: 'node-1',
   position: { x: 0, y: 0 },
-  data: { title: 'Central Idea' }
+  data: { label: 'Central Idea' }
 };
 
 const layer: Layer = {
