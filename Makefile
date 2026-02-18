@@ -70,6 +70,12 @@ update-version:
 	pkg["version"] = version; \
 	json.dump(pkg, open(pkg_path, "w"), indent=2); \
 	print("Updated bindings/typescript/package.json"); \
+	\
+	readme_path = "README.md"; \
+	readme = open(readme_path).read(); \
+	readme = re.sub(r"\[!\[Version\]\(https://img\.shields\.io/badge/Version-[^-]+-orange\)\]\(\)", f"[![Version](https://img.shields.io/badge/Version-{version}-orange)]()", readme); \
+	open(readme_path, "w").write(readme); \
+	print("Updated README.md badge"); \
 	'
 	@echo "Regenerating bindings to reflect new version..."
 	@$(MAKE) generate

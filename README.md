@@ -2,7 +2,7 @@
 
 > **A modern, streamable, and hierarchical standard for mind mapping and visualization.**
 
-[![Status](https://img.shields.io/badge/Status-Draft-orange)]()
+[![Version](https://img.shields.io/badge/Version-0.1.0-orange)]()
 [![License](https://img.shields.io/badge/License-MIT-blue)]()
 [![CI/CD](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml)
 
