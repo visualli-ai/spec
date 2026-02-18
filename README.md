@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/V-spec-logo.png" alt="Visualli Logo" width="300">
+</p>
+
 # Visualli Specification
 
 > **A modern, streamable standard for spatial hierarchies - an immersive alternative to traditional mind maps.**
