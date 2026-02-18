@@ -1,6 +1,6 @@
 # Visualli Specification
 
-> **A modern, streamable, and hierarchical standard for mind mapping and visualization.**
+> **A modern, streamable standard for spatial hierarchies - an immersive alternative to traditional mind maps.**
 
 [![Version](https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge)]()  
 
