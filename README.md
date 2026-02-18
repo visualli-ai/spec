@@ -1,26 +1,30 @@
-<p align="center">
-  <img src=".github/assets/V-spec-logo.png" alt="Visualli Logo" width="300">
-</p>
-
-# Visualli Specification
-
-> **A modern, streamable standard for spatial hierarchies - an immersive alternative to traditional mind maps.**
-
-[![Version](https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge)]()  
-
-[![License](https://img.shields.io/badge/License-MIT-blue)]()
-[![CI/CD](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml)
+<table border="0">
+  <tr>
+    <td width="200" style="border: none;">
+      <img src=".github/assets/V-spec-logo.png" alt="Visualli Logo" width="200">
+    </td>
+    <td style="border: none; vertical-align: middle;">
+      <h1>Visualli Specification</h1>
+      <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
+      <p>
+        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge" alt="Version"></a></br>
+        <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
+        <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
+      </p>
+    </td>
+  </tr>
+</table>
 
 ## What is Visualli?
 
-Visualli is an open specification designed to turn structured/unstructured data into human-readable visualizations. Unlike traditional mind map formats that rely on rigid XML or single-file JSON trees, Visualli is built from the ground up for **streaming**, **infinite scaling**, and **lazy loading**.
+Visualli is an open standard designed to turn structured/unstructured data into human-readable visualizations. Unlike traditional mind map formats that rely on rigid XML or single-file JSON trees, Visualli is built from the ground up for **streaming**, **infinite scaling**, and **lazy loading**.
 
 ## Why Visualli?
 
-*   **Streamable (JSONL)**: Parse and render content line-by-line as it's generated. No need to wait for the full response.
-*   **Layered Architecture**: Independent layers allow for "Detail on Demand". Load the high-level summary first, then fetch details as the user explores.
-*   **Hierarchical**: Supports deeply nested structures while maintaining a flat serialization format.
-*   **Modern & Extensible**: Built-in support for semantic metadata, visual extensions, and custom payloads.
+-  **Streamable (JSONL)**: Parse and render content line-by-line as it's generated. No need to wait for the full response.
+-  **Layered Architecture**: Independent layers allow for "Detail on Demand". Load the high-level summary first, then fetch details as the user explores.
+-  **Hierarchical**: Supports deeply nested structures while maintaining a flat serialization format.
+-  **Modern & Extensible**: Built-in support for semantic metadata, visual extensions, and custom payloads.
 
 ## The Specification
 
