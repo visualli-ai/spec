@@ -54,7 +54,7 @@ You can import the Visualli bindings by installing them directly from this repos
 
 ### Python
 
-Install directly via `pip` (requires Python 3.11+):
+1. Install directly via `pip` (requires Python 3.11+):
 
 ```bash
 pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindings/python"
@@ -62,13 +62,16 @@ pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindi
 *Note: Replace `@main` with a specific branch or tag (e.g., `@v0.1.0`) if needed.*
 
 ### TypeScript
+To ensure clean imports (`@visualli/bindings`), you must install from a local copy of the repository.
 
-Install directly via `npm` (requires npm v7+):
-
-```bash
-npm install github:visualli-ai/spec#main -w @visualli/bindings
-```
-*Note: Replace `main` with a specific branch or tag if needed.*
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/visualli-ai/spec.git
+   ```
+2. Install the bindings package from the local path:
+   ```bash
+   npm install ./spec/bindings/typescript
+   ```
 
 ## Contributing
 
