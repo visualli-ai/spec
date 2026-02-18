@@ -589,12 +589,18 @@
                              if (data.nodes) {
                                 data.nodes = data.nodes.map(node => ({
                                     ...node,
-                                    label: node.data ? node.data.label : node.label,
+                                    label: (node.data && node.data.label) 
+                                        ? (Array.isArray(node.data.label) ? node.data.label : [node.data.label])
+                                        : (Array.isArray(node.label) ? node.label : [node.label]),
                                     summary: node.data ? node.data.summary : node.summary
                                 }));
                             }
                             if (data.parentNodeId) {
                                 data.parentId = data.parentNodeId;
+                            }
+                            if (data.parentLayerId) {
+                                // For backward compatibility if internal logic needs parentLayerId
+                                // But internal logic primarily uses parentNodeId (mapped to parentId)
                             }
                             layers.push(data);
                         }
