@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-verify:
-    name: Build and Verify
+  generate-and-verify:
+    name: Generate and Verify Bindings
     runs-on: ubuntu-latest
     environment: main
     permissions:
