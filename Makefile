@@ -1,0 +1,73 @@
+PYTHON ?= python3
+PIP ?= pip
+VENV ?= .venv
+
+.PHONY: all install generate update-version help clean-venv
+
+help:
+	@echo "Available commands:"
+	@echo "  make install         - Create Python 3.11+ venv and install dependencies"
+	@echo "  make generate        - Regenerate Python and TypeScript bindings"
+	@echo "  make update-version  - Propagate version from VERSION file to all files AND regenerate bindings"
+	@echo "  make clean-venv      - Remove the existing virtual environment"
+
+install:
+	@# Ensure Python 3.11+ is available
+	@if ! command -v python3.11 >/dev/null 2>&1; then \
+		echo "Error: python3.11 is not installed or not in PATH."; \
+		echo "Please install Python 3.11 (e.g., via 'brew install python@3.11' on macOS)."; \
+		exit 1; \
+	fi
+	@# Create venv if it doesn't exist
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "Creating virtual environment using python3.11..."; \
+		python3.11 -m venv $(VENV); \
+	else \
+		echo "Virtual environment already exists at $(VENV)"; \
+	fi
+	@# Install dependencies inside venv
+	@echo "Installing dependencies..."
+	@$(VENV)/bin/pip install --upgrade pip
+	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]"
+	@echo "Installing TypeScript dependencies..."
+	cd bindings/typescript && npm install
+	@echo "Installing code generation tools (dev only)..."
+	npm install -g json-schema-to-typescript
+
+clean-venv:
+	rm -rf $(VENV)
+	@echo "Virtual environment removed."
+
+generate:
+	@echo "⏳ Generating Python Pydantic Models..."
+	@$(VENV)/bin/python -m datamodel_code_generator --input visualli.schema.json --input-file-type jsonschema --output bindings/python/visualli.py --output-model-type pydantic_v2.BaseModel --use-schema-description --field-constraints --use-annotated --use-union-operator --formatters black
+	@echo "✅ Python models generated at bindings/python/visualli.py"
+	@echo "⏳ Generating TypeScript Interfaces..."
+	@json2ts visualli.schema.json bindings/typescript/src/types.ts
+	@echo "✅ TypeScript interfaces generated at bindings/typescript/src/types.ts"
+
+update-version:
+	@$(VENV)/bin/python -c '\
+	import json, re, os; \
+	version = open("VERSION").read().strip(); \
+	print(f"Propagating version {version}..."); \
+	\
+	schema = json.load(open("visualli.schema.json")); \
+	schema["title"] = f"Visualli Spec {version}"; \
+	json.dump(schema, open("visualli.schema.json", "w"), indent=2); \
+	print("Updated visualli.schema.json"); \
+	\
+	setup_path = "bindings/python/setup.py"; \
+	content = open(setup_path).read(); \
+	content = re.sub(r"version=\"[^\"]+\"", f"version=\"{version}\"", content); \
+	open(setup_path, "w").write(content); \
+	print("Updated bindings/python/setup.py"); \
+	\
+	pkg_path = "bindings/typescript/package.json"; \
+	pkg = json.load(open(pkg_path)); \
+	pkg["version"] = version; \
+	json.dump(pkg, open(pkg_path, "w"), indent=2); \
+	print("Updated bindings/typescript/package.json"); \
+	'
+	@echo "Regenerating bindings to reflect new version..."
+	@$(MAKE) generate

@@ -1,0 +1,54 @@
+name: Visualli CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-verify:
+    name: Build and Verify
+    runs-on: ubuntu-latest
+    environment: main
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11.0'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22'
+
+    # 1. Install dependencies
+    - name: Install dependencies
+      run: |
+        make install
+
+    # 2. Generate bindings and verify
+    - name: Verify generated bindings
+      run: |
+        make generate
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "::error::Bindings are not up to date. Please run 'make generate' locally and commit the changes."
+          git status
+          git diff
+          exit 1
+        fi
+
+    # 3. Update version and verify
+    - name: Verify version propagation
+      run: |
+        make update-version
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "::error::Version propagation is incomplete. Please run 'make update-version' locally and commit the changes."
+          git status
+          git diff
+          exit 1
+        fi

@@ -5,7 +5,7 @@ Official TypeScript definitions for the Visualli specification. These bindings p
 ## Installation
 
 ```bash
-npm install @visualli/models
+npm install @visualli/bindings
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install @visualli/models
 These types are purely for type-checking and interface implementation. They do not include parsing logic.
 
 ```typescript
-import { Layer, Node, VisualliFragment } from '@visualli/models';
+import { Layer, Node, VisualliFragment } from '@visualli/bindings';
 
 // Create typed objects
 const node: Node = {

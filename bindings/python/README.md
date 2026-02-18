@@ -6,6 +6,8 @@ Official [Pydantic](https://docs.pydantic.dev/) models for the Visualli specific
 
 ```bash
 pip install .
+# OR
+pip3 install .
 ```
 
 ## Usage

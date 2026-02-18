@@ -4,6 +4,7 @@
 
 [![Status](https://img.shields.io/badge/Status-Draft-orange)]()
 [![License](https://img.shields.io/badge/License-MIT-blue)]()
+[![CI/CD](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml)
 
 ## What is Visualli?
 
@@ -38,9 +39,39 @@ We are building a comprehensive ecosystem around the specification:
 
 Check out the [examples/](examples/) directory for sample `.visualli` files.
 
+## Development
+
+This repository includes a `Makefile` to automate common tasks:
+
+*   `make install`: Install development dependencies (Python & Node.js).
+*   `make generate`: Regenerate Python and TypeScript bindings from the schema.
+*   `make update-version`: Propagate the version from `VERSION` file to all files and regenerate bindings.
+
+
+## Importing Bindings
+
+You can import the Visualli bindings by installing them directly from this repository via Git (for now) and via Package Managers (in future).
+
+### Python
+
+Install directly via `pip` (requires Python 3.11+):
+
+```bash
+pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindings/python"
+```
+*Note: Replace `@main` with a specific branch or tag (e.g., `@v0.1.0`) if needed.*
+
+### TypeScript
+
+Install directly via `npm` (requires npm v7+):
+
+```bash
+npm install github:visualli-ai/spec#main:bindings/typescript
+```
+
 ## Contributing
 
 We welcome contributions from the community! Please read [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 ---
-*Maintained by the Visualli AI Team.*
+*Maintained by the Visualli Crew.*

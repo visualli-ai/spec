@@ -1,19 +1,16 @@
 {
-  "name": "@visualli/models",
+  "name": "@visualli/bindings",
   "version": "0.1.0",
   "description": "Official Visualli TypeScript models and type definitions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepare": "npm run build"
   },
-  "keywords": [
-    "visualli",
-    "schema",
-    "types"
+  "files": [
+    "dist"
   ],
-  "author": "Visualli AI",
-  "license": "MIT",
   "devDependencies": {
     "typescript": "^5.0.0"
   }
