@@ -66,8 +66,9 @@ pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindi
 Install directly via `npm` (requires npm v7+):
 
 ```bash
-npm install github:visualli-ai/spec#main:bindings/typescript
+npm install github:visualli-ai/spec#main -w @visualli/bindings
 ```
+*Note: Replace `main` with a specific branch or tag if needed.*
 
 ## Contributing
 

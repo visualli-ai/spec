@@ -1,0 +1,7 @@
+{
+  "name": "@visualli/spec",
+  "private": true,
+  "workspaces": [
+    "bindings/typescript"
+  ]
+}
