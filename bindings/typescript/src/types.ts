@@ -8,7 +8,7 @@
 /**
  * Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.
  */
-export type VisualliSpec010 = Meta | Extension | Layer;
+export type VisualliSpec011 = Meta | Extension | Layer;
 
 export interface Meta {
   type: "meta";
@@ -99,5 +99,9 @@ export interface Container {
    * List of Node IDs contained in this group
    */
   nodes: string[];
+  /**
+   * Visual arrangement of nodes within the container
+   */
+  formation?: "natural" | "linear" | "circular" | "tree";
   [k: string]: unknown;
 }

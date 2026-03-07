@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Annotated, Any, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from enum import Enum
 
 
 class Meta(BaseModel):
@@ -58,12 +59,27 @@ class Connection(BaseModel):
     label: str | None = None
 
 
+class Formation(Enum):
+    """
+    Visual arrangement of nodes within the container
+    """
+
+    natural = 'natural'
+    linear = 'linear'
+    circular = 'circular'
+    tree = 'tree'
+
+
 class Container(BaseModel):
     id: str
     label: str
     nodes: Annotated[
         list[str], Field(description='List of Node IDs contained in this group')
     ]
+    formation: Annotated[
+        Formation | None,
+        Field(description='Visual arrangement of nodes within the container'),
+    ] = 'natural'
 
 
 class Layer(BaseModel):
@@ -85,12 +101,12 @@ class Layer(BaseModel):
     containers: Annotated[list[Container] | None, Field(default_factory=list)]
 
 
-class VisualliSpec010(RootModel[Meta | Extension | Layer]):
+class VisualliSpec011(RootModel[Meta | Extension | Layer]):
     root: Annotated[
         Meta | Extension | Layer,
         Field(
             description='Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.',
             discriminator='type',
-            title='Visualli Spec 0.1.0',
+            title='Visualli Spec 0.1.1',
         ),
     ]

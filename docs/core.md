@@ -31,12 +31,33 @@ Connections represent relationships between nodes within a layer.
 Containers allow for visual grouping of related nodes within a layer.
 *   **Grouping**: Contains a list of Node IDs.
 *   **Labeled**: Can have a title or label (e.g., "Upward Movement").
+*   **Formation**: Can be one of these (e.g., "linear", "circular", "tree", default is "natural")
 
 ### Extensions
 Extensions provide a mechanism to add metadata or change behavior without altering the core schema. Examples include:
 *   **Semantic Anchors**: Linking terms to external knowledge.
 *   **Particle Trails**: Configuring visual effects like particle trails.
 *   **Themes**: Configuring themes.
+
+Example of a `semantic-anchors` extension:
+```json
+{
+  "type": "extension",
+  "id": "semantic-anchors",
+  "data": [
+    {
+      "word": "atmosphere",
+      "description": "The envelope of gases surrounding the earth or another planet.",
+      "knowMoreUrl": null
+    },
+    {
+      "word": "water circulation",
+      "description": "The continuous movement of water on, above and below the surface of the Earth.",
+      "knowMoreUrl": null
+    }
+  ]
+}
+```
 
 ## Entity Relationship Diagram
 
@@ -90,6 +111,7 @@ classDiagram
         +id
         +label
         +nodes
+        +formation
     }
 
     %% Relationships
