@@ -7,7 +7,7 @@
       <h1>Visualli Specification</h1>
       <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
       <p>
-        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge" alt="Version"></a></br>
+        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.1-orange?style=for-the-badge" alt="Version"></a></br>
         <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
         <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
       </p>
