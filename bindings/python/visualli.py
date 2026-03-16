@@ -40,9 +40,12 @@ class Position(BaseModel):
 
 class Data(BaseModel):
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
     )
-    label: Annotated[str | None, Field(description='Label text for the node')] = None
+    label: Annotated[str, Field(description='Label text for the node')]
+    summary: Annotated[
+        str, Field(description='A short description or summary of the node content')
+    ]
     color: str | None = None
 
 
@@ -52,11 +55,24 @@ class Node(BaseModel):
     data: Data
 
 
+class Style(Enum):
+    dashed = 'dashed'
+    solid = 'solid'
+
+
+class Data1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: str
+    style: Style | None = 'solid'
+
+
 class Connection(BaseModel):
     id: str
     from_: Annotated[str, Field(alias='from', description='Source Node ID')]
     to: Annotated[str, Field(description='Target Node ID')]
-    label: str | None = None
+    data: Data1
 
 
 class Formation(Enum):
@@ -70,16 +86,35 @@ class Formation(Enum):
     tree = 'tree'
 
 
-class Container(BaseModel):
-    id: str
-    label: str
-    nodes: Annotated[
-        list[str], Field(description='List of Node IDs contained in this group')
-    ]
+class Style1(Enum):
+    """
+    Visual style of the container border
+    """
+
+    dashed = 'dashed'
+    none = 'none'
+
+
+class Data2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    label: Annotated[str, Field(description='Container Label')]
     formation: Annotated[
         Formation | None,
         Field(description='Visual arrangement of nodes within the container'),
     ] = 'natural'
+    style: Annotated[
+        Style1 | None, Field(description='Visual style of the container border')
+    ] = None
+
+
+class Container(BaseModel):
+    id: str
+    nodes: Annotated[
+        list[str], Field(description='List of Node IDs contained in this group')
+    ]
+    data: Data2
 
 
 class Layer(BaseModel):
@@ -97,7 +132,7 @@ class Layer(BaseModel):
     ] = None
     description: str | None = None
     nodes: Annotated[list[Node] | None, Field(default_factory=list)]
-    connections: Annotated[list[Connection] | None, Field(default_factory=list)]
+    connections: list[Connection] | None = None
     containers: Annotated[list[Container] | None, Field(default_factory=list)]
 
 

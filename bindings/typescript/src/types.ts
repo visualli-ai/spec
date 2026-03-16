@@ -73,9 +73,12 @@ export interface Node {
     /**
      * Label text for the node
      */
-    label?: string;
+    label: string;
+    /**
+     * A short description or summary of the node content
+     */
+    summary: string;
     color?: string;
-    [k: string]: unknown;
   };
   [k: string]: unknown;
 }
@@ -89,19 +92,31 @@ export interface Connection {
    * Target Node ID
    */
   to: string;
-  label?: string;
+  data: {
+    label: string;
+    style?: "dashed" | "solid";
+  };
   [k: string]: unknown;
 }
 export interface Container {
   id: string;
-  label: string;
   /**
    * List of Node IDs contained in this group
    */
   nodes: string[];
-  /**
-   * Visual arrangement of nodes within the container
-   */
-  formation?: "natural" | "linear" | "circular" | "tree";
+  data: {
+    /**
+     * Container Label
+     */
+    label: string;
+    /**
+     * Visual arrangement of nodes within the container
+     */
+    formation?: "natural" | "linear" | "circular" | "tree";
+    /**
+     * Visual style of the container border
+     */
+    style?: "dashed" | "none";
+  };
   [k: string]: unknown;
 }

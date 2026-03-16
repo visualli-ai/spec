@@ -4,7 +4,8 @@
 
 Visualli treats information as existing on an infinite 2D canvas. Unlike rigid tree structures, Visualli allows for flexible positioning while maintaining strict hierarchical relationships.
 
-## Layers
+## Layers and Levels
+### Layers
 
 The fundamental unit of organization in Visualli is the **Layer**. 
 
@@ -14,24 +15,90 @@ The fundamental unit of organization in Visualli is the **Layer**.
 
 This allows for "Detail on Demand". A high-level summary layer can load first, and deeper detailed layers can be fetched only when the user zooms in or expands a node.
 
+### Levels
+
+Multiple **Layers** can belong to a certain **Level**. 
+
+*   **Depth**: Represents the depth of information in the hierarchy (Level 0, 1, 2...).
+*   **Grouping**: Acts like a "floor" in a building, where multiple apartments (Layers) coexist while only one Layer is visible to the user at any given moment.
+*   **Navigation**: Users traverse from lower levels (summary) to higher levels (detail).
+
+### How Layers and Levels are connected?
+
+```mermaid
+graph BT
+    %% LEVEL 0: THE FOUNDATION
+    subgraph L0 [**LEVEL 0**]
+        direction LR
+        subgraph LA [Layer A]
+            direction LR
+            A1((N)) 
+            A2((N))
+        end
+    end
+
+    %% LEVEL 1: LAYER B ON LEFT, LAYER C ON RIGHT
+    subgraph L1 [**LEVEL 1**]
+        direction LR
+        subgraph LB [Layer B]
+            direction LR
+            B1((N)) --> B2((N)) --> B3((N))
+        end
+        subgraph LC [Layer C]
+            direction LR
+            C1((N)) --> C2((N))
+        end
+    end
+
+    %% LEVEL 2: LAYER D -> LAYER E -> LAYER F
+    subgraph L2 [**LEVEL 2**]
+        direction LR
+        subgraph LD [Layer D]
+            direction LR
+            D1((N)) --> D2((N)) --> D3((N)) --> D4((N))
+        end
+        subgraph LE [Layer E]
+            direction LR
+            E1((N))
+        end
+        subgraph LF [Layer F]
+            direction LR
+            F1((N)) --> F2((N))
+        end
+    end
+
+    %% CONNECTIONS
+    A1 -.-> LB
+    A2 -.-> LC
+    
+    B1 -.-> LD
+    B2 -.-> LE
+    B3 -.-> LF
+
+    %% STYLING
+    style L0 stroke-dasharray: 5 5
+    style L1 stroke-dasharray: 5 5
+    style L2 stroke-dasharray: 5 5
+```
+
+
 ## Entities
 
 ### Nodes
 Nodes represent discrete pieces of information.
 *   **Identity**: Unique ID (UUID).
-*   **Data**: Payload (Label, Description, Color, etc.).
+*   **Data**: Payload (Label, Summary, Color, etc.).
 *   **Position**: (x, y) coordinates on the canvas.
 
 ### Connections
 Connections represent relationships between nodes within a layer.
 *   **Directional**: From Node A to Node B.
-*   **Labeled**: Can carry semantic meaning (e.g., "includes", "caused by").
+*   **Data**: Payload (Label, Style).
 
 ### Containers
 Containers allow for visual grouping of related nodes within a layer.
 *   **Grouping**: Contains a list of Node IDs.
-*   **Labeled**: Can have a title or label (e.g., "Upward Movement").
-*   **Formation**: Can be one of these (e.g., "linear", "circular", "tree", default is "natural")
+*   **Data**: Payload (Label, Formation, Style).
 
 ### Extensions
 Extensions provide a mechanism to add metadata or change behavior without altering the core schema. Examples include:
@@ -103,15 +170,14 @@ classDiagram
         +id
         +from
         +to
-        +label
+        +data
     }
 
     %% Container Entity (Embedded in Layer)
     class containers {
         +id
-        +label
         +nodes
-        +formation
+        +data
     }
 
     %% Relationships

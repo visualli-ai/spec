@@ -54,8 +54,8 @@ interface Layer {
   parentLayerId?: string; // UUID of parent layer (optional for root)
   parentNodeId?: string; // UUID of parent node in parent layer (optional)
   description?: string;
-  nodes: Node[];
-  connections: Connection[];
+  nodes?: Node[];
+  connections?: Connection[];
   containers?: Container[];
 }
 
@@ -63,9 +63,9 @@ interface Node {
   id: string;            // UUID
   position: { x: number; y: number };
   data: {
-    label?: string;      // Label text
+    label: string;       // Label text
+    summary: string;     // Short description/summary
     color?: string;
-    [key: string]: any;  // Extensible data
   };
 }
 
@@ -73,13 +73,20 @@ interface Connection {
   id: string;            // UUID
   from: string;          // Source Node ID
   to: string;            // Target Node ID
-  label?: string;
+  data: {
+    label: string;
+    style?: 'dashed' | 'solid';
+  };
 }
 
 interface Container {
   id: string;            // UUID
-  label: string;         // Container Label
   nodes: string[];       // Array of Node IDs
+  data: {
+    label: string;       // Container Label
+    formation?: 'natural' | 'linear' | 'circular' | 'tree';
+    style?: 'dashed' | 'none';
+  };
 }
 ```
 
@@ -87,5 +94,5 @@ interface Container {
 
 ```jsonl
 {"type": "meta", "version": "2.0", "title": "Example Map", "created": "2024-05-21T10:00:00Z", "lastModified": "2024-05-22T15:30:00Z"}
-{"type": "layer", "id": "layer-1", "level": 0, "description": "Root", "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"label": "Root Node"}}], "connections": []}
+{"type": "layer", "id": "layer-1", "level": 0, "description": "Root", "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"label": "Root Node", "summary": "The starting point"}}]}
 ```

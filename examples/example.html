@@ -738,6 +738,9 @@
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.id = `path-${conn.from}-${conn.to}`;
                     path.setAttribute("class", "connection-path");
+                    if (conn.data && conn.data.style === 'dashed') {
+                        path.setAttribute("stroke-dasharray", "5,5");
+                    }
                     path.setAttribute("marker-end", `url(#arrowhead-${layerIndex})`);
                     svg.appendChild(path);
 
@@ -754,7 +757,7 @@
                     textPath.setAttribute("startOffset", "50%");
                     textPath.setAttribute("text-anchor", "middle");
                     textPath.setAttribute("class", "connection-label-svg");
-                    textPath.textContent = conn.label;
+                    textPath.textContent = conn.data?.label || conn.label || '';
                     text.appendChild(textPath);
                     svg.appendChild(text);
 
@@ -871,7 +874,7 @@
             // Get the node's background color (CSS variable) for history and bg update
             const nodeBgVar = nodeElement.style.getPropertyValue('--node-bg');
             
-            // Get the node's title for breadcrumb tooltip
+            // Get the node's label for breadcrumb tooltip
             const labelEls = nodeElement.querySelectorAll('.node-label');
             const nodeLabel = labelEls.length > 0 
                 ? Array.from(labelEls).map(el => el.textContent.trim()).join(' ') 
@@ -1633,17 +1636,29 @@
                 const strokeColor = "#cbd5e1"; // Slate 300 to match text
                 
                 path.setAttribute("fill", "none");
-                path.setAttribute("stroke", strokeColor);
-                path.setAttribute("stroke-width", "1"); // Thin
-                path.setAttribute("stroke-dasharray", "3,5"); // Loose dots
+                
+                // Handle Container Style
+                const containerStyle = container.data?.style || 'dashed'; // Default to dashed
+                
+                if (containerStyle === 'none') {
+                     path.setAttribute("stroke", "none");
+                } else {
+                    path.setAttribute("stroke", strokeColor);
+                    path.setAttribute("stroke-width", "1"); // Thin
+                    // Since 'dashed' is the only other option in the enum (besides 'none'), 
+                    // and it's the default visual, we apply it.
+                    // If we add 'solid' later, we'd check for it here.
+                    path.setAttribute("stroke-dasharray", "3,5"); // Loose dots
+                    path.setAttribute("stroke-linejoin", "round");
+                    path.setAttribute("stroke-linecap", "round");
+                }
+
                 path.setAttribute("opacity", "0.8"); 
-                path.setAttribute("stroke-linejoin", "round");
-                path.setAttribute("stroke-linecap", "round");
                 
                 localSvg.appendChild(path);
                 
                 // Label
-                if (container.label) {
+                if (container.data?.label) {
                     // Place label at the top-most point of the hull (min Y)
                     // Or centroid? "right on top of the container's boundary line"
                     // implies on the top edge.
@@ -1663,7 +1678,7 @@
                     // Simple: Min Y point.
                     
                     const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    labelText.textContent = container.label;
+                    labelText.textContent = container.data.label;
                     labelText.setAttribute("x", topPoint.x);
                     labelText.setAttribute("y", topPoint.y - 10); // slightly above
                     labelText.setAttribute("class", "group-label-text");

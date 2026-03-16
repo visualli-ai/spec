@@ -109,8 +109,7 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/Connection"
-          },
-          "default": []
+          }
         },
         "containers": {
           "type": "array",
@@ -154,12 +153,19 @@
               "type": "string",
               "description": "Label text for the node"
             },
+            "summary": {
+              "type": "string",
+              "description": "A short description or summary of the node content"
+            },
             "color": {
               "type": "string"
             }
           },
-          "additionalProperties": true,
-          "required": []
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "summary"
+          ]
         }
       },
       "required": [
@@ -182,23 +188,38 @@
           "type": "string",
           "description": "Target Node ID"
         },
-        "label": {
-          "type": "string"
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "dashed",
+                "solid"
+              ],
+              "default": "solid"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "id",
         "from",
-        "to"
+        "to",
+        "data"
       ]
     },
     "Container": {
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
-        },
-        "label": {
           "type": "string"
         },
         "nodes": {
@@ -208,22 +229,43 @@
           },
           "description": "List of Node IDs contained in this group"
         },
-        "formation": {
-          "type": "string",
-          "enum": [
-            "natural",
-            "linear",
-            "circular",
-            "tree"
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Container Label"
+            },
+            "formation": {
+              "type": "string",
+              "enum": [
+                "natural",
+                "linear",
+                "circular",
+                "tree"
+              ],
+              "default": "natural",
+              "description": "Visual arrangement of nodes within the container"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "dashed",
+                "none"
+              ],
+              "description": "Visual style of the container border"
+            }
+          },
+          "required": [
+            "label"
           ],
-          "default": "natural",
-          "description": "Visual arrangement of nodes within the container"
+          "additionalProperties": false
         }
       },
       "required": [
         "id",
-        "label",
-        "nodes"
+        "nodes",
+        "data"
       ]
     }
   }
