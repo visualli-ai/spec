@@ -31,10 +31,9 @@ Visualli is an open standard designed to turn structured/unstructured data into 
 The **Single Source of Truth** for the format is the JSON Schema:
 *   [**visualli.schema.json**](visualli.schema.json)
 
-The documentation is divided into:
+The documentation is available at:
 
-*   [**Core Concepts**](docs/core.md): Understand the philosophy of Layers, Nodes, and the Infinite Canvas.
-*   [**Visualli Specification**](docs/spec.md): The technical reference for the `.visualli` interchange format.
+*   [**Visualli Specification**](docs/spec.md): The comprehensive guide to Visualli concepts and the interchange format.
 
 ## Ecosystem & Tooling
 

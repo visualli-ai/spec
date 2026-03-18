@@ -11,7 +11,7 @@ Thank you for your interest in improving the Visualli Specification! We aim to c
 *   The **Single Source of Truth** is `visualli.schema.json` at the root of the repository.
 *   Please ensure any changes to the schema are reflected in `docs/spec.md`.  
 *   We love examples! Please add valid `.visualli` files to the `examples/` directory to demonstrate new features or edge cases.  
-*   If you are adding a new concept, consider creating a new file in `docs/` or updating `docs/core.md`.  
+*   If you are adding a new concept, consider updating `docs/spec.md`.  
 
 ## Style Guide
 *   **Clarity**: Keep language simple and unambiguous.

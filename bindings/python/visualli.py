@@ -24,10 +24,6 @@ class Extension(BaseModel):
             description="Unique identifier for the extension (e.g., 'semantic-anchors')"
         ),
     ]
-    config: Annotated[
-        dict[str, Any] | None,
-        Field(description='Configuration parameters for the extension'),
-    ] = None
     data: Annotated[
         list[Any] | None, Field(description='Data payload for the extension')
     ] = None
@@ -130,7 +126,6 @@ class Layer(BaseModel):
             description='UUID of the specific node in the parent layer this layer attaches to'
         ),
     ] = None
-    description: str | None = None
     nodes: Annotated[list[Node] | None, Field(default_factory=list)]
     connections: list[Connection] | None = None
     containers: Annotated[list[Container] | None, Field(default_factory=list)]

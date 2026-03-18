@@ -27,12 +27,6 @@ export interface Extension {
    */
   id: string;
   /**
-   * Configuration parameters for the extension
-   */
-  config?: {
-    [k: string]: unknown;
-  };
-  /**
    * Data payload for the extension
    */
   data?: unknown[];
@@ -56,7 +50,6 @@ export interface Layer {
    * UUID of the specific node in the parent layer this layer attaches to
    */
   parentNodeId?: string;
-  description?: string;
   nodes?: Node[];
   connections?: Connection[];
   containers?: Container[];

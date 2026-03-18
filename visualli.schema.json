@@ -57,10 +57,6 @@
           "type": "string",
           "description": "Unique identifier for the extension (e.g., 'semantic-anchors')"
         },
-        "config": {
-          "type": "object",
-          "description": "Configuration parameters for the extension"
-        },
         "data": {
           "type": "array",
           "description": "Data payload for the extension",
@@ -94,9 +90,6 @@
         "parentNodeId": {
           "type": "string",
           "description": "UUID of the specific node in the parent layer this layer attaches to"
-        },
-        "description": {
-          "type": "string"
         },
         "nodes": {
           "type": "array",
