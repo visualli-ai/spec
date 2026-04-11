@@ -237,11 +237,20 @@ interface Layer {
   level: number;         // Depth level (0 = root)
   parentLayerId?: string; // UUID of parent layer (optional for root)
   parentNodeId?: string; // UUID of parent node in parent layer (optional)
+  layout?: 'radial' | 'linear-horizontal' | 'linear-vertical';
   nodes?: Node[];
   connections?: Connection[];
   containers?: Container[];
 }
 ```
+
+`layout` describes the spatial arrangement of the layer's nodes on the canvas. Unlike `Container.data.formation` (which arranges nodes within a grouping), `layout` governs how *all* nodes in the layer are positioned relative to the parent node.
+
+| Attribute | Value | When to use |
+|-----------|-------|-------------|
+| Layer.layout | `radial` | Peer categories radiating from a parent node; most common for category branches with no inherent order. |
+| Layer.layout | `linear-horizontal` | Chronological sequences, timelines, event progressions, geographic/alphabetical ordering. |
+| Layer.layout | `linear-vertical` | Priority ordering, ranked lists, hierarchy/rank, steps in a process. |
 
 #### Node Object
 Nodes represent discrete pieces of information.

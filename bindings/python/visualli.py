@@ -29,6 +29,16 @@ class Extension(BaseModel):
     ] = None
 
 
+class Layout(Enum):
+    """
+    Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis.
+    """
+
+    radial = 'radial'
+    linear_horizontal = 'linear-horizontal'
+    linear_vertical = 'linear-vertical'
+
+
 class Position(BaseModel):
     x: float
     y: float
@@ -126,9 +136,15 @@ class Layer(BaseModel):
             description='UUID of the specific node in the parent layer this layer attaches to'
         ),
     ] = None
-    nodes: Annotated[list[Node] | None, Field(default_factory=list)]
+    layout: Annotated[
+        Layout | None,
+        Field(
+            description="Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis."
+        ),
+    ] = None
+    nodes: Annotated[list[Node] | None, Field(validate_default=True)] = []
     connections: list[Connection] | None = None
-    containers: Annotated[list[Container] | None, Field(default_factory=list)]
+    containers: Annotated[list[Container] | None, Field(validate_default=True)] = []
 
 
 class VisualliSpec011(RootModel[Meta | Extension | Layer]):

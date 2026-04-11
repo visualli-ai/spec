@@ -91,6 +91,15 @@
           "type": "string",
           "description": "UUID of the specific node in the parent layer this layer attaches to"
         },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "radial",
+            "linear-horizontal",
+            "linear-vertical"
+          ],
+          "description": "Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis."
+        },
         "nodes": {
           "type": "array",
           "items": {

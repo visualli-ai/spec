@@ -50,6 +50,10 @@ export interface Layer {
    * UUID of the specific node in the parent layer this layer attaches to
    */
   parentNodeId?: string;
+  /**
+   * Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis.
+   */
+  layout?: "radial" | "linear-horizontal" | "linear-vertical";
   nodes?: Node[];
   connections?: Connection[];
   containers?: Container[];
