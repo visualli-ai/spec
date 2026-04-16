@@ -107,9 +107,9 @@ export interface Container {
      */
     label: string;
     /**
-     * Visual arrangement of nodes within the container
+     * Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis.
      */
-    formation?: "natural" | "linear" | "circular" | "tree";
+    formation?: "radial" | "linear-horizontal" | "linear-vertical";
     /**
      * Visual style of the container border
      */

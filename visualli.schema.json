@@ -241,13 +241,11 @@
             "formation": {
               "type": "string",
               "enum": [
-                "natural",
-                "linear",
-                "circular",
-                "tree"
+                "radial",
+                "linear-horizontal",
+                "linear-vertical"
               ],
-              "default": "natural",
-              "description": "Visual arrangement of nodes within the container"
+              "description": "Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis."
             },
             "style": {
               "type": "string",

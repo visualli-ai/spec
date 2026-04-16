@@ -83,13 +83,12 @@ class Connection(BaseModel):
 
 class Formation(Enum):
     """
-    Visual arrangement of nodes within the container
+    Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis.
     """
 
-    natural = 'natural'
-    linear = 'linear'
-    circular = 'circular'
-    tree = 'tree'
+    radial = 'radial'
+    linear_horizontal = 'linear-horizontal'
+    linear_vertical = 'linear-vertical'
 
 
 class Style1(Enum):
@@ -108,8 +107,10 @@ class Data2(BaseModel):
     label: Annotated[str, Field(description='Container Label')]
     formation: Annotated[
         Formation | None,
-        Field(description='Visual arrangement of nodes within the container'),
-    ] = 'natural'
+        Field(
+            description="Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis."
+        ),
+    ] = None
     style: Annotated[
         Style1 | None, Field(description='Visual style of the container border')
     ] = None

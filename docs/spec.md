@@ -309,18 +309,19 @@ interface Container {
   nodes: string[];       // Array of Node IDs
   data: {
     label: string;       // Container Label
-    formation?: 'natural' | 'linear' | 'circular' | 'tree';
+    formation?: 'radial' | 'linear-horizontal' | 'linear-vertical';
     style?: 'dashed' | 'none';
   };
 }
 ```
 
+`Container.data.formation` shares its vocabulary with `Layer.layout`. A container may use a formation that differs from its enclosing layer's layout — the layer controls node positioning across the whole layer, while the container's formation describes how the grouping itself is visually rendered.
+
 | Attribute | Value | When to use | How it looks |
 |-----------|-------|-------------|--------------|
-| Container.data.formation | `natural` | Default free-form positioning; nodes stay where placed. | <<image>> |
-| Container.data.formation | `linear` | Nodes are arranged along a straight line. | ![linear](assets/container.data.formation-linear.png) |
-| Container.data.formation | `circular` | Nodes are arranged in a circle or ellipse. | ![circular](assets/container.data.formation-circular.png) |
-| Container.data.formation | `tree` | Nodes are arranged in a hierarchical tree layout. | ![tree](assets/container.data.formation-tree.png) |
+| Container.data.formation | `radial` | Nodes in the group radiate from a shared center; good for peer categories within the grouping. | <<image>> |
+| Container.data.formation | `linear-horizontal` | Nodes in the group are arranged along a horizontal axis; good for sequences or timelines. | <<image>> |
+| Container.data.formation | `linear-vertical` | Nodes in the group are arranged along a vertical axis; good for ranked lists or hierarchies. | <<image>> |
 | Container.data.style | `dashed` | Container boundary is shown with a dashed stroke. | ![dashed](assets/container.data.style-dashed.png) |
 | Container.data.style | `none` | Container boundary is hidden; grouping is logical only. | ![none](assets/container.data.style-none.png) |
 
