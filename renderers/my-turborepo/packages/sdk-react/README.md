@@ -1,0 +1,188 @@
+# @mysdk/react
+
+React canvas rendering for Visualli — powered by Konva. Drop-in component that displays a `VisualliDocument` as an interactive, zoomable, navigable mind-map.
+
+## Features
+
+- **GPU-accelerated canvas** via `react-konva` — handles thousands of nodes at 60 fps
+- **Organic blob nodes** — 6 quadratic-bezier blob shapes that cycle by level
+- **Layer navigation** — double-click any node to drill into its child layer, breadcrumb back
+- **Animated transitions** — rAF-driven zoom-into-layer / zoom-out-to-parent with color crossfade
+- **Zoom controls** — +/− buttons, %, fit-to-screen
+- **Viewport culling** — RBush spatial index keeps only visible nodes on the canvas
+- **Zustand stores** — fine-grained subscriptions for nodes, viewport, selection, render config
+- **Light / dark theme** — single `isDark` prop
+
+## Installation
+
+```bash
+npm install @mysdk/react @mysdk/core konva react-konva zustand
+```
+
+Peer dependencies: `react@^18`, `react-dom@^18`
+
+## Quick Start
+
+```tsx
+import { VisualliCanvas } from '@mysdk/react';
+
+// Option A — pass a pre-parsed VisualliDocument
+import { parseVisualliFile } from '@mysdk/core';
+
+const doc = parseVisualliFile(rawJsonlString);
+
+export default function App() {
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <VisualliCanvas document={doc} isDark={false} />
+    </div>
+  );
+}
+
+// Option B — pass the raw JSONL string directly
+export default function App() {
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <VisualliCanvas visualliString={rawJsonlString} isDark={true} />
+    </div>
+  );
+}
+```
+
+## `VisualliCanvas` Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `document` | `VisualliDocument` | — | Pre-parsed document |
+| `visualliString` | `string` | — | Raw JSONL — parsed internally |
+| `isDark` | `boolean` | `false` | Light / dark canvas theme |
+| `onNodeClick` | `(node: FlatNode) => void` | — | Single-click callback |
+| `onLayerChange` | `(id: string, layer: VisualliLayer) => void` | — | Fired after navigation |
+| `className` | `string` | `''` | Extra CSS classes on the wrapper div |
+| `style` | `React.CSSProperties` | — | Inline styles on the wrapper div |
+
+> The component fills its parent container — set an explicit `width` / `height` on the wrapper.
+
+## Architecture
+
+```
+VisualliCanvas
+├── KonvaStage              react-konva <Stage>, position/scale from viewport store
+│   ├── KonvaContainerLayer <Layer> — convex-hull outlines (non-interactive)
+│   ├── KonvaEdgeLayer      <Layer> — bezier edges between visible nodes
+│   └── KonvaNodeLayer      <Layer> — blob nodes, handles click/dblclick
+├── NavigationStack         DOM overlay — breadcrumb trail, click to go back
+└── ZoomControls            DOM overlay — +/−/% buttons, fit-to-screen
+```
+
+### Stores (Zustand)
+
+Access any store directly for advanced use cases:
+
+```ts
+import { useViewportStore, useNodeStore, useSelectionStore } from '@mysdk/react';
+
+// Read viewport
+const { centerX, centerY, zoomLevel } = useViewportStore();
+
+// Programmatic zoom
+useViewportStore.getState().setZoom(1.5);
+useViewportStore.getState().setCenter(0, 0);
+
+// Read selected node
+const selectedId = useSelectionStore(s => s.selectedId);
+```
+
+### Hooks
+
+```ts
+import { useViewportNodes } from '@mysdk/react';
+
+// Get nodes currently visible in the viewport (culled)
+const visible = useViewportNodes(allNodes, /* optional level filter */ 0);
+```
+
+### Navigation Stack
+
+Layer navigation is fully internal but observable via the `onLayerChange` callback. The breadcrumb UI renders automatically — no props required.
+
+Drill-in: **double-click** a node that has a child layer.  
+Back: click any crumb in the breadcrumb bar, or use `onNavigateBack` exposed by `NavigationStack` directly.
+
+## Exports
+
+### Component
+
+```ts
+import { VisualliCanvas } from '@mysdk/react';
+```
+
+### Stores
+
+```ts
+import { useNodeStore, useViewportStore, useSelectionStore, useRenderConfigStore } from '@mysdk/react';
+```
+
+### Hooks
+
+```ts
+import { useKonvaRenderer, useKonvaLayerTransition, useViewportNodes } from '@mysdk/react';
+```
+
+### Sub-components (composition)
+
+```ts
+import {
+  KonvaStage, KonvaNode, KonvaEdge,
+  KonvaNodeLayer, KonvaEdgeLayer,
+  KonvaContainerLayer,
+  NavigationStack, ZoomControls,
+} from '@mysdk/react';
+```
+
+### Utilities
+
+```ts
+import {
+  getChildLayerForNode, getConnectionsForLayer,
+  calculateFitView, calculateFitZoom, calculateFitCenter,
+} from '@mysdk/react';
+```
+
+### Config helpers
+
+```ts
+import {
+  getBlobTypeForLayer, buildBlobPathData, ALL_BLOB_SHAPES,
+  computeNodeTextWorldScale, computeNodeTextScreenScale,
+} from '@mysdk/react';
+```
+
+## TypeScript
+
+```jsonc
+// tsconfig.json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "target": "ES2020"
+  }
+}
+```
+
+## Requirements
+
+- Node.js ≥ 22
+- React 18
+- `@mysdk/core` must be built (`npm run build` in `sdk-core/`) before typechecking
+
+## Typecheck
+
+```bash
+# Build core first
+cd ../sdk-core && npm run build
+
+# Typecheck react package
+cd ../sdk-react && npx tsc --noEmit
+```
