@@ -59,8 +59,10 @@ export function parseVisualliFile(content: string): VisualliDocument {
         break;
 
       case 'extension': {
-        const ext = obj as unknown as VisualliExtension;
-        doc.extensions.set(ext.id, ext);
+        // Extensions are specific to the visualli.ai application and should
+        // not be parsed or rendered by the spec renderer packages. Skip
+        // storing or processing extension entries so downstream renderers
+        // in this repo never see them.
         break;
       }
 

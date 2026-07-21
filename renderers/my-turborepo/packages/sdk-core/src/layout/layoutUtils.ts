@@ -17,8 +17,8 @@ export function getNodeBounds(node: MindMapNode): CollisionBox {
   const baseHeight = Math.max(40, 32 + 16);
   const padding = 20;
   return {
-    x: node.position.x - baseWidth / 2 - padding,
-    y: node.position.y - baseHeight / 2 - padding,
+    x: node.x - baseWidth / 2 - padding,
+    y: node.y - baseHeight / 2 - padding,
     width: baseWidth + padding * 2,
     height: baseHeight + padding * 2,
   };
@@ -57,12 +57,12 @@ export function resolveCollisions(nodes: MindMapNode[], maxIterations = 10): Min
           if (!checkCollision(getNodeBounds(n1), getNodeBounds(n2))) continue;
 
           hasCollisions = true;
-          const dx = n2.position.x - n1.position.x;
-          const dy = n2.position.y - n1.position.y;
+          const dx = n2.x - n1.x;
+          const dy = n2.y - n1.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < 1) {
-            n2.position.x += 100;
+            n2.x += 100;
           } else {
             const b1 = getNodeBounds(n1);
             const b2 = getNodeBounds(n2);
@@ -70,10 +70,10 @@ export function resolveCollisions(nodes: MindMapNode[], maxIterations = 10): Min
             const overlap = minSep - dist + 20;
             if (overlap > 0) {
               const move = overlap / 2;
-              n1.position.x -= (dx / dist) * move;
-              n1.position.y -= (dy / dist) * move;
-              n2.position.x += (dx / dist) * move;
-              n2.position.y += (dy / dist) * move;
+              n1.x -= (dx / dist) * move;
+              n1.y -= (dy / dist) * move;
+              n2.x += (dx / dist) * move;
+              n2.y += (dy / dist) * move;
             }
           }
         }
@@ -106,8 +106,8 @@ export function optimizeLayout(nodes: MindMapNode[]): MindMapNode[] {
         const n2 = result[j];
         if (n1.level !== n2.level) continue;
 
-        const dx = n2.position.x - n1.position.x;
-        const dy = n2.position.y - n1.position.y;
+        const dx = n2.x - n1.x;
+        const dy = n2.y - n1.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist <= 0 || dist >= 300) continue;
 
@@ -123,8 +123,8 @@ export function optimizeLayout(nodes: MindMapNode[]): MindMapNode[] {
 
     result.forEach(n => {
       const f = forces.get(n.id)!;
-      n.position.x += f.x * damp;
-      n.position.y += f.y * damp;
+      n.x += f.x * damp;
+      n.y += f.y * damp;
     });
   }
 

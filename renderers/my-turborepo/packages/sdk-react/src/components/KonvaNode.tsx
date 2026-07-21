@@ -129,7 +129,9 @@ const KonvaNode = React.memo(function KonvaNode({
         perfectDrawEnabled={false}
       />
 
-      {/* Node title — inverse-scaled for legibility, clipped to blob silhouette */}
+      {/* Node Title — inverse-scaled so it stays legible at a constant screen size.
+           Clipped to the blob silhouette via clipFunc so the growing text never visually
+           bleeds outside the first layer boundary at low zoom levels. */}
       <Group
         clipFunc={(ctx: any) => {
           drawBlobPath(ctx, baseRadiusX, baseRadiusY, blobType);

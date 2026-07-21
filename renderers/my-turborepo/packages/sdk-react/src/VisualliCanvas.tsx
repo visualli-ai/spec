@@ -63,7 +63,19 @@ function resolveDocument(props: VisualliCanvasProps): VisualliDocument | null {
   return null;
 }
 
-function layerLabel(layer: VisualliLayer, layerId: string): string {
+function layerLabel(doc: VisualliDocument, layer: VisualliLayer, layerId: string): string {
+  if (layer.parentNodeId) {
+    // Find the parent node in the parent layer to get its title
+    const parentLayer = layer.parentLayerId ? doc.layers.get(layer.parentLayerId) : null;
+    if (parentLayer) {
+      const parentNode = parentLayer.nodes.find(n => n.id === layer.parentNodeId);
+      if (parentNode) {
+        return Array.isArray(parentNode.data.label)
+          ? (parentNode.data.label as string[]).join(' ')
+          : (parentNode.data.label || 'Untitled');
+      }
+    }
+  }
   return layer.description ?? layerId;
 }
 
@@ -106,7 +118,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!rootId) return;
     const rootLayer = doc.layers.get(rootId)!;
     setCurrentLayerId(rootId);
-    setNavStack([{ layerId: rootId, layer: rootLayer, label: layerLabel(rootLayer, rootId) }]);
+    setNavStack([{ layerId: rootId, layer: rootLayer, label: 'Home' }]);
     parentViewports.current = [];
   }, [doc]);
 
@@ -292,9 +304,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     canvasWrapperRef,
     onSwapLayer: (childLayerId) => {
       const childLayer = doc?.layers.get(childLayerId);
-      if (!childLayer) return;
+      if (!childLayer || !doc) return;
       setCurrentLayerId(childLayerId);
-      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(childLayer, childLayerId) }]);
+      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(doc, childLayer, childLayerId) }]);
       onLayerChange?.(childLayerId, childLayer);
     },
     onSwapBack: () => {
@@ -381,7 +393,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
             cd.style.transformOrigin = '0 0';
             cd.style.willChange = 'transform';
           }
-          stage.getLayers().forEach(l => { l.hitGraphEnabled(false); l.listening(false); });
+          stage.getLayers().forEach(l => { l.listening(false); });
         }
       } else {
         if (canvasWrapperRef.current) canvasWrapperRef.current.style.willChange = 'auto';
@@ -389,7 +401,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         baselineTransformRef.current = null;
         zoomOutTargetRef.current = null;
         if (stage) {
-          stage.getLayers().forEach(l => { l.listening(true); l.hitGraphEnabled(true); });
+          stage.getLayers().forEach(l => { l.listening(true); });
           stage.batchDraw();
         }
       }
@@ -397,15 +409,25 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   });
 
   const handleNavigate = useCallback((nodeId: string) => {
-    if (!doc || !currentLayerId) return;
-    if (isTransitioningRef.current || isAnimating()) return;
+    if (!doc || !currentLayerId) {
+      return;
+    }
+    if (isTransitioningRef.current || isAnimating()) {
+      return;
+    }
 
     const childLayer = getChildLayerForNode(doc, nodeId, currentLayerId);
-    if (!childLayer) return;
+    if (!childLayer) {
+      return;
+    }
     const childLayerId = [...doc.layers.entries()].find(([, l]) => l === childLayer)?.[0];
-    if (!childLayerId) return;
+    if (!childLayerId) {
+      return;
+    }
     const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId); } catch { return []; } })();
-    if (childNodes.length === 0) return;
+    if (childNodes.length === 0) {
+      return;
+    }
 
     const node = nodes.get(nodeId);
     if (!node) return;
@@ -641,12 +663,15 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           }
         }
       } else {
-        // Click — navigate into child layer only if it has children
+        // Click — check if node has child layer (regardless of branchCount)
         const node = nodes.get(nodeId);
-        if (node?.branchCount && node.branchCount > 0) {
-          handleNavigate(nodeId);
+        if (node) {
+          const childLayer = doc ? getChildLayerForNode(doc, nodeId, currentLayerId ?? '') : null;
+          if (childLayer) {
+            handleNavigate(nodeId);
+          }
+          onNodeClick?.(node);
         }
-        onNodeClick?.(node!);
       }
       isDraggingRef.current = false;
       setIsDraggingState(false);

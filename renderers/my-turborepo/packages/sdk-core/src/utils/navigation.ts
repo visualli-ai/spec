@@ -22,7 +22,8 @@ export function getConnectionsForLayer(
       ?? (c as unknown as { targetId?: string }).targetId
       ?? '',
     level: layer.level,
-    label: (c as unknown as { label?: string }).label,
+    label: (c as unknown as { label?: string; data?: { label?: string } }).data?.label
+      ?? (c as unknown as { label?: string }).label,
   } satisfies Connection));
 }
 

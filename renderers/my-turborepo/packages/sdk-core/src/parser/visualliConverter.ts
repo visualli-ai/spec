@@ -64,12 +64,19 @@ const COLOR_PALETTE = [
   '#F28C16', '#FFD347', '#12C7D3', '#7F7F7F', '#8D8D8D', '#12C7D3',
 ];
 
-function deterministicColor(nodeId: string): string {
+/**
+ * Get a deterministic random color from palette based on node ID
+ */
+function getRandomColorForNode(nodeId: string): string {
+  // Simple hash function to convert string to number
   let hash = 0;
   for (let i = 0; i < nodeId.length; i++) {
     hash = nodeId.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
+  
+  // Use absolute value and modulo to get palette index
+  const index = Math.abs(hash) % COLOR_PALETTE.length;
+  return COLOR_PALETTE[index];
 }
 
 // ── Container-formation Layout ────────────────────────────────────────────────
@@ -170,7 +177,7 @@ function convertLayerWithContainers(
     flatNodes.push(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
-        node.data.color || deterministicColor(node.id), branchCount,
+        node.data.color || getRandomColorForNode(node.id), branchCount,
       ),
     );
   }
@@ -216,6 +223,8 @@ function convertLayerWithContainers(
     }
   }
 
+  resolveNodeOverlaps(flatNodes);
+
   return flatNodes;
 }
 
@@ -241,8 +250,8 @@ export function convertLayerToFlatNodes(
     flatNodes.push(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
-        node.data.color || deterministicColor(node.id), branchCount,
-        node.position.x, node.position.y,
+        node.data.color || getRandomColorForNode(node.id), branchCount,
+        0, 0,
       ),
     );
   }
@@ -264,6 +273,8 @@ export function convertLayerToFlatNodes(
       });
     }
   }
+
+  resolveNodeOverlaps(flatNodes);
 
   return flatNodes;
 }

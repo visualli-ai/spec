@@ -4,7 +4,8 @@ export interface MindMapNode {
   id: string;
   title: string;
   level: number;
-  position: { x: number; y: number };
+  x: number;
+  y: number;
   children?: MindMapNode[];
   parent?: string;
   color?: string;
