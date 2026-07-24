@@ -20,6 +20,8 @@ export interface NavigationStackProps {
   stack: NavStackEntry[];
   onNavigateBack: (index: number) => void;
   isDark?: boolean;
+  top?: string;
+  left?: string;
 }
 
 // Pastel fills cycled across levels
@@ -36,7 +38,7 @@ const ORGANIC_PATHS_SMALL = [
 const ORGANIC_PATH_ACTIVE =
   'M16.55,9.22 C17.95,9.15 20.87,11.33 20.97,13.36 C21.19,17.37 19.96,20.70 14.37,20.99 C10.51,21.19 7.20,18.10 7.00,14.09 C6.78,10.08 12.13,5.08 16.48,7.77';
 
-const CIRCLE_SIZE = 18;
+const CIRCLE_SIZE = 14;
 
 function hexToRgba(hex: string, opacity: number): string {
   const h = hex.replace('#', '');
@@ -67,6 +69,8 @@ const NavigationStack = memo(function NavigationStack({
   stack,
   onNavigateBack,
   isDark = false,
+  top = '16px',
+  left = '16px',
 }: NavigationStackProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -78,16 +82,17 @@ const NavigationStack = memo(function NavigationStack({
   const activeStroke   = isDark ? '#e8e6e4' : '#1a1a18';
   const activeText     = isDark ? '#e8e6e4' : '#1a1a18';
   const connectorColor = isDark ? '#908e8c' : '#747270';
-  const connectorMarginLeft = 12.5;
+  const connectorMarginLeft = 10.5; // padding(4) + circleHalf(7) - connectorHalf(0.5)
   const currentIndex = stack.length - 1;
 
   return (
     <div
+      data-help="navigation-stack"
       style={{
         position: 'absolute',
-        top: '16px',
-        left: '8px',
-        zIndex: 55,
+        top,
+        left,
+        zIndex: 30,
         pointerEvents: 'auto',
       }}
     >
@@ -134,9 +139,9 @@ const NavigationStack = memo(function NavigationStack({
                 alignSelf: 'flex-start',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                height: '28px',
-                padding: '6px',
+                gap: '4px',
+                height: '22px',
+                padding: '4px',
                 borderRadius: '8px',
                 cursor: isClickable ? 'pointer' : 'default',
                 background: rowBg,
@@ -156,15 +161,12 @@ const NavigationStack = memo(function NavigationStack({
               <span
                 style={{
                   fontFamily: "'Nunito', sans-serif",
-                  fontSize: isCurrent || (isHovered && isClickable) ? '13px' : '11px',
+                  fontSize: isCurrent || (isHovered && isClickable) ? '11px' : '9px',
                   fontWeight: isCurrent ? 600 : 400,
                   color: isCurrent ? activeText : visitedText,
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
                   transition: 'color 0.15s, font-size 0.15s',
-                  maxWidth: 160,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
                 }}
               >
                 {entry.label}

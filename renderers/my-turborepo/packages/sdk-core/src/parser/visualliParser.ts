@@ -6,6 +6,7 @@ import type { VisualliDocument } from '../types/document.js';
 import type { VisualliMeta } from '../types/meta.js';
 import type { VisualliExtension } from '../types/extension.js';
 import type { VisualliLayer } from '../types/layer.js';
+import type { ParserMiddleware, RawNodeData } from './middleware.js';
 
 export class VisualliParseError extends Error {
   constructor(message: string, public readonly lineNumber?: number) {
@@ -91,6 +92,121 @@ export function parseVisualliFile(content: string): VisualliDocument {
   if (!doc.rootLayer) throw new VisualliParseError('Missing root layer (level 0)');
 
   return doc;
+}
+
+// ─── Class-Based Parser with Middleware Support ───────────────────────────────
+
+/**
+ * Extensible parser that supports middleware for transforming JSONL data.
+ * 
+ * @example
+ * ```typescript
+ * const parser = new VisualliParser()
+ *   .use((data) => {
+ *     // Transform or filter data
+ *     if (data.type === 'extension') {
+ *       return { ...data, processed: true };
+ *     }
+ *     return data;
+ *   });
+ * 
+ * const doc = parser.parseDocument(jsonlContent);
+ * ```
+ */
+export class VisualliParser {
+  private middlewares: ParserMiddleware[] = [];
+
+  /**
+   * Register a middleware function
+   * Middlewares execute in registration order
+   */
+  use(middleware: ParserMiddleware): this {
+    this.middlewares.push(middleware);
+    return this;
+  }
+
+  /**
+   * Parse a single JSONL line through the middleware pipeline
+   * Returns null if line is malformed or filtered by middleware
+   */
+  parseLine(jsonLine: string): RawNodeData | null {
+    if (!jsonLine.trim()) return null;
+
+    let obj: RawNodeData;
+    try {
+      obj = JSON.parse(jsonLine) as RawNodeData;
+    } catch (err) {
+      console.warn('Failed to parse JSON line:', err);
+      return null;
+    }
+
+    // Run through middleware pipeline
+    for (const mw of this.middlewares) {
+      const result = mw(obj);
+      if (result === null) return null; // Middleware filtered this line
+      obj = result;
+    }
+
+    return obj;
+  }
+
+  /**
+   * Parse full JSONL content with middleware pipeline
+   */
+  parseDocument(content: string): VisualliDocument {
+    const lines = content.trim().split('\n');
+    
+    const doc: VisualliDocument = {
+      meta: null as unknown as VisualliMeta,
+      extensions: new Map(),
+      layers: new Map(),
+      layersByLevel: new Map(),
+      rootLayer: null,
+    };
+
+    for (const line of lines) {
+      const obj = this.parseLine(line);
+      if (!obj || !obj.type) continue;
+
+      // Route by type
+      switch (obj.type) {
+        case 'meta':
+          doc.meta = obj as unknown as VisualliMeta;
+          break;
+
+        case 'extension': {
+          // Store extension data (not skipped anymore - middleware can handle filtering)
+          const ext = obj as unknown as VisualliExtension;
+          doc.extensions.set(ext.id, ext);
+          break;
+        }
+
+        case 'layer': {
+          const layer = obj as unknown as VisualliLayer;
+          doc.layers.set(layer.id, layer);
+
+          if (!doc.layersByLevel.has(layer.level)) {
+            doc.layersByLevel.set(layer.level, []);
+          }
+          doc.layersByLevel.get(layer.level)!.push(layer);
+
+          if (layer.level === 0) {
+            doc.rootLayer = layer;
+          }
+          break;
+        }
+
+        default:
+          // Unknown type — silently skip
+          break;
+      }
+    }
+
+    if (!doc.meta) throw new VisualliParseError('Missing required meta section');
+    if (!doc.rootLayer) throw new VisualliParseError('Missing root layer (level 0)');
+
+    return doc;
+  }
 }
 
 /**

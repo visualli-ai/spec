@@ -12,6 +12,9 @@ React canvas rendering for Visualli — powered by Konva. Drop-in component that
 - **Viewport culling** — RBush spatial index keeps only visible nodes on the canvas
 - **Zustand stores** — fine-grained subscriptions for nodes, viewport, selection, render config
 - **Light / dark theme** — single `isDark` prop
+- **🆕 Extension system** — inject custom parser middlewares and UI components at runtime
+- **🆕 Stream fetching** — `useVisualliStream` hook for backend JSONL streams
+- **🆕 Context provider** — `VisualliProvider` for dependency injection
 
 ## Installation
 
@@ -109,12 +112,153 @@ Layer navigation is fully internal but observable via the `onLayerChange` callba
 Drill-in: **double-click** a node that has a child layer.  
 Back: click any crumb in the breadcrumb bar, or use `onNavigateBack` exposed by `NavigationStack` directly.
 
+## Extension System 🆕
+
+The extension system allows you to inject custom parser middlewares and UI components at runtime without modifying the SDK.
+
+### Basic Setup with Provider
+
+```tsx
+import { VisualliProvider, VisualliCanvas } from '@mysdk/react';
+
+function App() {
+  return (
+    <VisualliProvider>
+      <VisualliCanvas document={document} />
+    </VisualliProvider>
+  );
+}
+```
+
+### With Custom Middleware
+
+```tsx
+import { VisualliProvider } from '@mysdk/react';
+import type { ParserMiddleware } from '@mysdk/core';
+
+const myMiddleware: ParserMiddleware = (data) => {
+  if (data.type === 'extension') {
+    return { ...data, enhanced: true };
+  }
+  return data;
+};
+
+<VisualliProvider middlewares={[myMiddleware]}>
+  <App />
+</VisualliProvider>
+```
+
+### With Extension Components
+
+```tsx
+import type { ExtensionComponentProps } from '@mysdk/react';
+
+function MyExtension({ extension, document }: ExtensionComponentProps) {
+  return (
+    <div style={{ position: 'absolute', top: 20, right: 20 }}>
+      <p>{extension.data?.message}</p>
+    </div>
+  );
+}
+
+const extensions = {
+  'my-ext-id': MyExtension,
+};
+
+<VisualliProvider extensions={extensions}>
+  <VisualliCanvas document={document} />
+</VisualliProvider>
+```
+
+### Stream Fetching
+
+```tsx
+import { useVisualliStream, VisualliCanvas } from '@mysdk/react';
+
+function MindMapViewer({ apiUrl }: { apiUrl: string }) {
+  const { document, isLoading, error, progress } = useVisualliStream(apiUrl);
+
+  if (isLoading) return <div>Loading... {progress}%</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!document) return null;
+
+  return <VisualliCanvas document={document} />;
+}
+```
+
+### Complete Example
+
+```tsx
+import {
+  VisualliProvider,
+  useVisualliStream,
+  VisualliCanvas
+} from '@mysdk/react';
+import type {
+  ParserMiddleware,
+  ExtensionComponentProps
+} from '@mysdk/react';
+
+// Middleware
+const middleware: ParserMiddleware = (data) => {
+  if (data.type === 'extension') {
+    return { ...data, processed: true };
+  }
+  return data;
+};
+
+// Extension Component
+function TooltipExtension({ extension }: ExtensionComponentProps) {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 20,
+      right: 20,
+      background: 'white',
+      padding: '12px',
+      borderRadius: '8px',
+      pointerEvents: 'auto'
+    }}>
+      {extension.data?.message}
+    </div>
+  );
+}
+
+// App
+function App() {
+  const { document, isLoading } = useVisualliStream('/api/mindmap');
+
+  return (
+    <VisualliProvider
+      middlewares={[middleware]}
+      extensions={{ 'tooltip': TooltipExtension }}
+    >
+      {isLoading ? <Loading /> : <VisualliCanvas document={document} />}
+    </VisualliProvider>
+  );
+}
+```
+
+📚 **See `EXTENSION_GUIDE.md` for comprehensive documentation and examples.**
+
 ## Exports
 
 ### Component
 
 ```ts
 import { VisualliCanvas } from '@mysdk/react';
+```
+
+### Context & Provider 🆕
+
+```ts
+import { VisualliProvider, useVisualli } from '@mysdk/react';
+import type {
+  VisualliProviderProps,
+  VisualliContextValue,
+  ExtensionComponentProps,
+  ExtensionRegistry
+} from '@mysdk/react';
 ```
 
 ### Stores
@@ -127,6 +271,10 @@ import { useNodeStore, useViewportStore, useSelectionStore, useRenderConfigStore
 
 ```ts
 import { useKonvaRenderer, useKonvaLayerTransition, useViewportNodes } from '@mysdk/react';
+
+// 🆕 Stream fetching hook
+import { useVisualliStream } from '@mysdk/react';
+import type { UseVisualliStreamReturn } from '@mysdk/react';
 ```
 
 ### Sub-components (composition)

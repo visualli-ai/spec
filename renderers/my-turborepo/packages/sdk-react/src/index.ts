@@ -1,12 +1,25 @@
 // ─── @mysdk/react ─────────────────────────────────────────────────────────────
 
-// ── Primary component (recommended entry point) ───────────────────────────────
+// ── Primary component (recommended for public use) ────────────────────────────────────────
 export { default as VisualliRenderer } from './VisualliRenderer';
 export type { VisualliRendererProps, VisualliTheme } from './VisualliRenderer';
 
-// ── Lower-level canvas component (advanced usage) ────────────────────────────
+// ── Canvas component (for advanced integrations) ───────────────────────────────────────────
 export { default as VisualliCanvas } from './VisualliCanvas';
 export type { VisualliCanvasProps } from './VisualliCanvas';
+
+// ── Context and Provider ──────────────────────────────────────────────────────
+export { VisualliProvider, useVisualli } from './context/VisualliContext';
+export type { 
+  VisualliProviderProps, 
+  VisualliContextValue,
+  ExtensionComponentProps,
+  ExtensionRegistry 
+} from './context/VisualliContext';
+
+// ── Stream Hook ───────────────────────────────────────────────────────────────
+export { useVisualliStream } from './hooks/useVisualliStream';
+export type { UseVisualliStreamReturn } from './hooks/useVisualliStream';
 
 // Stores
 export { useNodeStore }           from './stores/useNodeStore';

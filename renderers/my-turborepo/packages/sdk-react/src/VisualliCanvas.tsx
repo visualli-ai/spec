@@ -52,6 +52,7 @@ import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getCont
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './animations/konvaLayerTransition';
 import { DESCRIPTION_TEXT_BASE_FONT_PX } from './config/textScaling';
+import { useVisualli } from './context/VisualliContext';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,19 @@ export interface VisualliCanvasProps {
   isDark?: boolean;
   onNodeClick?: (node: FlatNode) => void;
   onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
+  
+  // Extension points for private features (implement in consuming app)
+  renderOverlay?: (params: { isDark: boolean; containerWidth: number; containerHeight: number }) => React.ReactNode;
+  renderTooltipContent?: (params: { 
+    summary: string; 
+    nodeId: string; 
+    nodeColor?: string;
+    onAnchorHover?: (word: string, description: string, knowMoreUrl: string | null, event: React.MouseEvent<HTMLSpanElement>) => void;
+    onAnchorLeave?: () => void;
+  }) => React.ReactNode;
+  navigationStackTop?: string;
+  navigationStackLeft?: string;
+  
   className?: string;
   style?: React.CSSProperties;
 }
@@ -101,7 +115,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, onNodeClick, onLayerChange, className = '', style } = props;
+  const { isDark = false, onNodeClick, onLayerChange, renderOverlay, renderTooltipContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
 
   const doc = useMemo(() => resolveDocument(props), [props.document, props.visualliString]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -174,6 +188,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const dragMoveRafRef      = useRef<number | null>(null);
   const dragMoveLatestRef   = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const dragStartPosRef     = useRef<Map<string, { x: number; y: number }>>(new Map());
+
+  // ── Background color ────────────────────────────────────────────────────
+  const bgColor = isDark ? '#141412' : '#F0EDE6';
 
   // ── Spatial index (for stage-level hit detection) ─────────────────────────
   const spatialIndexRef = useRef<RBushSpatialIndex | null>(null);
@@ -784,8 +801,30 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN));
   }, [viewport.zoomLevel, setZoom]);
 
-  // ── Background / theme ────────────────────────────────────────────────────
-  const bgColor = getThemeBackground(isDark);
+  // ── Extension rendering ───────────────────────────────────────────────────
+  const { extensions: extensionRegistry } = useVisualli();
+
+  // Render extensions from document.extensions Map
+  const extensionComponents = useMemo(() => {
+    if (!doc || !doc.extensions) return null;
+    
+    const components: React.ReactNode[] = [];
+    
+    doc.extensions.forEach((extension, id) => {
+      const ExtComponent = extensionRegistry[id];
+      if (ExtComponent) {
+        components.push(
+          <ExtComponent
+            key={id}
+            extension={extension}
+            document={doc}
+          />
+        );
+      }
+    });
+    
+    return components.length > 0 ? components : null;
+  }, [doc, extensionRegistry]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!doc) {
@@ -878,15 +917,17 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       )}
 
       {/* Navigation stack (left, matches reference) */}
-      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} isDark={isDark} />
+      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} isDark={isDark} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Top-right: zoom controls (matches reference layout) */}
-      <div style={{ position: 'absolute', top: 32, right: 24, zIndex: 50, display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center', pointerEvents: 'auto' }}>
-        {/* Zoom controls */}
+      {/* Zoom controls (top-right) */}
+      <div data-help="zoom-controls" style={{ position: 'absolute', top: '24px', right: '16px', zIndex: 50, pointerEvents: 'auto' }}>
         <ZoomControls isDark={isDark} />
       </div>
 
-      {/* Node description tooltip (sketchy-box, above node) */}
+      {/* Custom overlay from consuming app (for private features like help button, chromatic bg, etc.) */}
+      {renderOverlay?.({ isDark, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
+
+      {/* Node description tooltip (sketchy-box, above node) - rendered before extensions so extensions appear on top */}
       {hoveredNode && hoveredNodePosition && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
         const nodeData = nodes.get(hoveredNode.nodeId);
         const borderColor = nodeData?.color ? darkenHexColor(nodeData.color, 0.13) : '#5BA8D4';
@@ -922,13 +963,45 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
                   lineHeight: 1.6,
                   margin: 0,
                 }}>
-                  {hoveredNode.summary}
+                  {renderTooltipContent ? renderTooltipContent({ 
+                    summary: hoveredNode.summary, 
+                    nodeId: hoveredNode.nodeId,
+                    nodeColor: nodeData?.color,
+                    onAnchorHover: (word, description, knowMoreUrl, event) => {
+                      // Dispatch event for semantic anchor hover
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const wordCenterX = rect.left + rect.width / 2;
+                      const wordBottomY = rect.bottom;
+                      window.dispatchEvent(new CustomEvent('semanticAnchorHover', {
+                        detail: { 
+                          anchor: { word, description, knowMoreUrl },
+                          screenX: wordCenterX,
+                          screenY: wordBottomY,
+                          zoom: viewport.zoomLevel,
+                          nodeColor: nodeData?.color
+                        }
+                      }));
+                    },
+                    onAnchorLeave: () => {
+                      // Dispatch event to clear semantic anchor
+                      window.dispatchEvent(new CustomEvent('semanticAnchorHover', {
+                        detail: { anchor: null }
+                      }));
+                    }
+                  }) : hoveredNode.summary}
                 </p>
               </SketchyBoxKonva>
             </div>
           </div>
         );
       })()}
+
+      {/* Extension components as overlays - rendered after description tooltip so extensions appear on top */}
+      {extensionComponents && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 60 }}>
+          {extensionComponents}
+        </div>
+      )}
     </div>
   );
 }
