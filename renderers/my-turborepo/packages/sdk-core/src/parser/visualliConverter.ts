@@ -125,10 +125,13 @@ function proxyLinearV(proxies: Proxy[], gap = 180): void {
 
 function proxyRadial(proxies: Proxy[], radius = 500): void {
   if (proxies.length === 1) { proxies[0].x = 0; proxies[0].y = 0; return; }
+  // Start at top (12 o'clock) for n>=3, horizontal for n=2 (matches circular layout)
+  const startAngle = proxies.length === 2 ? 0 : -Math.PI / 2;
   const step = (2 * Math.PI) / proxies.length;
   for (let i = 0; i < proxies.length; i++) {
-    proxies[i].x = radius * Math.cos(i * step);
-    proxies[i].y = radius * Math.sin(i * step);
+    const angle = startAngle + i * step;
+    proxies[i].x = radius * Math.cos(angle);
+    proxies[i].y = radius * Math.sin(angle);
   }
 }
 
