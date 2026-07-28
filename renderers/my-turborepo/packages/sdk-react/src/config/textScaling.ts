@@ -7,7 +7,7 @@
 
 import { NODE_HEIGHT } from '@mysdk/core';
 
-export const NODE_TEXT_BASE_FONT_PX = 28;
+export const NODE_TEXT_BASE_FONT_PX = 30;
 export const DESCRIPTION_TEXT_BASE_FONT_PX = 12;
 export const CONTAINER_LABEL_BASE_FONT_PX = 24;
 export const EDGE_LABEL_BASE_FONT_PX = 18;
@@ -20,15 +20,23 @@ const NODE_TEXT_SAFE_BLOB_FILL_RATIO = 0.88;
  * Computes world-space text scale for node title:
  * - inverse zoom for screen-space consistency
  * - clamped so text stays inside the node blob with safe padding
+ * - uses base width of 300px for consistent text sizing
+ * - allows taller text box for multi-line wrapping
  *
- * Matches visualli.ai's computeNodeTextWorldScale(nodeWidth, zoomLevel).
+ * Improved from visualli.ai to handle long labels better with multi-line support.
  */
 export function computeNodeTextWorldScale(nodeWidth: number, zoomLevel: number): number {
   const safeZoom = Math.max(zoomLevel, 0.0001);
-  const baseRadiusX = nodeWidth / 2;
+  
+  // Use a consistent base width (300px) for text scaling
+  // This keeps font size more consistent across different node widths
+  const baseWidth = 300;
+  
+  const baseRadiusX = baseWidth / 2;
   const baseRadiusY = Math.max((NODE_HEIGHT * 1.6) / 2, baseRadiusX * 0.74);
-  const textNaturalWidth  = nodeWidth - 40;
-  const textNaturalHeight = NODE_HEIGHT - 20;
+  const textNaturalWidth  = baseWidth - 40;
+  // Increase text height to allow 2-3 lines of wrapped text
+  const textNaturalHeight = NODE_HEIGHT * 1.2;
 
   const maxScaleX = ((baseRadiusX * 2) * NODE_TEXT_SAFE_BLOB_FILL_RATIO) / Math.max(textNaturalWidth, 1);
   const maxScaleY = ((baseRadiusY * 2) * NODE_TEXT_SAFE_BLOB_FILL_RATIO) / Math.max(textNaturalHeight, 1);

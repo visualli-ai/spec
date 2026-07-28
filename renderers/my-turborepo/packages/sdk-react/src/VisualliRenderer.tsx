@@ -62,6 +62,15 @@ export interface VisualliRendererProps {
   theme?: VisualliTheme;
 
   /**
+   * Enable chromatic immersion background effect.
+   * When true:
+   *  - Root layer (level 0) shows base background color
+   *  - Child layers show parent node's color as semi-transparent background
+   * @default false
+   */
+  chromaticImmersion?: boolean;
+
+  /**
    * Width of the renderer. Accepts any CSS length string ('100%', '800px', '100vw')
    * or a plain number treated as pixels.
    * @default '100%'
@@ -232,7 +241,8 @@ self.onmessage = function(e) {
         doc.layersByLevel.get(obj.level).push(obj);
         if (obj.level === 0) doc.rootLayer = obj;
       } else if (obj.type === 'extension') {
-        doc.extensions.set(obj.id || String(i), obj);
+        // Extensions are specific to visualli.ai application.
+        // Skip storing or processing extension entries in spec renderer.
       }
     }
     if (!doc.meta)      throw new Error('Missing required meta section');
@@ -356,6 +366,7 @@ export default function VisualliRenderer({
   width = '100%',
   height = '100%',
   useWorker = false,
+  chromaticImmersion = false,
   onNodeClick,
   onLayerChange,
   className,
@@ -406,6 +417,7 @@ export default function VisualliRenderer({
       <VisualliCanvas
         document={resolvedDoc ?? undefined}
         isDark={isDark}
+        chromaticImmersion={chromaticImmersion}
         onNodeClick={onNodeClick}
         onLayerChange={onLayerChange}
         style={{ width: '100%', height: '100%' }}

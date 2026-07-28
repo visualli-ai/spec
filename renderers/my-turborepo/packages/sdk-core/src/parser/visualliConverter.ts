@@ -137,6 +137,14 @@ function proxyRadial(proxies: Proxy[], radius = 500): void {
 
 // ── Layer Conversion ──────────────────────────────────────────────────────────
 
+/**
+ * Calculate dynamic node width based on title length.
+ * Formula matches visualli.ai: max(200, title.length * 8 + 40)
+ */
+function calculateNodeWidth(title: string): number {
+  return Math.max(200, title.length * 8 + 40);
+}
+
 function makeFlatNode(
   nodeId: string,
   label: string,
@@ -156,7 +164,7 @@ function makeFlatNode(
     title: label,
     description: summary,
     color,
-    width: 200,
+    width: calculateNodeWidth(label),
     height: 80,
     isExpanded: branchCount > 0,
     branchCount,
@@ -201,7 +209,8 @@ function convertLayerWithContainers(
   const proxies: Proxy[] = [];
   for (const node of layer.nodes) {
     if (!containerNodeIds.has(node.id)) {
-      proxies.push({ id: node.id, x: 0, y: 0, width: 200, height: 80 });
+      const nodeWidth = calculateNodeWidth(node.data.label);
+      proxies.push({ id: node.id, x: 0, y: 0, width: nodeWidth, height: 80 });
     }
   }
   for (const container of layer.containers) {

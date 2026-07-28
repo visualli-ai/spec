@@ -54,6 +54,28 @@ import type { AnimatorViewport } from './animations/konvaLayerTransition';
 import { DESCRIPTION_TEXT_BASE_FONT_PX } from './config/textScaling';
 import { useVisualli } from './context/VisualliContext';
 
+// Helper to convert hex color to rgba with transparency
+function hexToRgba(hex: string, alpha: number): string {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Parse hex values
+  let r: number, g: number, b: number;
+  if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length === 6) {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  } else {
+    return `rgba(240, 237, 230, ${alpha})`; // fallback
+  }
+  
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function resolveDocument(props: VisualliCanvasProps): VisualliDocument | null {
@@ -93,6 +115,7 @@ export interface VisualliCanvasProps {
   document?: VisualliDocument;
   visualliString?: string;
   isDark?: boolean;
+  chromaticImmersion?: boolean;
   onNodeClick?: (node: FlatNode) => void;
   onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
   
@@ -115,7 +138,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, onNodeClick, onLayerChange, renderOverlay, renderTooltipContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
+  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, renderOverlay, renderTooltipContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
 
   const doc = useMemo(() => resolveDocument(props), [props.document, props.visualliString]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -189,8 +212,34 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const dragMoveLatestRef   = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const dragStartPosRef     = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // ── Background color ────────────────────────────────────────────────────
-  const bgColor = isDark ? '#141412' : '#F0EDE6';
+  // ── Background color (with chromatic immersion support) ──────────────────
+  const baseBgColor = isDark ? '#141412' : '#F0EDE6';
+  
+  // For chromatic immersion: get the parent node color for child layers
+  const chromaticBgColor = useMemo(() => {
+    if (!chromaticImmersion || !doc || !currentLayerId) return baseBgColor;
+    
+    const currentLayer = doc.layers.get(currentLayerId);
+    if (!currentLayer) return baseBgColor;
+    
+    // Root layer always uses base background
+    if (currentLayer.level === 0 || !currentLayer.parentNodeId) return baseBgColor;
+    
+    // For child layers, find the parent node's color
+    const parentLayer = currentLayer.parentLayerId ? doc.layers.get(currentLayer.parentLayerId) : null;
+    if (parentLayer) {
+      const parentNode = parentLayer.nodes.find(n => n.id === currentLayer.parentNodeId);
+      if (parentNode) {
+        const nodeColor = parentNode.data.color || baseBgColor;
+        // Add transparency to the parent node color for subtle effect
+        return hexToRgba(nodeColor, 0.15);
+      }
+    }
+    
+    return baseBgColor;
+  }, [chromaticImmersion, doc, currentLayerId, baseBgColor]);
+  
+  const bgColor = chromaticImmersion ? chromaticBgColor : baseBgColor;
 
   // ── Spatial index (for stage-level hit detection) ─────────────────────────
   const spatialIndexRef = useRef<RBushSpatialIndex | null>(null);

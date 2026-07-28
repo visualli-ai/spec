@@ -48,9 +48,17 @@ const KonvaNode = React.memo(function KonvaNode({
   const baseRadiusX = node.width / 2;
   const baseRadiusY = Math.max((NODE_HEIGHT * 1.6) / 2, baseRadiusX * 0.74);
 
+  // Larger, consistent font size for better readability
+  // Text will wrap to multiple lines if needed
+  const calculateFontSize = useMemo(() => {
+    // Use a larger base font size for better visibility
+    return 30;
+  }, [node.title]);
+
   // Text scale and layout
   const textNaturalWidth  = node.width - 40;
-  const textNaturalHeight = NODE_HEIGHT - 20;
+  // Increase text height to allow 2-3 lines of wrapped text
+  const textNaturalHeight = NODE_HEIGHT * 1.2;
   const maxScale = computeNodeTextWorldScale(node.width, zoomLevel);
 
   // Blob type and text offset
@@ -149,14 +157,14 @@ const KonvaNode = React.memo(function KonvaNode({
           scaleX={maxScale}
           scaleY={maxScale}
           text={node.title}
-          fontSize={28}
+          fontSize={calculateFontSize}
           fontFamily="'Story Script', cursive"
           fontStyle="normal"
           fill={CANVAS_COLORS.node.titleColor}
           align="center"
           verticalAlign="middle"
           wrap="word"
-          ellipsis={true}
+          ellipsis={false}
           listening={false}
           perfectDrawEnabled={false}
         />
