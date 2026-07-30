@@ -1,7 +1,7 @@
 {
-  "name": "@mysdk/react",
+  "name": "@visualli/react",
   "version": "0.1.0",
-  "description": "React canvas renderer for .visualli files — built on @mysdk/core",
+  "description": "React canvas renderer for .visualli files — built on @visualli/core",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mysdk/core": "*",
+    "@visualli/core": "*",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "zustand": "^4.5.2",

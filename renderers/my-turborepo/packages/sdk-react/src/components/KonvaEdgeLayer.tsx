@@ -9,7 +9,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react';
 import { KLayer as Layer } from '../konvaCompat';
 import type Konva from 'konva';
-import type { FlatNode, Connection } from '@mysdk/core';
+import type { FlatNode, Connection } from '@visualli/core';
 import { useNodeStore } from '../stores/useNodeStore';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useViewportNodes } from '../hooks/useViewportNodes';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { VisualliRenderer } from '@mysdk/react';
+import { VisualliRenderer } from '@visualli/react';
 import { VISUALLI_JSONL } from './data/visualliJson';
 
 export default function App() {

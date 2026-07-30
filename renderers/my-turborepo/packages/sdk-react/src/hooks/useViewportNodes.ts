@@ -7,8 +7,8 @@
 // so the full layer is rendered when opacity ramps in.
 
 import { useMemo, useRef } from 'react';
-import type { FlatNode } from '@mysdk/core';
-import { RBushSpatialIndex, getViewportVisibleNodes } from '@mysdk/core';
+import type { FlatNode } from '@visualli/core';
+import { RBushSpatialIndex, getViewportVisibleNodes } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 
 const SPATIAL_INDEX_THRESHOLD = 200;

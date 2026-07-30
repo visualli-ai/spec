@@ -1,7 +1,7 @@
 /**
  * Middleware Demo Script
  * 
- * This script demonstrates the new middleware functionality in @mysdk/core
+ * This script demonstrates the new middleware functionality in @visualli/core
  * Run with: tsx examples/middleware-demo.ts
  */
 

@@ -10,7 +10,7 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, FlatNode } from '@mysdk/core';
+import type { VisualliDocument, FlatNode } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 import { konvaLayerTransitionAnimator } from '../animations/konvaLayerTransition';
 import type { AnimatorViewport } from '../animations/konvaLayerTransition';

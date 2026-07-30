@@ -8,7 +8,7 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import { KLayer as Layer } from '../konvaCompat';
 import type Konva from 'konva';
-import type { FlatNode } from '@mysdk/core';
+import type { FlatNode } from '@visualli/core';
 import { useNodeStore } from '../stores/useNodeStore';
 import KonvaContainer from './KonvaContainer';
 

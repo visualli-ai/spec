@@ -1,7 +1,7 @@
 /**
  * Extension System Demo
  * 
- * This example demonstrates the complete extension system in @mysdk/react
+ * This example demonstrates the complete extension system in @visualli/react
  * including provider, middlewares, extension components, and streaming.
  */
 

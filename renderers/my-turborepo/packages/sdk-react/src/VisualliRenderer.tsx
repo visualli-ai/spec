@@ -16,8 +16,8 @@
 //  • Delegates all canvas/navigation/zoom logic to VisualliCanvas
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { VisualliDocument, VisualliLayer, FlatNode } from '@mysdk/core';
-import { parseVisualliFile } from '@mysdk/core';
+import type { VisualliDocument, VisualliLayer, FlatNode } from '@visualli/core';
+import { parseVisualliFile } from '@visualli/core';
 import VisualliCanvas from './VisualliCanvas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

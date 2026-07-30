@@ -15,7 +15,7 @@ export {
   computeNodeTextScreenScale,
   computeOverlayScale,
   computeEdgeLabelScale,
-} from '@mysdk/core';
+} from '@visualli/core';
 
 export { buildBlobPathData } from './blobShapes';
-export type { BlobPoint, BlobShape } from '@mysdk/core';
+export type { BlobPoint, BlobShape } from '@visualli/core';

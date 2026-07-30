@@ -19,7 +19,7 @@
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, VisualliLayer, FlatNode, Connection } from '@mysdk/core';
+import type { VisualliDocument, VisualliLayer, FlatNode, Connection } from '@visualli/core';
 import {
   parseVisualliFile,
   getNodesForLayer,
@@ -31,7 +31,7 @@ import {
   ZOOM_NAV_IN_THRESHOLD,
   ZOOM_NAV_OUT_THRESHOLD,
   ZOOM_MIN,
-} from '@mysdk/core';
+} from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
 import { useViewportStore }    from './stores/useViewportStore';

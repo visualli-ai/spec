@@ -3,8 +3,8 @@
 // Hook to fetch and parse JSONL stream from backend with middleware support
 
 import { useState, useEffect, useRef } from 'react';
-import { VisualliParser, JSONLStreamReader } from '@mysdk/core';
-import type { VisualliDocument } from '@mysdk/core';
+import { VisualliParser, JSONLStreamReader } from '@visualli/core';
+import type { VisualliDocument } from '@visualli/core';
 import { useVisualli } from '../context/VisualliContext';
 
 export interface UseVisualliStreamReturn {

@@ -3,7 +3,7 @@
 // React Context for runtime injection of parser middlewares and extension components
 
 import React, { createContext, useContext, useMemo } from 'react';
-import type { ParserMiddleware } from '@mysdk/core';
+import type { ParserMiddleware } from '@visualli/core';
 
 /**
  * Props passed to extension components

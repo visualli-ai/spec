@@ -1,4 +1,4 @@
-# @mysdk/core
+# @visualli/core
 
 Framework-agnostic core logic, types, and algorithms for Visualli. Zero React / DOM dependencies.
 
@@ -18,7 +18,7 @@ Framework-agnostic core logic, types, and algorithms for Visualli. Zero React / 
 ## Installation
 
 ```bash
-npm install @mysdk/core
+npm install @visualli/core
 ```
 
 > **Only dependency:** [`rbush`](https://github.com/mourner/rbush) — no React, no Zod, no network code.
@@ -28,7 +28,7 @@ npm install @mysdk/core
 ### Parse a document
 
 ```ts
-import { parseVisualliFile, getNodesForLayer } from '@mysdk/core';
+import { parseVisualliFile, getNodesForLayer } from '@visualli/core';
 
 // Parse from a raw JSONL string
 const doc = parseVisualliFile(rawJsonlString);
@@ -41,7 +41,7 @@ const nodes = getNodesForLayer(doc, rootLayerId); // FlatNode[]
 ### Apply layouts
 
 ```ts
-import { applyCircularLayout, applyLinearHorizontalLayout } from '@mysdk/core';
+import { applyCircularLayout, applyLinearHorizontalLayout } from '@visualli/core';
 
 applyCircularLayout(nodes);             // mutates x/y in-place
 applyLinearHorizontalLayout(nodes);    // horizontal tree layout
@@ -53,7 +53,7 @@ applyLinearHorizontalLayout(nodes);    // horizontal tree layout
 import {
   zoomViewport, panViewport, setViewportCenter,
   calculateViewportBounds, worldToScreen, screenToWorld,
-} from '@mysdk/core';
+} from '@visualli/core';
 
 const next     = zoomViewport(delta, viewport, pivotX, pivotY, canvasW, canvasH);
 const bounds   = calculateViewportBounds(viewport, canvasW, canvasH);
@@ -63,7 +63,7 @@ const screenPt = worldToScreen(worldX, worldY, viewport, canvasW, canvasH);
 ### Spatial culling
 
 ```ts
-import { RBushSpatialIndex } from '@mysdk/core';
+import { RBushSpatialIndex } from '@visualli/core';
 
 const index = new RBushSpatialIndex();
 index.bulkLoad(nodes.map(n => ({
@@ -78,7 +78,7 @@ const visible = index.query(viewportBounds); // string[] — node IDs
 ### Easing
 
 ```ts
-import { easeInOutCubic, easeOutCubic, createCubicBezier } from '@mysdk/core';
+import { easeInOutCubic, easeOutCubic, createCubicBezier } from '@visualli/core';
 
 const t = easeInOutCubic(progress); // 0..1 → 0..1
 const custom = createCubicBezier(0.4, 0, 0.2, 1); // CSS timing function
@@ -90,7 +90,7 @@ const custom = createCubicBezier(0.4, 0, 0.2, 1); // CSS timing function
 import {
   getColorForLevel, getThemeBackground,
   LEVEL_COLOR_ARRAY, DS_COLORS, BRAND_COLORS,
-} from '@mysdk/core';
+} from '@visualli/core';
 
 const nodeColor = getColorForLevel(2);         // '#...' for level 2
 const bg        = getThemeBackground(isDark);  // canvas background
@@ -226,7 +226,7 @@ src/
 ## Installation
 
 ```bash
-npm install @mysdk/core
+npm install @visualli/core
 ```
 
 > **Dependencies:** `zod` (schema validation) · `rbush` (spatial index)
@@ -235,22 +235,22 @@ npm install @mysdk/core
 
 ```ts
 // Parse a .visualli document
-import { parseVisualliFile, convertVisualliToFlatNodes } from '@mysdk/core/parser';
+import { parseVisualliFile, convertVisualliToFlatNodes } from '@visualli/core/parser';
 
 const doc      = parseVisualliFile(rawJsonlString);
 const nodeMap  = convertVisualliToFlatNodes(doc);
 
 // Apply a circular layout
-import { applyCircularLayout } from '@mysdk/core/layout';
+import { applyCircularLayout } from '@visualli/core/layout';
 const nodes = [...nodeMap.values()];
 applyCircularLayout(nodes);
 
 // Viewport math
-import { zoomViewport } from '@mysdk/core/viewport';
+import { zoomViewport } from '@visualli/core/viewport';
 const next = zoomViewport(0.1, currentViewport, pivotX, pivotY);
 
 // API client
-import { initApi, mindmapApi } from '@mysdk/core/services';
+import { initApi, mindmapApi } from '@visualli/core/services';
 initApi({ baseUrl: 'https://api.example.com/api' });
 const list = await mindmapApi.getAllMindmaps();
 ```

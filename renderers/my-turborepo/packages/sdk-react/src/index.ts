@@ -1,4 +1,4 @@
-// ─── @mysdk/react ─────────────────────────────────────────────────────────────
+// ─── @visualli/react ─────────────────────────────────────────────────────────────
 
 // ── Primary component (recommended for public use) ────────────────────────────────────────
 export { default as VisualliRenderer } from './VisualliRenderer';

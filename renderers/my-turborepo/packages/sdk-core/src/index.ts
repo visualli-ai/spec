@@ -1,6 +1,6 @@
-// ─── @mysdk/core — Main Barrel Export ────────────────────────────────────────
+// ─── @visualli/core — Main Barrel Export ────────────────────────────────────────
 //
-// Import from sub-paths for tree-shaking (e.g. `@mysdk/core/layout`),
+// Import from sub-paths for tree-shaking (e.g. `@visualli/core/layout`),
 // or import everything from this root for convenience.
 
 export * from './types/index.js';

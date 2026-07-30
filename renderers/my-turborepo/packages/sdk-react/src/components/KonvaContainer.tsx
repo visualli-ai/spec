@@ -16,8 +16,8 @@ import {
   KRect as Rect,
   KText as Text,
 } from '../konvaCompat';
-import type { FlatNode } from '@mysdk/core';
-import { NODE_HEIGHT, TEXT_LABEL_HIDE_BELOW_ZOOM } from '@mysdk/core';
+import type { FlatNode } from '@visualli/core';
+import { NODE_HEIGHT, TEXT_LABEL_HIDE_BELOW_ZOOM } from '@visualli/core';
 import { useViewportStore }           from '../stores/useViewportStore';
 import {
   CONTAINER_LABEL_BASE_FONT_PX,
