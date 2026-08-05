@@ -121,12 +121,11 @@ export interface VisualliCanvasProps {
   
   // Extension points for private features (implement in consuming app)
   renderOverlay?: (params: { isDark: boolean; containerWidth: number; containerHeight: number }) => React.ReactNode;
-  renderTooltipContent?: (params: { 
+  renderNodeContent?: (params: { 
     summary: string; 
     nodeId: string; 
     nodeColor?: string;
-    onAnchorHover?: (word: string, description: string, knowMoreUrl: string | null, event: React.MouseEvent<HTMLSpanElement>) => void;
-    onAnchorLeave?: () => void;
+    zoom: number;
   }) => React.ReactNode;
   navigationStackTop?: string;
   navigationStackLeft?: string;
@@ -138,7 +137,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, renderOverlay, renderTooltipContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
+  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
 
   const doc = useMemo(() => resolveDocument(props), [props.document, props.visualliString]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1027,31 +1026,11 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
                   lineHeight: 1.6,
                   margin: 0,
                 }}>
-                  {renderTooltipContent ? renderTooltipContent({ 
+                  {renderNodeContent ? renderNodeContent({ 
                     summary: hoveredNode.summary, 
                     nodeId: hoveredNode.nodeId,
                     nodeColor: nodeData?.color,
-                    onAnchorHover: (word, description, knowMoreUrl, event) => {
-                      // Dispatch event for semantic anchor hover
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      const wordCenterX = rect.left + rect.width / 2;
-                      const wordBottomY = rect.bottom;
-                      window.dispatchEvent(new CustomEvent('semanticAnchorHover', {
-                        detail: { 
-                          anchor: { word, description, knowMoreUrl },
-                          screenX: wordCenterX,
-                          screenY: wordBottomY,
-                          zoom: viewport.zoomLevel,
-                          nodeColor: nodeData?.color
-                        }
-                      }));
-                    },
-                    onAnchorLeave: () => {
-                      // Dispatch event to clear semantic anchor
-                      window.dispatchEvent(new CustomEvent('semanticAnchorHover', {
-                        detail: { anchor: null }
-                      }));
-                    }
+                    zoom: viewport.zoomLevel,
                   }) : hoveredNode.summary}
                 </p>
               </SketchyBoxKonva>
