@@ -608,6 +608,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   } | null>(null);
 
   const tooltipHoverRef = useRef(false);
+  const keepTooltipOpenRef = useRef(false); // External request to keep tooltip open (e.g., from extensions)
   const clearTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hoveredNodePosition = useMemo(() => {
@@ -799,6 +800,15 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (now - lastHoverCheckRef.current < 50) return;
     lastHoverCheckRef.current = now;
 
+    // Check if mouse is over a tooltip - if so, don't change hovered node
+    const target = e.target as HTMLElement;
+    const isOverTooltip = target.closest('[data-node-tooltip="true"]') || target.closest('[data-semantic-tooltip="true"]');
+    
+    // If tooltip is open and we're hovering it or keeping it open, don't detect new nodes
+    if (tooltipHoverRef.current || keepTooltipOpenRef.current || isOverTooltip) {
+      return;
+    }
+
     const cw = viewport.canvasWidth  || canvasSizeRef.current.width;
     const ch = viewport.canvasHeight || canvasSizeRef.current.height;
     // e.clientX is viewport-relative; subtract the container's left/top offset
@@ -825,12 +835,27 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!found) {
       if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
       clearTooltipTimerRef.current = setTimeout(() => {
-        if (!tooltipHoverRef.current) setHoveredNode(null);
+        if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) setHoveredNode(null);
       }, 150);
     } else {
       if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; }
     }
   }, [nodes, viewport, spatialIndexRef]);
+
+  // Listen for external requests to keep tooltip open (e.g., from extensions)
+  useEffect(() => {
+    const handleKeepTooltipOpen = (event: CustomEvent) => {
+      keepTooltipOpenRef.current = event.detail.keep;
+    };
+    
+    // @ts-ignore - custom event
+    window.addEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+    
+    return () => {
+      // @ts-ignore - custom event
+      window.removeEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+    };
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -850,30 +875,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN));
   }, [viewport.zoomLevel, setZoom]);
 
-  // ── Extension rendering ───────────────────────────────────────────────────
-  const { extensions: extensionRegistry } = useVisualli();
-
-  // Render extensions from document.extensions Map
-  const extensionComponents = useMemo(() => {
-    if (!doc || !doc.extensions) return null;
-    
-    const components: React.ReactNode[] = [];
-    
-    doc.extensions.forEach((extension, id) => {
-      const ExtComponent = extensionRegistry[id];
-      if (ExtComponent) {
-        components.push(
-          <ExtComponent
-            key={id}
-            extension={extension}
-            document={doc}
-          />
-        );
-      }
-    });
-    
-    return components.length > 0 ? components : null;
-  }, [doc, extensionRegistry]);
+  // Extension rendering removed - not part of open spec
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!doc) {
@@ -900,7 +902,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         ...style 
       }}
       onMouseMove={handleCanvasMouseMove}
-      onMouseLeave={() => setHoveredNode(null)}
+      onMouseLeave={() => {
+        // Only close tooltip on mouse leave if not keeping it open
+        if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) {
+          setHoveredNode(null);
+        }
+      }}
     >
       {/* Konva canvas — opacity driven imperatively during transitions */}
       <div ref={canvasWrapperRef} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
@@ -989,6 +996,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         const safeTop  = Math.max(VP_PAD + APPROX_H, rawTop);
         return (
           <div
+            data-node-tooltip="true"
             style={{
               position: 'fixed',
               zIndex: 50,
@@ -999,7 +1007,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
               pointerEvents: 'auto',
             }}
             onMouseEnter={() => { tooltipHoverRef.current = true; if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; } }}
-            onMouseLeave={() => { tooltipHoverRef.current = false; setHoveredNode(null); }}
+            onMouseLeave={() => { 
+              tooltipHoverRef.current = false; 
+              // Delay clearing to allow external extensions to request keeping tooltip open
+              if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
+              clearTooltipTimerRef.current = setTimeout(() => {
+                if (!keepTooltipOpenRef.current) setHoveredNode(null);
+              }, 100);
+            }}
           >
             <div style={{ maxWidth: '20rem', minWidth: '12rem', maxHeight: '15rem', overflowY: 'auto' }}>
               <SketchyBoxKonva fill="#ffffff" stroke={borderColor} backStroke={borderColor} padding="1rem 1.25rem">
@@ -1044,13 +1059,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           </div>
         );
       })()}
-
-      {/* Extension components as overlays - rendered after description tooltip so extensions appear on top */}
-      {extensionComponents && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 60 }}>
-          {extensionComponents}
-        </div>
-      )}
     </div>
   );
 }

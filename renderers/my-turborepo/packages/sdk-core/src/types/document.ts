@@ -1,14 +1,11 @@
 // ─── Core .visualli Document ───────────────────────────────────────────────────
 
 import type { VisualliMeta } from './meta.js';
-import type { VisualliExtension } from './extension.js';
 import type { VisualliLayer } from './layer.js';
 
 /** Parsed .visualli document structure. */
 export interface VisualliDocument {
   meta: VisualliMeta;
-  /** Keyed by extension ID */
-  extensions: Map<string, VisualliExtension>;
   /** Keyed by layer ID */
   layers: Map<string, VisualliLayer>;
   /** Quick lookup by level */

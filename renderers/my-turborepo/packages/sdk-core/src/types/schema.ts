@@ -4,7 +4,7 @@
 // for serialisation / deserialisation boundaries.
 
 import type { VisualliMeta } from './meta.js';
-import type { VisualliExtension } from './extension.js';
+
 import type { VisualliLayer, LayerNode, LayerConnection, LayerContainer } from './layer.js';
 
 export interface Meta {
@@ -13,13 +13,6 @@ export interface Meta {
   title: string;
   created?: string;
   lastModified?: string;
-}
-
-export interface Extension {
-  type: 'extension';
-  id: string;
-  config?: Record<string, unknown>;
-  data?: unknown[];
 }
 
 export interface Node {
@@ -53,12 +46,11 @@ export interface Layer {
   containers: Container[];
 }
 
-export type VisualliFragment = Meta | Extension | Layer;
+export type VisualliFragment = Meta | Layer;
 
 // Re-export domain types for convenience
 export type {
   VisualliMeta,
-  VisualliExtension,
   VisualliLayer,
   LayerNode,
   LayerConnection,

@@ -221,7 +221,6 @@ self.onmessage = function(e) {
     var lines = content.trim().split('\\n');
     var doc = {
       meta: null,
-      extensions: new Map(),
       layers: new Map(),
       layersByLevel: new Map(),
       rootLayer: null,
@@ -240,9 +239,6 @@ self.onmessage = function(e) {
         if (!doc.layersByLevel.has(obj.level)) doc.layersByLevel.set(obj.level, []);
         doc.layersByLevel.get(obj.level).push(obj);
         if (obj.level === 0) doc.rootLayer = obj;
-      } else if (obj.type === 'extension') {
-        // Extensions are specific to visualli.ai application.
-        // Skip storing or processing extension entries in spec renderer.
       }
     }
     if (!doc.meta)      throw new Error('Missing required meta section');

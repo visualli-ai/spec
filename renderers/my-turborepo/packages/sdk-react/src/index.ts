@@ -12,14 +12,8 @@ export type { VisualliCanvasProps } from './VisualliCanvas';
 export { VisualliProvider, useVisualli } from './context/VisualliContext';
 export type { 
   VisualliProviderProps, 
-  VisualliContextValue,
-  ExtensionComponentProps,
-  ExtensionRegistry 
+  VisualliContextValue
 } from './context/VisualliContext';
-
-// ── Stream Hook ───────────────────────────────────────────────────────────────
-export { useVisualliStream } from './hooks/useVisualliStream';
-export type { UseVisualliStreamReturn } from './hooks/useVisualliStream';
 
 // Stores
 export { useNodeStore }           from './stores/useNodeStore';

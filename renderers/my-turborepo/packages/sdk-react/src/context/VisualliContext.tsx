@@ -1,61 +1,33 @@
 // ─── Visualli Context ─────────────────────────────────────────────────────────
 //
-// React Context for runtime injection of parser middlewares and extension components
+// React Context for Visualli components (minimal implementation)
 
-import React, { createContext, useContext, useMemo } from 'react';
-import type { ParserMiddleware } from '@visualli/core';
-
-/**
- * Props passed to extension components
- */
-export interface ExtensionComponentProps {
-  extension: any; // The extension object from document.extensions
-  document: any;  // Full document for cross-referencing
-}
-
-/**
- * Registry of extension renderers keyed by extension.id
- */
-export type ExtensionRegistry = Record<
-  string,
-  React.ComponentType<ExtensionComponentProps>
->;
+import React, { createContext, useContext } from 'react';
 
 export interface VisualliContextValue {
-  middlewares: ParserMiddleware[];
-  extensions: ExtensionRegistry;
+  // Reserved for future use
 }
 
 const VisualliContext = createContext<VisualliContextValue | null>(null);
 
 export interface VisualliProviderProps {
   children: React.ReactNode;
-  middlewares?: ParserMiddleware[];
-  extensions?: ExtensionRegistry;
 }
 
 /**
- * Provider for runtime injection of middlewares and extension components
+ * Provider for Visualli context
  * 
  * @example
  * ```tsx
- * <VisualliProvider
- *   middlewares={[myMiddleware]}
- *   extensions={{ 'my-ext': MyExtensionComponent }}
- * >
+ * <VisualliProvider>
  *   <VisualliCanvas document={doc} />
  * </VisualliProvider>
  * ```
  */
 export function VisualliProvider({
   children,
-  middlewares = [],
-  extensions = {},
 }: VisualliProviderProps) {
-  const value = useMemo(
-    () => ({ middlewares, extensions }),
-    [middlewares, extensions]
-  );
+  const value: VisualliContextValue = {};
 
   return (
     <VisualliContext.Provider value={value}>
@@ -72,8 +44,7 @@ export function VisualliProvider({
 export function useVisualli(): VisualliContextValue {
   const ctx = useContext(VisualliContext);
   if (!ctx) {
-    // Return defaults if no provider
-    return { middlewares: [], extensions: {} };
+    return {};
   }
   return ctx;
 }

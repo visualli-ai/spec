@@ -19,7 +19,6 @@ export type ParserMiddleware = (rawData: RawNodeData) => RawNodeData | null;
  * Middleware context with document state (for advanced use cases)
  */
 export interface ParserContext {
-  extensions: Map<string, unknown>;
   layers: Map<string, unknown>;
   meta: unknown | null;
 }
