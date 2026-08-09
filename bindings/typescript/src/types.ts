@@ -8,7 +8,7 @@
 /**
  * Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.
  */
-export type VisualliSpec010 = Meta | Extension | Layer;
+export type VisualliSpec011 = Meta | Extension | Layer;
 
 export interface Meta {
   type: "meta";
@@ -26,12 +26,6 @@ export interface Extension {
    * Unique identifier for the extension (e.g., 'semantic-anchors')
    */
   id: string;
-  /**
-   * Configuration parameters for the extension
-   */
-  config?: {
-    [k: string]: unknown;
-  };
   /**
    * Data payload for the extension
    */
@@ -56,7 +50,10 @@ export interface Layer {
    * UUID of the specific node in the parent layer this layer attaches to
    */
   parentNodeId?: string;
-  description?: string;
+  /**
+   * Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis.
+   */
+  layout?: "radial" | "linear-horizontal" | "linear-vertical";
   nodes?: Node[];
   connections?: Connection[];
   containers?: Container[];
@@ -73,9 +70,12 @@ export interface Node {
     /**
      * Label text for the node
      */
-    label?: string;
+    label: string;
+    /**
+     * A short description or summary of the node content
+     */
+    summary: string;
     color?: string;
-    [k: string]: unknown;
   };
   [k: string]: unknown;
 }
@@ -89,15 +89,31 @@ export interface Connection {
    * Target Node ID
    */
   to: string;
-  label?: string;
+  data: {
+    label: string;
+    style?: "dashed" | "solid";
+  };
   [k: string]: unknown;
 }
 export interface Container {
   id: string;
-  label: string;
   /**
    * List of Node IDs contained in this group
    */
   nodes: string[];
+  data: {
+    /**
+     * Container Label
+     */
+    label: string;
+    /**
+     * Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis.
+     */
+    formation?: "radial" | "linear-horizontal" | "linear-vertical";
+    /**
+     * Visual style of the container border
+     */
+    style?: "dashed" | "none";
+  };
   [k: string]: unknown;
 }

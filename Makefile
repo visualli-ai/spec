@@ -73,7 +73,7 @@ update-version:
 	\
 	readme_path = "README.md"; \
 	readme = open(readme_path).read(); \
-	readme = re.sub(r"\[!\[Version\]\(https://img\.shields\.io/badge/Version-[^-]+-orange\)\]\(\)", f"[![Version](https://img.shields.io/badge/Version-{version}-orange)]()", readme); \
+	readme = re.sub(r"src=\"https://img\.shields\.io/badge/Version-.+?-orange\?style=for-the-badge\"", f"src=\"https://img.shields.io/badge/Version-{version}-orange?style=for-the-badge\"", readme); \
 	open(readme_path, "w").write(readme); \
 	print("Updated README.md badge"); \
 	'

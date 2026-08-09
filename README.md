@@ -7,7 +7,7 @@
       <h1>Visualli Specification</h1>
       <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
       <p>
-        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge" alt="Version"></a></br>
+        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.1-orange?style=for-the-badge" alt="Version"></a></br>
         <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
         <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
       </p>
@@ -31,10 +31,9 @@ Visualli is an open standard designed to turn structured/unstructured data into 
 The **Single Source of Truth** for the format is the JSON Schema:
 *   [**visualli.schema.json**](visualli.schema.json)
 
-The documentation is divided into:
+The documentation is available at:
 
-*   [**Core Concepts**](docs/core.md): Understand the philosophy of Layers, Nodes, and the Infinite Canvas.
-*   [**Visualli Specification**](docs/spec.md): The technical reference for the `.visualli` interchange format.
+*   [**Visualli Specification**](docs/spec.md): The comprehensive guide to Visualli concepts and the interchange format.
 
 ## Ecosystem & Tooling
 
