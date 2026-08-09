@@ -49,7 +49,7 @@ export interface VisualliRendererProps {
    * When true, parsing is offloaded to a Web Worker so the main thread never
    * blocks during JSON.parse. Recommended for large documents (>500 nodes).
    * Has no effect when `document` is supplied (already parsed).
-   * @default false
+   * @default true
    */
   useWorker?: boolean;
 
@@ -57,7 +57,8 @@ export interface VisualliRendererProps {
    * Colour theme.
    *  - 'dark'  → always dark background
    *  - 'light' → always light background
-   *  - 'auto'  → follows the OS/browser prefers-color-scheme (default)
+   *  - 'auto'  → follows the OS/browser prefers-color-scheme
+   * @default 'light'
    */
   theme?: VisualliTheme;
 
@@ -83,12 +84,6 @@ export interface VisualliRendererProps {
    * @default '100%'
    */
   height?: string | number;
-
-  /** Called when the user single-clicks a node. */
-  onNodeClick?: (node: FlatNode) => void;
-
-  /** Called after a layer navigation (drill-in or back). */
-  onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
 
   /** Additional CSS class on the root element. */
   className?: string;
@@ -358,13 +353,11 @@ export default function VisualliRenderer({
   visualliString,
   visualliFile,
   document: docProp,
-  theme = 'auto',
+  theme = 'light',
   width = '100%',
   height = '100%',
-  useWorker = false,
+  useWorker = true,
   chromaticImmersion = false,
-  onNodeClick,
-  onLayerChange,
   className,
   style,
 }: VisualliRendererProps) {
@@ -414,8 +407,6 @@ export default function VisualliRenderer({
         document={resolvedDoc ?? undefined}
         isDark={isDark}
         chromaticImmersion={chromaticImmersion}
-        onNodeClick={onNodeClick}
-        onLayerChange={onLayerChange}
         style={{ width: '100%', height: '100%' }}
       />
     </div>
