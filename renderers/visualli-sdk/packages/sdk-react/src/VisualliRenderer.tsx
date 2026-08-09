@@ -27,16 +27,19 @@ export type VisualliTheme = 'dark' | 'light' | 'auto';
 export interface VisualliRendererProps {
   /**
    * Raw JSONL string — the content of a .visualli file.
-   * Mutually exclusive with `visualliFile`.
+   * Simply pass the string data directly, no preprocessing needed.
+   * Example: visualliString="{\"type\":\"meta\"...}\n{\"type\":\"layer\"...}"
    */
   visualliString?: string;
 
   /**
-   * A File object pointing to a .visualli file (e.g. from an <input type="file">).
-   * The renderer reads it as text and parses it automatically.
-   * Mutually exclusive with `visualliString`.
+   * A .visualli file — can be:
+   *  - File object (e.g. from <input type="file">)
+   *  - String path to file (e.g. '/data/myfile.visualli' or './src/data/data.visualli')
+   * The renderer automatically fetches, reads, and parses it.
+   * No user code required for conversion or processing.
    */
-  visualliFile?: File;
+  visualliFile?: File | string;
 
   /**
    * When true, parsing is offloaded to a Web Worker so the main thread never
@@ -153,7 +156,7 @@ function EmptyState({ isDark }: { isDark: boolean }) {
           No .visualli file provided
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 13 }}>
-          Pass a <code style={code}>visualliFile</code>, <code style={code}>visualliString</code>, or <code style={code}>document</code> prop.
+          Pass a <code style={code}>visualliFile</code> or <code style={code}>visualliString</code> prop.
         </p>
       </div>
     </div>
@@ -320,7 +323,7 @@ function useAsyncParse(
 
 // ── File → string hook ────────────────────────────────────────────────────────
 
-function useFileText(file: File | undefined): { text: string | undefined; error: string | undefined; loading: boolean } {
+function useFileText(file: File | string | undefined): { text: string | undefined; error: string | undefined; loading: boolean } {
   const [text,    setText]    = useState<string | undefined>(undefined);
   const [error,   setError]   = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -329,11 +332,30 @@ function useFileText(file: File | undefined): { text: string | undefined; error:
     if (!file) { setText(undefined); setError(undefined); setLoading(false); return; }
     setLoading(true); setText(undefined); setError(undefined);
     let cancelled = false;
-    file.text().then(t => {
-      if (!cancelled) { setText(t); setLoading(false); }
-    }).catch((err: unknown) => {
-      if (!cancelled) { setError(err instanceof Error ? err.message : String(err)); setLoading(false); }
-    });
+
+    // Handle string path - fetch the file
+    if (typeof file === 'string') {
+      fetch(file)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to fetch file: ${response.statusText}`);
+          return response.text();
+        })
+        .then(t => {
+          if (!cancelled) { setText(t); setLoading(false); }
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) { setError(err instanceof Error ? err.message : String(err)); setLoading(false); }
+        });
+    }
+    // Handle File object - read as text
+    else {
+      file.text().then(t => {
+        if (!cancelled) { setText(t); setLoading(false); }
+      }).catch((err: unknown) => {
+        if (!cancelled) { setError(err instanceof Error ? err.message : String(err)); setLoading(false); }
+      });
+    }
+    
     return () => { cancelled = true; };
   }, [file]);
 

@@ -1,11 +1,12 @@
 import React from 'react';
 import { VisualliRenderer } from '@visualli/react';
-import { VISUALLI_JSONL } from './data/visualliJson';
+import { VISUALLI_STRING } from './data/string';
 
 export default function App() {
   return (
     <VisualliRenderer
-      visualliString={VISUALLI_JSONL}
+      visualliFile="/src/data/data.visualli"
+      // visualliString={VISUALLI_STRING}
       useWorker={true}
       theme="light"
       width="100vw"

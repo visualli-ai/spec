@@ -114,8 +114,18 @@ function getRootLayerId(doc: VisualliDocument): string | null {
 
 export interface VisualliCanvasProps {
   preParsedVisualli?: VisualliDocument;
+  /**
+   * Raw JSONL string — just pass the string data directly.
+   * No preprocessing needed by user.
+   */
   visualliString?: string;
-  visualliFile?: File;
+  /**
+   * A .visualli file — can be:
+   *  - File object (from file input)
+   *  - String path to file (e.g. '/data/file.visualli')
+   * Component handles all fetching and parsing automatically.
+   */
+  visualliFile?: File | string;
   isDark?: boolean;
   chromaticImmersion?: boolean;
   onNodeClick?: (node: FlatNode) => void;
@@ -141,16 +151,35 @@ export interface VisualliCanvasProps {
 export default function VisualliCanvas(props: VisualliCanvasProps) {
   const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
 
-  // Read file if provided
+  // Read file if provided (handles both File objects and string paths)
   const [fileText, setFileText] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (!props.visualliFile) { setFileText(undefined); return; }
     let cancelled = false;
-    props.visualliFile.text().then(t => {
-      if (!cancelled) setFileText(t);
-    }).catch(() => {
-      if (!cancelled) setFileText(undefined);
-    });
+    
+    // Handle string path - fetch the file
+    if (typeof props.visualliFile === 'string') {
+      fetch(props.visualliFile)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
+          return response.text();
+        })
+        .then(t => {
+          if (!cancelled) setFileText(t);
+        })
+        .catch(() => {
+          if (!cancelled) setFileText(undefined);
+        });
+    }
+    // Handle File object - read as text
+    else {
+      props.visualliFile.text().then(t => {
+        if (!cancelled) setFileText(t);
+      }).catch(() => {
+        if (!cancelled) setFileText(undefined);
+      });
+    }
+    
     return () => { cancelled = true; };
   }, [props.visualliFile]);
 
