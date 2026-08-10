@@ -20,4 +20,4 @@
 
 ## File format
 
-Core implements the `.visualli` format described in the [Specification](../../spec.md) — one JSON object per line (JSONL), starting with a `meta` entity followed by one or more `layer` entities.
+Core implements the `.visualli` format.
