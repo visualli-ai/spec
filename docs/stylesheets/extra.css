@@ -1,0 +1,14 @@
+/* Visualli spec docs overrides */
+
+/* Keep prop/type columns readable — prevent wrapping into two lines */
+.md-typeset table:not([class]) th:first-child,
+.md-typeset table:not([class]) td:first-child {
+  white-space: nowrap;
+}
+
+/* Give tables more breathing room on wide screens */
+@media screen and (min-width: 76.25em) {
+  .md-content__inner {
+    max-width: 60rem;
+  }
+}

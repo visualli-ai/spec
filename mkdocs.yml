@@ -1,0 +1,61 @@
+site_name: Visualli Spec
+site_url: https://spec.visualli.ai
+
+nav:
+  - Home: index.md
+  - Core Concepts: core.md
+  - Specification: spec.md
+  - Visualli SDK:
+      - Overview: visualli-sdk/index.md
+      - ⚛️ React:
+          - 🚀 Getting Started: visualli-sdk/react/getting-started.md
+          - ⚙️ Props Reference: visualli-sdk/react/props.md
+          - 🧪 Examples: visualli-sdk/react/examples.md
+      - 🧱 Core:
+          - Overview: visualli-sdk/core/overview.md
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.tracking
+    - content.tabs.link
+    - content.code.copy
+    - content.tooltips
+    - search.suggest
+    - search.highlight
+  font:
+    text: Inter
+  palette:
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+
+use_directory_urls: false
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra:
+  generator: false
