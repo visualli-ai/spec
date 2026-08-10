@@ -1,8 +1,8 @@
-# Visualli Specification
+# 🏠 Visualli Specification
 
 Welcome to the official specification and SDK documentation for **Visualli** — an open format for interactive, hierarchical, mindmap-style visualizations.
 
-## What's here
+## 📚 What's here
 
 | Section | Description |
 |---|---|
@@ -10,7 +10,7 @@ Welcome to the official specification and SDK documentation for **Visualli** —
 | [Specification](spec.md) | The `.visualli` file format reference |
 | [Visualli SDK](visualli-sdk/index.md) | The official SDK: React renderer and Core |
 
-## Quick look
+## 👀 Quick look
 
 ```jsonl
 {"type":"meta","version":"1.0","title":"Simple Map","created":"2026-01-01T00:00:00Z","lastModified":"2026-01-01T00:00:00Z"}

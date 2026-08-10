@@ -1,11 +1,11 @@
-# Visualli Specification
+# 📐 Visualli Specification
 
 Visualli uses **JSONL (JSON Lines)** as its primary interchange format. 
 Each line in a `.visualli` file represents a distinct entity (`Meta`, `Extension`, or `Layer`).
 
 > **Source of Truth**: The formal validation rules are defined in [visualli.schema.json](../visualli.schema.json).
 
-## Core Concepts
+## 🧠 Core Concepts
 
 ### The Infinite Canvas
 
@@ -91,7 +91,7 @@ graph BT
     style L2 stroke-dasharray: 5 5
 ```
 
-## File Structure
+## 📄 File Structure
 
 A valid `.visualli` file consists of a sequence of JSON objects, separated by newlines (`\n`).
 
@@ -109,7 +109,7 @@ A valid `.visualli` file consists of a sequence of JSON objects, separated by ne
 {"type": "layer", "id": "layer-1", "level": 0, "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"label": "Root Node", "summary": "The starting point"}}]}
 ```
 
-## Entity Relationship Diagram
+## 🔗 Entity Relationship Diagram
 
 The following diagram illustrates the relationships between the core entities in the Visualli specification.
 
@@ -178,7 +178,7 @@ classDiagram
     containers ..> nodes : nodes (groups Node IDs)
 ```
 
-## Schema Definitions
+## 📋 Schema Definitions
 
 ### 1. Meta Object
 Must be the first line of the file.

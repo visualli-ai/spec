@@ -1,10 +1,10 @@
-# Core Concepts
+# 🧠 Core Concepts
 
-## The Infinite Canvas
+## ♾️ The Infinite Canvas
 
 Visualli treats information as existing on an infinite 2D canvas. Unlike rigid tree structures, Visualli allows for flexible positioning while maintaining strict hierarchical relationships.
 
-## Layers and Levels
+## 🗂️ Layers and Levels
 ### Layers
 
 The fundamental unit of organization in Visualli is the **Layer**. 
@@ -82,7 +82,7 @@ graph BT
 ```
 
 
-## Entities
+## 🧩 Entities
 
 ### Nodes
 Nodes represent discrete pieces of information.
@@ -126,7 +126,7 @@ Example of a `semantic-anchors` extension:
 }
 ```
 
-## Entity Relationship Diagram
+## 🔗 Entity Relationship Diagram
 
 The following diagram illustrates the relationships between the core entities in the Visualli specification.
 
