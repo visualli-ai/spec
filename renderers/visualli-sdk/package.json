@@ -1,5 +1,5 @@
 {
-  "name": "my-turborepo",
+  "name": "visualli-sdk",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -25,6 +25,7 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "sdk/*",
+    "tooling/*"
   ]
 }
