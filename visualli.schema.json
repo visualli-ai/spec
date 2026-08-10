@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Visualli Spec 0.1.0",
+  "title": "Visualli Spec 0.1.1",
   "description": "Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.",
   "type": "object",
   "discriminator": {
@@ -57,10 +57,6 @@
           "type": "string",
           "description": "Unique identifier for the extension (e.g., 'semantic-anchors')"
         },
-        "config": {
-          "type": "object",
-          "description": "Configuration parameters for the extension"
-        },
         "data": {
           "type": "array",
           "description": "Data payload for the extension",
@@ -95,8 +91,14 @@
           "type": "string",
           "description": "UUID of the specific node in the parent layer this layer attaches to"
         },
-        "description": {
-          "type": "string"
+        "layout": {
+          "type": "string",
+          "enum": [
+            "radial",
+            "linear-horizontal",
+            "linear-vertical"
+          ],
+          "description": "Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis."
         },
         "nodes": {
           "type": "array",
@@ -109,8 +111,7 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/Connection"
-          },
-          "default": []
+          }
         },
         "containers": {
           "type": "array",
@@ -154,12 +155,19 @@
               "type": "string",
               "description": "Label text for the node"
             },
+            "summary": {
+              "type": "string",
+              "description": "A short description or summary of the node content"
+            },
             "color": {
               "type": "string"
             }
           },
-          "additionalProperties": true,
-          "required": []
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "summary"
+          ]
         }
       },
       "required": [
@@ -182,14 +190,32 @@
           "type": "string",
           "description": "Target Node ID"
         },
-        "label": {
-          "type": "string"
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "dashed",
+                "solid"
+              ],
+              "default": "solid"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "id",
         "from",
-        "to"
+        "to",
+        "data"
       ]
     },
     "Container": {
@@ -198,21 +224,48 @@
         "id": {
           "type": "string"
         },
-        "label": {
-          "type": "string"
-        },
         "nodes": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "description": "List of Node IDs contained in this group"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Container Label"
+            },
+            "formation": {
+              "type": "string",
+              "enum": [
+                "radial",
+                "linear-horizontal",
+                "linear-vertical"
+              ],
+              "description": "Visual arrangement of nodes within the container. Uses the same vocabulary as Layer.layout: 'radial' arranges nodes in a circle, 'linear-horizontal' along a horizontal axis, 'linear-vertical' along a vertical axis."
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "dashed",
+                "none"
+              ],
+              "description": "Visual style of the container border"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "id",
-        "label",
-        "nodes"
+        "nodes",
+        "data"
       ]
     }
   }
