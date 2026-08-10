@@ -6,7 +6,7 @@ Welcome to the official specification and SDK documentation for **Visualli** —
 
 | Section | Description |
 |---|---|
-| [Core Concepts](core.md) | The mental model: infinite canvas, layers, nodes, connections, containers |
+| [Core Concepts](core-concepts.md) | The mental model: infinite canvas, layers, nodes, connections, containers |
 | [Specification](spec.md) | The `.visualli` file format reference |
 | [Visualli SDK](visualli-sdk/index.md) | The official SDK: React renderer and Core |
 

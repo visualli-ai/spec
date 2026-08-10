@@ -1,0 +1,166 @@
+/* Brand palette mapped to Material for MkDocs CSS variables */
+
+:root {
+  /* Primary: cyan from the VISUALLI logo (#12C7D3) */
+  --md-primary-fg-color: #12C7D3;
+  --md-primary-fg-color--light: #64e3eb;
+  --md-primary-fg-color--dark: #0ea5ad;
+
+  /* Accent: orange from the logo (#F28C16) */
+  --md-accent-fg-color: #F28C16;
+
+  /* Links use accent for consistency */
+  --md-typeset-a-color: var(--md-accent-fg-color);
+
+  /* Brand gradient across VISUALLI tones */
+  --brand-gradient: linear-gradient(90deg,
+    #12C7D3 0%,
+    #325E8C 10%,
+    #8A70A6 20%,
+    #F54A57 30%,
+    #FF6C4D 40%,
+    #F28C16 50%,
+    #FFD347 60%,
+    #12C7D3 70%,
+    #7F7F7F 80%,
+    #8D8D8D 90%,
+    #12C7D3 100%
+  );
+  /* Site title used in header banner (rendered inside the clickable logo link) */
+  --site-title: "Visualli Spec";
+}
+
+[data-md-color-scheme="slate"] {
+  /* Keep brand colors in dark mode */
+  --md-primary-fg-color: #12C7D3;
+  --md-primary-fg-color--light: #5bd9e2;
+  --md-primary-fg-color--dark: #0b8b93;
+  --md-accent-fg-color: #F28C16;
+  --md-typeset-a-color: var(--md-accent-fg-color);
+}
+
+/* Header: solid black banner with thin gradient line at bottom */
+.md-header {
+  background-color: #000000;
+  background-image: none; /* remove previous gradient fill */
+  position: relative; /* enable bottom border pseudo-element */
+}
+
+.md-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px; /* very thin gradient line */
+  background-image: var(--brand-gradient);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Make the left logo act as the full clickable banner title */
+.md-header__button.md-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  text-decoration: none;
+  width: auto !important; /* expand clickable area to include text */
+  max-width: none !important;
+  padding: 0 .5rem; /* small horizontal padding for comfortable click */
+  margin-right: auto; /* keep search + palette icons right-aligned */
+}
+.md-header__button.md-logo::after {
+  content: var(--site-title);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem; /* reduced to match earlier banner scale */
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Center the header options (palette + search) on desktop */
+.md-header__inner { position: relative; }
+@media (min-width: 768px) {
+  .md-header__options {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 5; /* above gradient divider */
+  }
+  /* Ensure search occupies its natural width while centered */
+  .md-header__options .md-search { max-width: none; }
+}
+/* Hide the original (non-clickable) header title to avoid duplicate text */
+.md-header__title { display: none !important; }
+.md-header__title * { display: none !important; }
+
+/* 
+   Table of Contents (Right Sidebar) - Improved Hierarchy
+   Indents h3 headings (and deeper) to visually distinguish them from h2 headings.
+*/
+.md-nav--secondary .md-nav__list .md-nav__list {
+  padding-left: 0.6rem;
+  margin-left: 0.2rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-nav--secondary .md-nav__list .md-nav__list .md-nav__item {
+  padding-left: 0.3rem;
+}
+
+/* 
+   Primary Navigation (Left Sidebar) - Match Hierarchy Style
+   Apply indentation lines to Level 2 items AND deeper nested levels (Level 3+).
+   Changed to generalized selector to support infinite nesting depth.
+*/
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list {
+  padding-left: 0.6rem;
+  margin-left: 0.2rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list > .md-nav__item {
+  padding-left: 0.3rem;
+}
+
+/* Hide site title in left sidebar (primary nav) */
+.md-nav--primary > .md-nav__title {
+  display: none !important;
+}
+
+/* Reduce vertical gap between header and content */
+.md-main__inner {
+  padding-top: .2rem !important;
+  margin-top: 0 !important;
+}
+
+/* Ensure content and sidebar start higher up */
+.md-content, .md-sidebar {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Reduce top margin of the first heading if needed to pull text up further */
+.md-typeset h1 {
+  margin-top: 0 !important;
+}
+
+/* --- Spec docs additions --- */
+
+/* Keep prop/type columns readable — prevent wrapping into two lines */
+.md-typeset table:not([class]) th:first-child,
+.md-typeset table:not([class]) td:first-child {
+  white-space: nowrap;
+}
+
+/* Give tables more breathing room on wide screens */
+@media screen and (min-width: 76.25em) {
+  .md-content__inner {
+    max-width: 60rem;
+  }
+}
