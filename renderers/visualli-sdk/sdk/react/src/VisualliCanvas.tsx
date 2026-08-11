@@ -19,7 +19,7 @@
 
 import React, { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, VisualliLayer, FlatNode, Connection } from '@visualli-sdk/core';
+import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '@visualli-sdk/core';
 import {
   parseVisualliFile,
   getNodesForLayer,
@@ -204,14 +204,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
 
   // ── Active layer → FlatNodes ──────────────────────────────────────────────
   const { flatNodes, connections, containers } = useMemo(() => {
-    if (!doc || !currentLayerId) return { flatNodes: [] as FlatNode[], connections: [] as Connection[], containers: [] as ContainerGroup[] };
+    if (!doc || !currentLayerId) return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] };
     try {
       return {
         flatNodes: getNodesForLayer(doc, currentLayerId),
         connections: getConnectionsForLayer(doc, currentLayerId),
         containers: getContainersForLayer(doc, currentLayerId) as ContainerGroup[],
       };
-    } catch { return { flatNodes: [] as FlatNode[], connections: [] as Connection[], containers: [] as ContainerGroup[] }; }
+    } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] }; }
   }, [doc, currentLayerId]);
 
   // ── Stores ────────────────────────────────────────────────────────────────

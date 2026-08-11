@@ -91,10 +91,11 @@ export interface RenderConfig {
 
 export interface MindMapData {
   nodes: MindMapNode[];
-  connections: Connection[];
+  connections: MindMapConnection[];
 }
 
-export interface Connection {
+/** Simplified connection type for mindmap rendering (not to be confused with schema Connection) */
+export interface MindMapConnection {
   from: string;
   to: string;
   level: number;

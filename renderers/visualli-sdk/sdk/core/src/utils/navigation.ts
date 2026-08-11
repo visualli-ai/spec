@@ -1,4 +1,4 @@
-import type { VisualliDocument, VisualliLayer, FlatNode, Connection } from '../types/index.js';
+import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '../types/index.js';
 import { ZOOM_MAX, ZOOM_NAV_OUT_THRESHOLD } from '../constants/performanceConstants.js';
 
 // ── Connection helpers ────────────────────────────────────────────────────────
@@ -10,21 +10,16 @@ import { ZOOM_MAX, ZOOM_NAV_OUT_THRESHOLD } from '../constants/performanceConsta
 export function getConnectionsForLayer(
   doc: VisualliDocument,
   layerId: string,
-): Connection[] {
+): MindMapConnection[] {
   const layer = doc.layers.get(layerId);
   if (!layer) return [];
-  // LayerConnection has from/to as well (mapped from the source schema)
-  return (layer.connections ?? []).map(c => ({
-    from: (c as unknown as { from?: string; sourceId?: string }).from
-      ?? (c as unknown as { sourceId?: string }).sourceId
-      ?? '',
-    to: (c as unknown as { to?: string; targetId?: string }).to
-      ?? (c as unknown as { targetId?: string }).targetId
-      ?? '',
+  // Convert schema LayerConnection to simplified mindmap MindMapConnection
+  return layer.connections.map(c => ({
+    from: c.from,
+    to: c.to,
     level: layer.level,
-    label: (c as unknown as { label?: string; data?: { label?: string } }).data?.label
-      ?? (c as unknown as { label?: string }).label,
-  } satisfies Connection));
+    label: c.data?.label,
+  } satisfies MindMapConnection));
 }
 
 /**
@@ -146,12 +141,10 @@ export function getContainersForLayer(
 ): ContainerGroupInfo[] {
   const layer = doc.layers.get(layerId);
   if (!layer) return [];
-  return (layer.containers ?? []).map(c => {
-    const raw = c as unknown as Record<string, unknown>;
-    const label =
-      (raw['label'] as string | undefined) ??
-      ((raw['data'] as Record<string, unknown> | undefined)?.['label'] as string | undefined);
-    return { id: c.id, label, nodeIds: (c.nodes ?? []) as string[], level: layer.level };
+  return layer.containers.map(c => {
+    // Schema Container has nested data.label structure
+    const label = c.data?.label ?? c.id;
+    return { id: c.id, label, nodeIds: c.nodes, level: layer.level };
   });
 }
 

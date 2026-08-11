@@ -9,7 +9,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react';
 import { KLayer as Layer } from '../konvaCompat';
 import type Konva from 'konva';
-import type { FlatNode, Connection } from '@visualli-sdk/core';
+import type { FlatNode, MindMapConnection } from '@visualli-sdk/core';
 import { useNodeStore } from '../stores/useNodeStore';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useViewportNodes } from '../hooks/useViewportNodes';
@@ -17,7 +17,7 @@ import KonvaEdge from './KonvaEdge';
 
 export interface KonvaEdgeLayerProps {
   nodes: FlatNode[];
-  connections: Connection[];
+  connections: MindMapConnection[];
   currentLevel?: number;
   isDark?: boolean;
   /** Pass true while a node is being dragged to skip viewport culling. */

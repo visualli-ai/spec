@@ -10,7 +10,7 @@
 
 import React, { useMemo, memo } from 'react';
 import { KGroup as Group, KLine as Line, KTextPath as TextPath } from '../konvaCompat';
-import type { FlatNode, Connection } from '@visualli-sdk/core';
+import type { FlatNode, MindMapConnection } from '@visualli-sdk/core';
 import { NODE_HEIGHT } from '@visualli-sdk/core';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ function getEllipseIntersection(
 export interface KonvaEdgeProps {
   sourceNode: FlatNode;
   targetNode: FlatNode;
-  connection?: Connection;
+  connection?: MindMapConnection;
   isDark?: boolean;
   colorOverride?: string;
   zoomLevel?: number;

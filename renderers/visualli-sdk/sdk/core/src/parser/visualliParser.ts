@@ -5,6 +5,24 @@
 import type { VisualliDocument } from '../types/document.js';
 import type { VisualliMeta } from '../types/meta.js';
 import type { VisualliLayer } from '../types/layer.js';
+import type { Layer } from '../types/schema.js';
+
+/**
+ * Convert schema Layer to VisualliLayer by ensuring required arrays exist.
+ */
+function toVisualliLayer(schemaLayer: Layer): VisualliLayer {
+  return {
+    type: 'layer',
+    id: schemaLayer.id,
+    level: schemaLayer.level,
+    parentLayerId: schemaLayer.parentLayerId,
+    parentNodeId: schemaLayer.parentNodeId,
+    layout: schemaLayer.layout,
+    nodes: schemaLayer.nodes ?? [],
+    connections: schemaLayer.connections ?? [],
+    containers: schemaLayer.containers ?? [],
+  };
+}
 
 export class VisualliParseError extends Error {
   constructor(message: string, public readonly lineNumber?: number) {
@@ -57,7 +75,10 @@ export function parseVisualliFile(content: string): VisualliDocument {
         break;
 
       case 'layer': {
-        const layer = obj as unknown as VisualliLayer;
+        // Convert schema Layer to VisualliLayer
+        const schemaLayer = obj as unknown as Layer;
+        const layer = toVisualliLayer(schemaLayer);
+        
         doc.layers.set(layer.id, layer);
 
         if (!doc.layersByLevel.has(layer.level)) {

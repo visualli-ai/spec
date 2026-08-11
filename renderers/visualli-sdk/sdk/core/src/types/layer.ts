@@ -1,51 +1,25 @@
 // ─── Visualli Layer Types ──────────────────────────────────────────────────────
+//
+// These types extend the auto-generated schema types from bindings.
+// They provide stricter runtime guarantees (required arrays) and SDK-specific fields.
 
-export interface LayerNodePosition {
-  x: number;
-  y: number;
-}
+import type { Layer, Node, Connection, Container } from './schema.js';
 
-export interface LayerNodeData {
-  /** Required display label */
-  label: string;
-  /** Required short description */
-  summary: string;
-  color?: string;
-}
+/** Alias to schema Node type for SDK consistency */
+export type LayerNode = Node;
 
-export interface LayerNode {
-  id: string;
-  position: LayerNodePosition;
-  data: LayerNodeData;
-}
+/** Alias to schema Connection type for SDK consistency */
+export type LayerConnection = Connection;
 
-export interface LayerConnectionData {
-  label: string;
-  style?: 'dashed' | 'solid';
-}
+/** Alias to schema Container type for SDK consistency */
+export type LayerContainer = Container;
 
-export interface LayerConnection {
-  id: string;
-  /** Source Node ID */
-  from: string;
-  /** Target Node ID */
-  to: string;
-  data: LayerConnectionData;
-}
-
-export interface LayerContainerData {
-  label: string;
-  formation?: 'radial' | 'linear-horizontal' | 'linear-vertical';
-  style?: 'dashed' | 'none';
-}
-
-export interface LayerContainer {
-  id: string;
-  /** List of Node IDs contained in this group */
-  nodes: string[];
-  data: LayerContainerData;
-}
-
+/**
+ * SDK's stricter version of schema Layer.
+ * - Makes nodes/connections/containers required (always arrays, even if empty)
+ * - Adds SDK-specific `description` field
+ * - Explicitly types key fields to avoid 'unknown' from schema's index signature
+ */
 export interface VisualliLayer {
   type: 'layer';
   /** UUID of the layer */
@@ -56,11 +30,15 @@ export interface VisualliLayer {
   parentLayerId?: string;
   /** UUID of the specific node in parent layer */
   parentNodeId?: string;
+  /** SDK-specific description field (not in schema) */
   description?: string;
-  /** Layout algorithm for this layer's nodes */
+  /** Spatial arrangement (inherits from schema) */
   layout?: 'radial' | 'linear-horizontal' | 'linear-vertical';
+  /** Required array of nodes (schema has optional) */
   nodes: LayerNode[];
+  /** Required array of connections (schema has optional) */
   connections: LayerConnection[];
+  /** Required array of containers (schema has optional) */
   containers: LayerContainer[];
 }
 
