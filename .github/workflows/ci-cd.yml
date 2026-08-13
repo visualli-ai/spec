@@ -49,6 +49,12 @@ jobs:
       # 3. Build Bindings & Packages (@visualli/bindings, @visualli/core, @visualli/react, etc.)
       - name: Build All
         run: |
+          # Build Python Bindings
+          pip install build
+          cd bindings/python && python -m build
+          cd ../../
+          
+          # Build TS Bindings & SDK
           cd bindings/typescript && npm install && npm run build
           cd ../../renderers/visualli-sdk && npm run build
 
@@ -63,6 +69,7 @@ jobs:
         with:
           name: build-artifacts
           path: |
+            bindings/python/dist
             bindings/typescript/dist
             renderers/visualli-sdk/sdk/*/dist
             site
