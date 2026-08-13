@@ -2,53 +2,155 @@ name: Visualli CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
-  generate-and-verify:
-    name: Generate and Verify Bindings
+  verify-and-build:
+    name: Verify and Build All
     runs-on: ubuntu-latest
-    environment: main
-    permissions:
-      contents: read
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11.0'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.0"
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '22'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
 
-    # 1. Install dependencies
-    - name: Install dependencies
-      run: |
-        make install
+      # 1. Install all dependencies (Speed optimized)
+      - name: Install dependencies
+        run: |
+          make install
+          cd renderers/visualli-sdk && npm install
 
-    # 2. Generate bindings and verify
-    - name: Verify generated bindings
-      run: |
-        make generate
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "::error::Bindings are not up to date. Please run 'make generate' locally and commit the changes."
-          git status
-          git diff
-          exit 1
-        fi
+      # 2. Verify Bindings & Version Propagation
+      - name: Verify bindings and version propagation
+        run: |
+          make update-version
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Bindings or version propagation are not up to date. Run 'make update-version' locally."
+            git status
+            git diff
+            exit 1
+          fi
 
-    # 3. Update version and verify
-    - name: Verify version propagation
-      run: |
-        make update-version
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "::error::Version propagation is incomplete. Please run 'make update-version' locally and commit the changes."
-          git status
-          git diff
-          exit 1
-        fi
+      # 3. Build Bindings & Packages (@visualli/bindings, @visualli/core, @visualli/react, etc.)
+      - name: Build All
+        run: |
+          cd bindings/typescript && npm install && npm run build
+          cd ../../renderers/visualli-sdk && npm run build
+
+      # 4. Build Documentation
+      - name: Build MkDocs Site
+        run: |
+          make docs-build
+
+      # 5. Archive artifacts for publishing jobs
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            bindings/typescript/dist
+            renderers/visualli-sdk/sdk/*/dist
+            site
+          retention-days: 1
+
+  publish-bindings:
+    name: Publish Bindings (PyPI & NPM)
+    needs: verify-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Publish Python Bindings to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          pip install twine build
+          cd bindings/python
+          python -m build
+          twine upload dist/*
+
+      - name: Publish TypeScript Bindings to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd bindings/typescript
+          npm publish --access public
+
+  publish-packages:
+    name: Publish SDK Packages (@visualli/core, @visualli/react)
+    needs: verify-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Publish Core Package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd renderers/visualli-sdk/sdk/core
+          npm publish --access public
+
+      - name: Publish React Package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd renderers/visualli-sdk/sdk/react
+          npm publish --access public
+
+  build-and-publish-docs:
+    name: Publish Docs to Cloudflare R2/Pages
+    needs: verify-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }}

@@ -1,99 +1,20 @@
-# Visualli Specification
+# 📐 Visualli Specification
 
-Visualli uses **JSONL (JSON Lines)** as its primary interchange format. 
-Each line in a `.visualli` file represents a distinct entity (`Meta`, `Extension`, or `Layer`).
+Visualli uses **JSONL (JSON Lines)** as its primary interchange format. Each line in a `.visualli` file is a single JSON object representing exactly one entity: `Meta`, `Extension`, or `Layer`.
 
-> **Source of Truth**: The formal validation rules are defined in [visualli.schema.json](../visualli.schema.json).
-
-## Core Concepts
-
-### The Infinite Canvas
-
-Visualli embraces the concept of infinite canvas, where information can be positioned flexibly anywhere in space while maintaining strict hierarchical relationships between layers and nodes. 
-
-This approach liberates content from the constraints of rigid tree structures (like found in traditional mindmaps), allowing for organic, spatial organization that mirrors natural thought patterns. 
-
-### Layers and Levels
-
-#### Layers
-
-The fundamental unit of organization in Visualli is the **Layer**. 
-
-*   **Self-Contained**: A layer contains a set of nodes, connections, and containers that belong together.
-*   **Independent**: Layers can be loaded, rendered, or hidden independently.
-*   **Hierarchical**: A layer can be a child of another layer, attached to a specific node of the parent layer.
-
-This allows for "Detail on Demand". A high-level summary layer can load first, and deeper detailed layers can be fetched only when the user zooms in or expands a node.
-
-#### Levels
-
-Multiple **Layers** can belong to a certain **Level**. 
-
-*   **Depth**: Represents the depth of information in the hierarchy (Level 0, 1, 2...).
-*   **Grouping**: Acts like a "floor" in a building, where multiple apartments (Layers) coexist while only one Layer is visible to the user at any given moment.
-*   **Navigation**: Users start at overview levels (summary) and drill down into deeper levels (detail).
-
-#### How Layers and Levels are connected?
-
-```mermaid
-graph BT
-    %% LEVEL 0: THE FOUNDATION
-    subgraph L0 [**LEVEL 0**]
-        direction LR
-        subgraph LA [Layer A]
-            direction LR
-            A1((N)) 
-            A2((N))
-        end
-    end
-
-    %% LEVEL 1: LAYER B ON LEFT, LAYER C ON RIGHT
-    subgraph L1 [**LEVEL 1**]
-        direction LR
-        subgraph LB [Layer B]
-            direction LR
-            B1((N)) --> B2((N)) --> B3((N))
-        end
-        subgraph LC [Layer C]
-            direction LR
-            C1((N)) --> C2((N))
-        end
-    end
-
-    %% LEVEL 2: LAYER D -> LAYER E -> LAYER F
-    subgraph L2 [**LEVEL 2**]
-        direction LR
-        subgraph LD [Layer D]
-            direction LR
-            D1((N)) --> D2((N)) --> D3((N)) --> D4((N))
-        end
-        subgraph LE [Layer E]
-            direction LR
-            E1((N))
-        end
-        subgraph LF [Layer F]
-            direction LR
-            F1((N)) --> F2((N))
-        end
-    end
-
-    %% CONNECTIONS
-    A1 -.-> LB
-    A2 -.-> LC
-    
-    B1 -.-> LD
-    B2 -.-> LE
-    B3 -.-> LF
-
-    %% STYLING
-    style L0 stroke-dasharray: 5 5
-    style L1 stroke-dasharray: 5 5
-    style L2 stroke-dasharray: 5 5
-```
+> **Single source of truth.** The formal validation rules are defined in [visualli.schema.json](../visualli.schema.json).
+>
+> **Reading the concepts first?** See [Concepts](concepts.md) for the mental model — infinite canvas, layers vs. levels, and the role of each entity.
 
 ## File Structure
 
-A valid `.visualli` file consists of a sequence of JSON objects, separated by newlines (`\n`).
+A valid `.visualli` file is a sequence of JSON objects, separated by newlines (`\n`):
+
+```
+Meta        → required, exactly one, first line
+Extension   → optional, zero or more, after Meta, before Layers
+Layer       → required, one or more, after Meta/Extensions
+```
 
 ```jsonl
 {"type": "meta", ...}
@@ -102,16 +23,16 @@ A valid `.visualli` file consists of a sequence of JSON objects, separated by ne
 {"type": "layer", ...}
 ```
 
-### Example
+### Minimal example
 
 ```jsonl
 {"type": "meta", "version": "2.0", "title": "Example Map", "created": "2024-05-21T10:00:00Z", "lastModified": "2024-05-22T15:30:00Z"}
-{"type": "layer", "id": "layer-1", "level": 0, "nodes": [{"id": "n1", "position": {"x":0,"y":0}, "data": {"label": "Root Node", "summary": "The starting point"}}]}
+{"type": "layer", "id": "layer-1", "level": 0, "nodes": [{"id": "n1", "position": {"x": 0, "y": 0}, "data": {"label": "Root Node", "summary": "The starting point"}}]}
 ```
 
 ## Entity Relationship Diagram
 
-The following diagram illustrates the relationships between the core entities in the Visualli specification.
+How the top-level entities and their embedded components relate:
 
 ```mermaid
 classDiagram
@@ -181,147 +102,149 @@ classDiagram
 ## Schema Definitions
 
 ### 1. Meta Object
-Must be the first line of the file.
+
+Must be the **first line** of the file. Exactly one per file.
 
 ```typescript
 interface Meta {
   type: "meta";
-  version: string;       // e.g., "2.0"
-  title: string;         // Project Title
-  created: string;       // ISO 8601 Date
-  lastModified: string;  // ISO 8601 Date
+  version: string;       // e.g. "2.0"
+  title: string;         // Project title
+  created: string;       // ISO 8601 date
+  lastModified: string;  // ISO 8601 date
 }
 ```
 
 ### 2. Extension Object
-Optional. Defines enabled extensions or configurations. Extensions provide a mechanism to add metadata or change behavior without altering the core schema. Examples include:
-*   **Semantic Anchors**: Linking terms to external knowledge.
-*   **Particle Trails**: Configuring visual effects like particle trails.
-*   **Themes**: Configuring themes.
+
+Optional. Appears after `Meta` and before any `Layer` lines. Extensions add metadata or behavior without changes to the core schema (examples: semantic anchors, themes, visual-effects configuration).
 
 ```typescript
 interface Extension {
   type: "extension";
-  id: string;            // Extension ID (e.g., "semantic-anchors")
-  data?: any[];          // Extension-specific data
+  id: string;            // e.g. "semantic-anchors"
+  data?: any[];          // Extension-specific payload
 }
 ```
 
-Example of a `semantic-anchors` extension:
+Example — a `semantic-anchors` extension that links terms to descriptions:
+
 ```json
 {
   "type": "extension",
   "id": "semantic-anchors",
   "data": [
-    {
-      "word": "atmosphere",
+    { "word": "atmosphere",
       "description": "The envelope of gases surrounding the earth or another planet.",
-      "knowMoreUrl": null
-    },
-    {
-      "word": "water circulation",
+      "knowMoreUrl": null },
+    { "word": "water circulation",
       "description": "The continuous movement of water on, above and below the surface of the Earth.",
-      "knowMoreUrl": null
-    }
+      "knowMoreUrl": null }
   ]
 }
 ```
 
 ### 3. Layer Object
-The core content unit.
+
+The core content unit — each `Layer` line is a self-contained slice of the document.
 
 ```typescript
 interface Layer {
   type: "layer";
-  id: string;            // UUID
-  level: number;         // Depth level (0 = root)
-  parentLayerId?: string; // UUID of parent layer (optional for root)
-  parentNodeId?: string; // UUID of parent node in parent layer (optional)
-  layout?: 'radial' | 'linear-horizontal' | 'linear-vertical';
+  id: string;                       // Unique layer ID
+  level: number;                    // Depth in the hierarchy (0 = root)
+  parentLayerId?: string;           // Parent layer ID (absent for root layers)
+  parentNodeId?: string;            // Node in the parent layer this layer attaches to
+  layout?:
+    | "radial"
+    | "linear-horizontal"
+    | "linear-vertical";
   nodes?: Node[];
   connections?: Connection[];
   containers?: Container[];
 }
 ```
 
-`layout` describes the spatial arrangement of the layer's nodes on the canvas. Unlike `Container.data.formation` (which arranges nodes within a grouping), `layout` governs how *all* nodes in the layer are positioned relative to the parent node.
+`layout` describes how nodes are positioned across the whole layer. It differs from `Container.data.formation`: layout positions *all* nodes in the layer relative to the parent node, while formation arranges only the nodes inside a specific container.
 
-| Attribute | Value | When to use |
-|-----------|-------|-------------|
-| Layer.layout | `radial` | Peer categories radiating from a parent node; most common for category branches with no inherent order. |
-| Layer.layout | `linear-horizontal` | Chronological sequences, timelines, event progressions, geographic/alphabetical ordering. |
-| Layer.layout | `linear-vertical` | Priority ordering, ranked lists, hierarchy/rank, steps in a process. |
+| `Layer.layout` | When to use |
+|---|---|
+| `radial` | Peer categories radiating from a parent node — the common default for branches with no inherent order. |
+| `linear-horizontal` | Chronological sequences, timelines, ordered progressions, geographic or alphabetical flows. |
+| `linear-vertical` | Priority ordering, ranked lists, ranked hierarchy, or steps in a process. |
 
-#### Node Object
-Nodes represent discrete pieces of information.
-*   **Identity**: Unique ID (UUID).
-*   **Data**: Payload (Label, Summary, Color, etc.).
-*   **Position**: (x, y) coordinates on the canvas.
+---
+
+### 3.1 Node Object (embedded in Layer)
+
+A discrete unit of information, positioned at `(x, y)` on the canvas.
 
 ```typescript
 interface Node {
-  id: string;            // UUID
+  id: string;
   position: { x: number; y: number };
   data: {
-    label: string;       // Label text
-    summary: string;     // Short description/summary
-    color?: string;
+    label: string;
+    summary?: string;
+    color?: string;    // any valid CSS color
   };
 }
 ```
 
-#### Connection Object
-Connections represent relationships between nodes within a layer.
-*   **Directional**: From Node A to Node B.
-*   **Data**: Payload (Label, Style).
+| Attribute | Value | When to use |
+|---|---|---|
+| `Node.data.color` | Any valid CSS color (`#ff0000`, `red`, `hsl(...)`) | Visually distinguish nodes by category, priority, or state. |
+
+---
+
+### 3.2 Connection Object (embedded in Layer)
+
+A directed relationship between two nodes in the **same layer**.
 
 ```typescript
 interface Connection {
-  id: string;            // UUID
-  from: string;          // Source Node ID
-  to: string;            // Target Node ID
+  id: string;
+  from: string;     // source Node ID
+  to: string;       // target Node ID
   data: {
     label: string;
-    style?: 'dashed' | 'solid';
+    style?: "dashed" | "solid";
   };
 }
 ```
 
-| Attribute | Value | When to use | How it looks |
-|-----------|-------|-------------|--------------|
-| Connection.data.style | `solid` | Used when nodes have a direct, causal, or strong relationship indicating clear flow or dependency. | ![solid](assets/connection.data.style-solid.png) |
-| Connection.data.style | `dashed` | Used when both nodes are indirectly related to each other, and there is no direct causal relation between both of them, yet they signify certain association. | <<image>> |
+| `Connection.data.style` | When to use | How it looks |
+|---|---|---|
+| `solid` | Strong, direct, or causal relationship — clear flow or dependency. | ![solid](assets/connection.data.style-solid.png) |
+| `dashed` | Indirect or associative link — related but no direct causal chain. | *(placeholder)* |
 
+---
 
-| Attribute | Value | When to use | How it looks |
-|-----------|-------|-------------|--------------|
-| Node.data.color | Any valid CSS color (e.g., `#ff0000`) | Used to visually distinguish nodes by category, priority, or state. | <<image>> |
+### 3.3 Container Object (embedded in Layer)
 
-
-#### Container Object
-Containers allow for visual grouping of related nodes within a layer.
-*   **Grouping**: Contains a list of Node IDs.
-*   **Data**: Payload (Label, Formation, Style).
+A visual grouping of nodes within the same layer. It does not create hierarchy; it communicates that a set of nodes share a role or category.
 
 ```typescript
 interface Container {
-  id: string;            // UUID
-  nodes: string[];       // Array of Node IDs
+  id: string;
+  nodes: string[];   // Node IDs being grouped
   data: {
-    label: string;       // Container Label
-    formation?: 'radial' | 'linear-horizontal' | 'linear-vertical';
-    style?: 'dashed' | 'none';
+    label: string;
+    formation?:
+      | "radial"
+      | "linear-horizontal"
+      | "linear-vertical";
+    style?: "dashed" | "none";
   };
 }
 ```
 
-`Container.data.formation` shares its vocabulary with `Layer.layout`. A container may use a formation that differs from its enclosing layer's layout — the layer controls node positioning across the whole layer, while the container's formation describes how the grouping itself is visually rendered.
+`Container.data.formation` shares its vocabulary with `Layer.layout` but has a different scope: a formation arranges nodes inside the container grouping, while a layout arranges all nodes in the layer. A container can legitimately use a different formation than its enclosing layer's layout.
 
 | Attribute | Value | When to use | How it looks |
-|-----------|-------|-------------|--------------|
-| Container.data.formation | `radial` | Nodes in the group radiate from a shared center; good for peer categories within the grouping. | <<image>> |
-| Container.data.formation | `linear-horizontal` | Nodes in the group are arranged along a horizontal axis; good for sequences or timelines. | <<image>> |
-| Container.data.formation | `linear-vertical` | Nodes in the group are arranged along a vertical axis; good for ranked lists or hierarchies. | <<image>> |
-| Container.data.style | `dashed` | Container boundary is shown with a dashed stroke. | ![dashed](assets/container.data.style-dashed.png) |
-| Container.data.style | `none` | Container boundary is hidden; grouping is logical only. | ![none](assets/container.data.style-none.png) |
-
+|---|---|---|---|
+| `Container.data.formation` | `radial` | Nodes in the group radiate from a shared center; good for peer categories within the grouping. | *(placeholder)* |
+| `Container.data.formation` | `linear-horizontal` | Nodes in the group are arranged along a horizontal axis; good for sequences or timelines. | *(placeholder)* |
+| `Container.data.formation` | `linear-vertical` | Nodes in the group are arranged along a vertical axis; good for ranked lists or hierarchies. | *(placeholder)* |
+| `Container.data.style` | `dashed` | Container boundary is drawn with a dashed stroke. | ![dashed](assets/container.data.style-dashed.png) |
+| `Container.data.style` | `none` | Container boundary is hidden; grouping is logical only (used e.g. to target the group via an extension). | ![none](assets/container.data.style-none.png) |

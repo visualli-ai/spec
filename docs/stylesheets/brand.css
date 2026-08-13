@@ -1,0 +1,434 @@
+/* Brand palette mapped to Material for MkDocs CSS variables */
+
+:root {
+  /* Primary: cyan from the VISUALLI logo (#12C7D3) */
+  --md-primary-fg-color: #12C7D3;
+  --md-primary-fg-color--light: #64e3eb;
+  --md-primary-fg-color--dark: #0ea5ad;
+
+  /* Accent: orange from the logo (#F28C16) */
+  --md-accent-fg-color: #F28C16;
+
+  /* Links use accent for consistency */
+  --md-typeset-a-color: var(--md-accent-fg-color);
+
+  /* Brand gradient across VISUALLI tones */
+  --brand-gradient: linear-gradient(90deg,
+    #12C7D3 0%,
+    #325E8C 10%,
+    #8A70A6 20%,
+    #F54A57 30%,
+    #FF6C4D 40%,
+    #F28C16 50%,
+    #FFD347 60%,
+    #12C7D3 70%,
+    #7F7F7F 80%,
+    #8D8D8D 90%,
+    #12C7D3 100%
+  );
+  /* Site title used in header banner (rendered inside the clickable logo link) */
+  --site-title: "spec.visualli.ai";
+}
+
+[data-md-color-scheme="slate"] {
+  /* Keep brand colors in dark mode */
+  --md-primary-fg-color: #12C7D3;
+  --md-primary-fg-color--light: #5bd9e2;
+  --md-primary-fg-color--dark: #0b8b93;
+  --md-accent-fg-color: #F28C16;
+  --md-typeset-a-color: var(--md-accent-fg-color);
+}
+
+/* Header: solid black banner with thin gradient line at bottom */
+.md-header {
+  background-color: #000000;
+  background-image: none; /* remove previous gradient fill */
+  position: relative; /* enable bottom border pseudo-element */
+}
+
+.md-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px; /* very thin gradient line */
+  background-image: var(--brand-gradient);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Make the left logo act as the full clickable banner title */
+.md-header__button.md-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  text-decoration: none;
+  width: auto !important; /* expand clickable area to include text */
+  max-width: none !important;
+  padding: 0 .5rem; /* small horizontal padding for comfortable click */
+  margin-right: auto; /* keep search + palette icons right-aligned */
+}
+.md-header__button.md-logo::after {
+  content: var(--site-title);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem; /* reduced to match earlier banner scale */
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Center the header options (palette + search) on desktop */
+.md-header__inner { position: relative; }
+@media (min-width: 768px) {
+  .md-header__options {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 5; /* above gradient divider */
+  }
+  /* Ensure search occupies its natural width while centered */
+  .md-header__options .md-search { max-width: none; }
+}
+/* Hide the original (non-clickable) header title to avoid duplicate text */
+.md-header__title { display: none !important; }
+.md-header__title * { display: none !important; }
+
+/* 
+   Table of Contents (Right Sidebar) - Improved Hierarchy
+   Indents h3 headings (and deeper) to visually distinguish them from h2 headings.
+*/
+.md-nav--secondary .md-nav__list .md-nav__list {
+  padding-left: 0.6rem;
+  margin-left: 0.2rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-nav--secondary .md-nav__list .md-nav__list .md-nav__item {
+  padding-left: 0.3rem;
+}
+
+/* 
+   Primary Navigation (Left Sidebar) - Match Hierarchy Style
+   Apply indentation lines to Level 2 items AND deeper nested levels (Level 3+).
+   Changed to generalized selector to support infinite nesting depth.
+*/
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list {
+  padding-left: 0.6rem;
+  margin-left: 0.2rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list > .md-nav__item {
+  padding-left: 0.3rem;
+}
+
+/* Hide site title in left sidebar (primary nav) */
+.md-nav--primary > .md-nav__title {
+  display: none !important;
+}
+
+/* Reduce vertical gap between header and content */
+.md-main__inner {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Ensure content and sidebar start higher up */
+.md-content, .md-sidebar {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Reduce top margin of the first heading if needed to pull text up further */
+.md-typeset h1 {
+  margin-top: 0 !important;
+}
+
+/* --- Spec docs additions --- */
+
+/* Keep prop/type columns readable — prevent wrapping into two lines */
+.md-typeset table:not([class]) th:first-child,
+.md-typeset table:not([class]) td:first-child {
+  white-space: nowrap;
+}
+
+/* Give tables more breathing room on wide screens */
+@media screen and (min-width: 76.25em) {
+  .md-content__inner {
+    max-width: 60rem;
+  }
+}
+
+/* --- Why Visualli? 2x2 feature grid (responsive, self-fit to content width) --- */
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+@media (max-width: 48rem) {
+  .why-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.why-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  box-sizing: border-box;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.why-card__banner {
+  position: absolute;
+  top: 1.25rem;
+  right: -2.75rem;
+  width: 10rem;
+  transform: rotate(45deg);
+  transform-origin: center center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 0.28rem 0;
+  background: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  opacity: 0.95;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.why-card__emoji {
+  font-size: 3.25rem;
+  line-height: 1;
+  margin: 0.1rem 0 0.6rem;
+}
+
+.why-card__title {
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--md-typeset-color);
+}
+
+.why-card__body {
+  margin: 0;
+  color: var(--md-typeset-color);
+  line-height: 1.45;
+}
+
+.why-card__body strong,
+.why-card__body b {
+  color: var(--md-accent-fg-color);
+}
+
+/* --- Intention / Getting Started path cards --- */
+
+.get-started {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.get-started__card {
+  position: relative;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-left-width: 4px;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--md-code-bg-color);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+.get-started__card > :last-child {
+  margin-bottom: 0;
+}
+
+.get-started__card--learn   { border-left-color: #12C7D3; }
+.get-started__card--build   { border-left-color: #F28C16; }
+.get-started__card--contrib { border-left-color: #8A70A6; }
+
+.get-started__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.get-started__badge {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.6rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  line-height: 1;
+}
+
+.get-started__icon {
+  font-size: 2rem;
+  line-height: 1;
+  margin: 0;
+  display: block;
+  text-align: center;
+}
+
+.get-started__audience {
+  margin: 0 0 0.02rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--md-typeset-a-color);
+}
+
+.get-started__title {
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+  color: var(--md-typeset-color);
+}
+
+.get-started__path {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.get-started__path li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.4rem;
+  transition: background 0.15s ease;
+  min-width: 0;
+}
+.get-started__path li:hover {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 8%, var(--md-code-bg-color));
+}
+
+.gs-ico {
+  font-size: 1rem;
+  flex: 0 0 1.25rem;
+  text-align: center;
+}
+
+.gs-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.get-started__path li a {
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--md-typeset-a-color) 35%, transparent);
+  flex: 0 0 auto;
+  color: var(--md-typeset-a-color);
+}
+.get-started__path li a:hover {
+  border-bottom-color: var(--md-typeset-a-color);
+}
+
+.gs-desc {
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.gs-time {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  opacity: 0.6;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 48rem) {
+  .get-started__card {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+  .get-started__icon {
+    font-size: 2.5rem;
+    text-align: left;
+  }
+  .gs-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+  .gs-desc {
+    white-space: normal;
+  }
+}
+
+.get-started__path li code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+
+
+.hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0.5rem 0 1.5rem;
+}
+@media (max-width: 48rem) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .hero__logo {
+    justify-self: center;
+  }
+}
+
+.hero__logo {
+  width: 6.25rem;
+  height: 6.25rem;
+  flex: 0 0 auto;
+  max-width: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.hero__lead {
+  margin: 0;
+  color: var(--md-typeset-color);
+}

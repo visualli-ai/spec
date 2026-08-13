@@ -1,0 +1,31 @@
+{
+  "name": "visualli-sdk",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4",
+    "tsup": "^8.5.1",
+    "turbo": "^2.10.3",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "^10.9.4"
+    }
+  },
+  "workspaces": [
+    "apps/*",
+    "sdk/*",
+    "tooling/*"
+  ]
+}

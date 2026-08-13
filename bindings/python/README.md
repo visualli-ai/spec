@@ -4,10 +4,16 @@ Official [Pydantic](https://docs.pydantic.dev/) models for the Visualli specific
 
 ## Installation
 
+### From PyPI (Recommended)
+
+```bash
+pip install visualli-bindings
+```
+
+### From Source
+
 ```bash
 pip install .
-# OR
-pip3 install .
 ```
 
 ## Usage
