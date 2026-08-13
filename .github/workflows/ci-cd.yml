@@ -75,8 +75,30 @@ jobs:
             site
           retention-days: 1
 
-  publish-bindings:
-    name: Publish Bindings (PyPI & NPM)
+  publish-pypi-bindings:
+    name: Publish Python Bindings (PyPI)
+    needs: verify-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+      - name: Publish Python Bindings to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: bindings/python/dist/
+          skip-existing: true
+
+  publish-npm-bindings:
+    name: Publish TypeScript Bindings (NPM)
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -86,26 +108,15 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
-
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: .
-
-      - name: Publish Python Bindings to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: bindings/python/dist/
-          skip-existing: true
-
       - name: Publish TypeScript Bindings to NPM
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -195,4 +206,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --commit-dirty
+          command: pages deploy site --project-name=spec-visualli-ai
