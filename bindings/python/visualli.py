@@ -143,9 +143,9 @@ class Layer(BaseModel):
             description="Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis."
         ),
     ] = None
-    nodes: Annotated[list[Node] | None, Field(validate_default=True)] = []
+    nodes: Annotated[list[Node] | None, Field(default_factory=list)]
     connections: list[Connection] | None = None
-    containers: Annotated[list[Container] | None, Field(validate_default=True)] = []
+    containers: Annotated[list[Container] | None, Field(default_factory=list)]
 
 
 class VisualliSpec011(RootModel[Meta | Extension | Layer]):
