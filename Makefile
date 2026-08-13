@@ -69,15 +69,21 @@ update-version:
 	open(setup_path, "w").write(content); \
 	print("Updated bindings/python/setup.py"); \
 	\
-	pkg_path = "bindings/typescript/package.json"; \
-	pkg = json.load(open(pkg_path)); \
-	pkg["version"] = version; \
-	json.dump(pkg, open(pkg_path, "w"), indent=2); \
-	print("Updated bindings/typescript/package.json"); \
+	paths = [ \
+		"bindings/typescript/package.json", \
+		"renderers/visualli-sdk/sdk/core/package.json", \
+		"renderers/visualli-sdk/sdk/react/package.json" \
+	]; \
+	for p in paths: \
+		if os.path.exists(p): \
+			pkg = json.load(open(p)); \
+			pkg["version"] = version; \
+			json.dump(pkg, open(p, "w"), indent=2); \
+			print(f"Updated {p}"); \
 	\
 	readme_path = "README.md"; \
 	readme = open(readme_path).read(); \
-	readme = re.sub(r"src=\"https://img\.shields\.io/badge/Version-.+?-orange\?style=for-the-badge\"", f"src=\"https://img.shields.io/badge/Version-{version}-orange?style=for-the-badge\"", readme); \
+	readme = re.sub(r"src=\"https://img\.shields\.io/badge/Version-.+?-orange\?style=for-the-badge\"", f"src=\"https://img\.shields\.io/badge/Version-{version}-orange?style=for-the-badge\"", readme); \
 	open(readme_path, "w").write(readme); \
 	print("Updated README.md badge"); \
 	'

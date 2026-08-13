@@ -57,7 +57,7 @@ extra_css:
   - stylesheets/brand.css
 
 extra_javascript:
-  - javascripts/mermaid-loader.js
+  - js/mermaid-loader.js
 
 plugins:
   - search
