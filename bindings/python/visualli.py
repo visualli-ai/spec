@@ -1,27 +1,25 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
-from typing import List, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
-from typing_extensions import Annotated
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 
 class Meta(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    type: Literal["Meta"]
+    type: Literal["meta"]
     version: Annotated[str, Field(description="Visualli spec version (e.g. '0.1')")]
     title: str
-    created: datetime | None = None
-    lastModified: datetime | None = None
+    created: AwareDatetime | None = None
+    lastModified: AwareDatetime | None = None
 
 
 class Extension(BaseModel):
-    type: Literal["Extension"]
+    type: Literal["extension"]
     id: Annotated[
         str,
         Field(
@@ -29,7 +27,7 @@ class Extension(BaseModel):
         ),
     ]
     data: Annotated[
-        List | None, Field(description="Data payload for the extension")
+        list[Any] | None, Field(description="Data payload for the extension")
     ] = None
 
 
@@ -123,13 +121,13 @@ class Data2(BaseModel):
 class Container(BaseModel):
     id: str
     nodes: Annotated[
-        List[str], Field(description="List of Node IDs contained in this group")
+        list[str], Field(description="List of Node IDs contained in this group")
     ]
     data: Data2
 
 
 class Layer(BaseModel):
-    type: Literal["Layer"]
+    type: Literal["layer"]
     id: Annotated[str, Field(description="UUID of the layer")]
     level: Annotated[int, Field(description="Hierarchy level (0 is root)", ge=0)]
     parentLayerId: Annotated[
@@ -147,9 +145,9 @@ class Layer(BaseModel):
             description="Spatial arrangement of the layer's nodes on the canvas. 'radial' arranges nodes in a circle around the parent node, 'linear-horizontal' arranges them along a horizontal axis, 'linear-vertical' arranges them along a vertical axis."
         ),
     ] = None
-    nodes: List[Node] | None = []
-    connections: List[Connection] | None = None
-    containers: List[Container] | None = []
+    nodes: Annotated[list[Node] | None, Field(validate_default=True)] = []
+    connections: list[Connection] | None = None
+    containers: Annotated[list[Container] | None, Field(validate_default=True)] = []
 
 
 class VisualliSpec011(RootModel[Meta | Extension | Layer]):

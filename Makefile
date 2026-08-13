@@ -30,7 +30,7 @@ install:
 	@# Install dependencies inside venv
 	@echo "Installing dependencies..."
 	@$(VENV)/bin/pip install --upgrade pip
-	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]"
+	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]==0.72.3"
 	@echo "Installing MkDocs + Material theme + Mermaid..."
 	@$(VENV)/bin/pip install mkdocs-material mkdocs-mermaid2-plugin
 	@echo "Installing TypeScript dependencies..."
