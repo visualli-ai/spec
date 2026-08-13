@@ -4,6 +4,10 @@
   "description": "Official Visualli TypeScript models and type definitions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
