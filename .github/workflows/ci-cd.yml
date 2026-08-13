@@ -82,21 +82,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: .
-
-      - name: Configure NPM Auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
-      - name: Build Python Bindings
-        run: |
-          pip install build
-          cd bindings/python
-          python -m build
 
       - name: Publish Python Bindings to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -105,13 +97,15 @@ jobs:
           skip-existing: true
 
       - name: Publish TypeScript Bindings to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd bindings/typescript
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/bindings@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
-            npm publish --access public
+            npm publish --access public --ignore-scripts --provenance
           fi
 
   publish-packages:
@@ -119,11 +113,15 @@ jobs:
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -131,27 +129,28 @@ jobs:
           name: build-artifacts
           path: .
 
-      - name: Configure NPM Auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
       - name: Publish Core Package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd renderers/visualli-sdk/sdk/core
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/core@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
-            npm publish --access public
+            npm publish --access public --ignore-scripts --provenance
           fi
 
       - name: Publish React Package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd renderers/visualli-sdk/sdk/react
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/react@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
-            npm publish --access public
+            npm publish --access public --ignore-scripts --provenance
           fi
 
   build-and-publish-docs:
