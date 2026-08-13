@@ -53,40 +53,7 @@ generate:
 	@echo "✅ TypeScript interfaces generated at bindings/typescript/src/types.ts"
 
 update-version:
-	@$(VENV)/bin/python -c '\
-	import json, re, os; \
-	version = open("VERSION").read().strip(); \
-	print(f"Propagating version {version}..."); \
-	\
-	schema = json.load(open("visualli.schema.json")); \
-	schema["title"] = f"Visualli Spec {version}"; \
-	json.dump(schema, open("visualli.schema.json", "w"), indent=2); \
-	print("Updated visualli.schema.json"); \
-	\
-	setup_path = "bindings/python/setup.py"; \
-	content = open(setup_path).read(); \
-	content = re.sub(r"version=\"[^\"]+\"", f"version=\"{version}\"", content); \
-	open(setup_path, "w").write(content); \
-	print("Updated bindings/python/setup.py"); \
-	\
-	paths = [ \
-		"bindings/typescript/package.json", \
-		"renderers/visualli-sdk/sdk/core/package.json", \
-		"renderers/visualli-sdk/sdk/react/package.json" \
-	]; \
-	for p in paths: \
-		if os.path.exists(p): \
-			pkg = json.load(open(p)); \
-			pkg["version"] = version; \
-			json.dump(pkg, open(p, "w"), indent=2); \
-			print(f"Updated {p}"); \
-	\
-	readme_path = "README.md"; \
-	readme = open(readme_path).read(); \
-	readme = re.sub(r"src=\"https://img\.shields\.io/badge/Version-.+?-orange\?style=for-the-badge\"", f"src=\"https://img\.shields\.io/badge/Version-{version}-orange?style=for-the-badge\"", readme); \
-	open(readme_path, "w").write(readme); \
-	print("Updated README.md badge"); \
-	'
+	@$(VENV)/bin/python scripts/update_version.py
 	@echo "Regenerating bindings to reflect new version..."
 	@$(MAKE) generate
 
