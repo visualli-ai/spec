@@ -108,8 +108,10 @@ jobs:
         run: |
           cd bindings/typescript
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          # Ensure .npmrc is used by npm
+          npm config set userconfig .npmrc
           VERSION=$(node -p "require('./package.json').version")
-          if npm view @visualli/bindings@$VERSION version >/dev/null 2>&1; then
+          if npm view @visualli/bindings@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
             npm publish --access public
@@ -139,8 +141,9 @@ jobs:
         run: |
           cd renderers/visualli-sdk/sdk/core
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          npm config set userconfig .npmrc
           VERSION=$(node -p "require('./package.json').version")
-          if npm view @visualli/core@$VERSION version >/dev/null 2>&1; then
+          if npm view @visualli/core@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
             npm publish --access public
@@ -152,8 +155,9 @@ jobs:
         run: |
           cd renderers/visualli-sdk/sdk/react
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          npm config set userconfig .npmrc
           VERSION=$(node -p "require('./package.json').version")
-          if npm view @visualli/react@$VERSION version >/dev/null 2>&1; then
+          if npm view @visualli/react@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
           else
             npm publish --access public
