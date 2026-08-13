@@ -100,6 +100,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: bindings/python/dist/
+          skip-existing: true
 
       - name: Publish TypeScript Bindings to NPM
         env:
@@ -107,7 +108,12 @@ jobs:
         run: |
           cd bindings/typescript
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          npm publish --access public
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @visualli/bindings@$VERSION version >/dev/null 2>&1; then
+            echo "Version $VERSION already exists on NPM. Skipping."
+          else
+            npm publish --access public
+          fi
 
   publish-packages:
     name: Publish SDK Packages (@visualli/core, @visualli/react)
@@ -133,7 +139,12 @@ jobs:
         run: |
           cd renderers/visualli-sdk/sdk/core
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          npm publish --access public
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @visualli/core@$VERSION version >/dev/null 2>&1; then
+            echo "Version $VERSION already exists on NPM. Skipping."
+          else
+            npm publish --access public
+          fi
 
       - name: Publish React Package
         env:
@@ -141,7 +152,12 @@ jobs:
         run: |
           cd renderers/visualli-sdk/sdk/react
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-          npm publish --access public
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @visualli/react@$VERSION version >/dev/null 2>&1; then
+            echo "Version $VERSION already exists on NPM. Skipping."
+          else
+            npm publish --access public
+          fi
 
   build-and-publish-docs:
     name: Publish Docs to Cloudflare Pages
