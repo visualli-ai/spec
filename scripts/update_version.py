@@ -48,7 +48,13 @@ def update_version():
                 json.dump(pkg, f, indent=2)
             print(f"Updated {p}")
 
-    # 4. Update README.md badge
+    # 4. Sync package-lock.json if needed
+    sdk_root = "renderers/visualli-sdk"
+    if os.path.exists(os.path.join(sdk_root, "package.json")):
+        print(f"Syncing {sdk_root}/package-lock.json...")
+        os.system(f"cd {sdk_root} && npm install --package-lock-only")
+
+    # 5. Update README.md badge
     readme_path = "README.md"
     if os.path.exists(readme_path):
         with open(readme_path, "r") as f:
