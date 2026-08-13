@@ -3,3 +3,7 @@ node_modules
 dist
 .venv
 myenv
+site
+docs/site
+__pycache__
+*.pyc

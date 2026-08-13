@@ -2,13 +2,15 @@ PYTHON ?= python3
 PIP ?= pip
 VENV ?= .venv
 
-.PHONY: all install generate update-version help clean-venv
+.PHONY: all install generate update-version help clean-venv docs-serve docs-build
 
 help:
 	@echo "Available commands:"
 	@echo "  make install         - Create Python 3.11+ venv and install dependencies"
 	@echo "  make generate        - Regenerate Python and TypeScript bindings"
 	@echo "  make update-version  - Propagate version from VERSION file to all files AND regenerate bindings"
+	@echo "  make docs-serve      - Run the MkDocs dev server for the docs/"
+	@echo "  make docs-build      - Build the MkDocs site to docs/site/"
 	@echo "  make clean-venv      - Remove the existing virtual environment"
 
 install:
@@ -29,6 +31,8 @@ install:
 	@echo "Installing dependencies..."
 	@$(VENV)/bin/pip install --upgrade pip
 	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]"
+	@echo "Installing MkDocs + Material theme + Mermaid..."
+	@$(VENV)/bin/pip install mkdocs-material mkdocs-mermaid2-plugin
 	@echo "Installing TypeScript dependencies..."
 	cd bindings/typescript && npm install
 	@echo "Installing code generation tools (dev only)..."
@@ -79,3 +83,9 @@ update-version:
 	'
 	@echo "Regenerating bindings to reflect new version..."
 	@$(MAKE) generate
+
+docs-serve:
+	@cd docs && ../$(VENV)/bin/mkdocs serve -f mkdocs.yml
+
+docs-build:
+	@cd docs && ../$(VENV)/bin/mkdocs build -f mkdocs.yml

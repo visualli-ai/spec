@@ -1,23 +1,31 @@
-site_name: Visualli Spec
+site_name: spec.visualli.ai
 site_url: https://spec.visualli.ai
 
 repo_url: https://github.com/visualli-ai/spec
 
+docs_dir: .
+site_dir: ../site
+
 nav:
   - Home: index.md
-  - Core Concepts: core-concepts.md
-  - Specification: spec.md
+  - 🚀 Getting Started: getting-started.md
+  - 📖 Concepts: concepts.md
+  - 📐 Specification: spec.md
+  - Running it locally: run-locally.md
   - Visualli SDK:
       - Overview: visualli-sdk/index.md
       - ⚛️ React:
-          - 🚀 Getting Started: visualli-sdk/react/getting-started.md
-          - ⚙️ Props Reference: visualli-sdk/react/props.md
-          - 🧪 Examples: visualli-sdk/react/examples.md
+          - Getting Started: visualli-sdk/react/getting-started.md
+          - API Reference: visualli-sdk/react/api.md
+  - Bindings:
+      - 🔵 TypeScript: bindings/typescript.md
+      - 🐍 Python: bindings/python.md
+  - Contributing: contributing.md
 
 theme:
   name: material
   custom_dir: overrides
-  logo: assets/V-logo-rgb-transparent.png
+  logo: assets/V-spec-logo.png
   features:
     - navigation.sections
     - navigation.tracking
@@ -47,8 +55,12 @@ use_directory_urls: false
 extra_css:
   - stylesheets/brand.css
 
+extra_javascript:
+  - javascripts/mermaid-loader.js
+
 plugins:
   - search
+  - mermaid2
 
 markdown_extensions:
   - admonition
@@ -57,7 +69,11 @@ markdown_extensions:
       toc_depth: 3
   - attr_list
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
 

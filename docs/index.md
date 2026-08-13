@@ -1,26 +1,44 @@
-# 🏠 Visualli Specification
+# Visualli
 
-Welcome to the official specification and SDK documentation for **Visualli** — an open format for interactive, hierarchical, mindmap-style visualizations.
+<div class="hero" markdown="0">
+  <img class="hero__logo" src="assets/V-spec-logo.png" alt="Visualli logo"/>
+  <p class="hero__lead"><strong>Visualli</strong> is an open standard for building comprehensible visualizations focused towards <i>visual learners</i> amongst us. <br/><br/> Unlike traditional mind-maps or infographics which are built over rigid formats, like XML or images, <strong>Visualli</strong> is designed from the ground-up with the following design choices in mind.</p>
+</div>
 
-## 📚 What's here
+## Why Visualli?
 
-| Section | Description |
-|---|---|
-| [Core Concepts](core-concepts.md) | The mental model: infinite canvas, layers, nodes, connections, containers |
-| [Specification](spec.md) | The `.visualli` file format reference |
-| [Visualli SDK](visualli-sdk/index.md) | The official SDK: React renderer and Core |
+Four design choices that set Visualli apart from every other mind-map format out there.
 
-## 👀 Quick look
+<div class="why-grid" markdown="0">
+  <div class="why-card">
+    <div class="why-card__emoji">🧶</div>
+    <div class="why-card__title">Layered</div>
+    <p class="why-card__body">Independent layers and levels enabling <b>detail on demand</b> for the end user.</p>
+  </div>
+  <div class="why-card">
+    <div class="why-card__emoji">🌳</div>
+    <div class="why-card__title">Hierarchical, yet flatter</div>
+    <p class="why-card__body">Deeply nested structures stay serializable as a <b>simple, editable</b> list of lines (JSONL).</p>
+  </div>
+  <div class="why-card">
+    <span class="why-card__banner">Coming soon</span>
+    <div class="why-card__emoji">🏗️</div>
+    <div class="why-card__title">Streamable</div>
+    <p class="why-card__body">Parse and render content <b>line by line</b> as it arrives. No waiting for the full download.</p>
+  </div>
+  <div class="why-card">
+    <span class="why-card__banner">Coming soon</span>
+    <div class="why-card__emoji">🧩</div>
+    <div class="why-card__title">Extensible</div>
+    <p class="why-card__body">First-class support for <b>semantic metadata</b>, visual themes, and custom payloads - all via the extension mechanism.</p>
+  </div>
+</div>
 
-```jsonl
-{"type":"meta","version":"1.0","title":"Simple Map","created":"2026-01-01T00:00:00Z","lastModified":"2026-01-01T00:00:00Z"}
-{"type":"layer","id":"root","level":0,"nodes":[{"id":"node1","position":{"x":0,"y":0},"data":{"label":"Central Idea","summary":"The main concept"}}],"connections":[],"containers":[],"parentLayerId":null,"parentNodeId":null}
-```
+## Try it out! ✨
+_Place an embeddable of .visualli example here_
 
-Render it with one component:
+---
 
-```tsx
-import { VisualliRenderer } from '@visualli-sdk/react';
+**Build your own.** Create your visual vault at [visualli.ai](https://visualli.ai) 🚀
 
-<VisualliRenderer visualliFile="/data/doc.visualli" theme="light" />
-```
+

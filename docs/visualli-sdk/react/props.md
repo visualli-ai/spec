@@ -1,4 +1,4 @@
-# ⚙️ Props Reference
+# ⚙️ Reference
 
 All props accepted by `<VisualliRenderer />`.
 
@@ -12,7 +12,7 @@ All props accepted by `<VisualliRenderer />`.
 !!! warning "One source only"
     You must provide **either** `visualliString` **or** `visualliFile` — not both.
 
-## 🎨 Visual Configuration
+## 🎨 Visual
 
 | Prop | Type | Default | Description |
 |---|---|---|---|

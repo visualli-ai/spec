@@ -25,9 +25,9 @@
 That's the only install command you need. It automatically pulls in the major dependencies:
 
 - 🧱 **`@visualli-sdk/core`** — the parsing engine and document model
-- ⚛️ **React & React DOM** (≥ 18.3) — peer dependencies for your app
+- ⚛️ **`React` & `React DOM`** (≥ 18.3) — peer dependencies for your app
 
-## ⚡ Basic Usage
+## ⚡ Usage
 
 Provide exactly **one** data source — `visualliFile` **or** `visualliString`:
 
@@ -121,5 +121,5 @@ Requires ES2020, Canvas API, and CSS Grid/Flexbox. Web Workers and `prefers-colo
 
 ## ➡️ Next steps
 
-- [Props Reference](props.md) — every prop `<VisualliRenderer />` accepts
+- [Reference](props.md) — every prop `<VisualliRenderer />` accepts
 - [Examples](examples.md) — themes, immersion, large documents, styling
