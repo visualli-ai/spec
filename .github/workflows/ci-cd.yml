@@ -80,7 +80,7 @@ jobs:
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: main
     permissions:
       contents: read
       id-token: write
@@ -111,7 +111,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd bindings/typescript
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/bindings@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
@@ -124,6 +123,7 @@ jobs:
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: main
     permissions:
       contents: read
       id-token: write
@@ -145,7 +145,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd renderers/visualli-sdk/sdk/core
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/core@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
@@ -158,7 +157,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd renderers/visualli-sdk/sdk/react
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
           VERSION=$(node -p "require('./package.json').version")
           if npm view @visualli/react@$VERSION version --auth-type=legacy >/dev/null 2>&1; then
             echo "Version $VERSION already exists on NPM. Skipping."
@@ -171,6 +169,7 @@ jobs:
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: main
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -196,4 +195,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --commit-dirty=true
+          command: pages deploy site --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --commit-dirty
