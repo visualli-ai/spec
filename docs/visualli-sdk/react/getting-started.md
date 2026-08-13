@@ -7,24 +7,24 @@
 === "npm"
 
     ```bash
-    npm install @visualli-sdk/react
+    npm install @visualli/react
     ```
 
 === "yarn"
 
     ```bash
-    yarn add @visualli-sdk/react
+    yarn add @visualli/react
     ```
 
 === "pnpm"
 
     ```bash
-    pnpm add @visualli-sdk/react
+    pnpm add @visualli/react
     ```
 
 That's the only install command you need. It automatically pulls in the major dependencies:
 
-- 🧱 **`@visualli-sdk/core`** — the parsing engine and document model
+- 🧱 **`@visualli/core`** — the parsing engine and document model
 - ⚛️ **`React` & `React DOM`** (≥ 18.3) — peer dependencies for your app
 
 ## ⚡ Usage
@@ -37,7 +37,7 @@ Provide exactly **one** data source — `visualliFile` **or** `visualliString`:
 ### From a file path
 
 ```tsx
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 
 function App() {
   return (
@@ -64,7 +64,7 @@ const data = `{"type":"meta","version":"1.0","title":"My Mind Map"}
 
 ```tsx
 import { useState } from 'react';
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 
 function FileViewer() {
   const [file, setFile] = useState<File | null>(null);

@@ -1,7 +1,7 @@
-// ─── @visualli-sdk/core — Main Barrel Export ────────────────────────────────────
+// ─── @visualli/core — Main Barrel Export ────────────────────────────────────
 //
-// Import from sub-paths for tree-shaking (e.g. `@visualli-sdk/core/layout`),
-// or import everything from this root for convenience.
+// Import from sub-paths for tree-shaking (e.g. `@visualli/core/layout`),
+// or use the main barrel for convenience.
 
 export * from './types/index.js';
 export * from './layout/index.js';

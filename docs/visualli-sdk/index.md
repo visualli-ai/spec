@@ -4,4 +4,4 @@ The official SDK for rendering `.visualli` documents. Renderers consume a `.visu
 
 | Package | Status | Docs | Purpose |
 |---|---|---|---|
-| `@visualli-sdk/react` | Active | [⚛️ React](react/getting-started.md) | Ready-to-use React component — `<VisualliRenderer />` |
+| `@visualli/react` | Active | [⚛️ React](react/getting-started.md) | Ready-to-use React component — `<VisualliRenderer />` |

@@ -7,8 +7,8 @@
 //
 // No React dependencies — can be instantiated once and reused.
 
-import { easeInOutSine, easeOutCubic, easeZoomTransition } from '@visualli-sdk/core';
-import { ANIMATION_PHASES } from '@visualli-sdk/core';
+import { easeInOutSine, easeOutCubic, easeZoomTransition } from '@visualli/core';
+import { ANIMATION_PHASES } from '@visualli/core';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ function interpolateRgb(a: RGB, b: RGB, t: number): string {
   return `rgb(${(a.r + (b.r - a.r) * e + 0.5) | 0},${(a.g + (b.g - a.g) * e + 0.5) | 0},${(a.b + (b.b - a.b) * e + 0.5) | 0})`;
 }
 
-// (easeZoomTransition is imported from @visualli-sdk/core — createCubicBezier(0.2, 0.8, 0.2, 1))
+// (easeZoomTransition is imported from @visualli/core — createCubicBezier(0.2, 0.8, 0.2, 1))
 
 function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
 

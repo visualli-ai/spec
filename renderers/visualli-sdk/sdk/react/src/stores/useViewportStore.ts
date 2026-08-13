@@ -1,7 +1,7 @@
 // ─── Viewport Store ───────────────────────────────────────────────────────────
 
 import { create } from 'zustand';
-import type { ViewportState } from '@visualli-sdk/core';
+import type { ViewportState } from '@visualli/core';
 import {
   panViewport,
   zoomViewport,
@@ -13,7 +13,7 @@ import {
   worldToScreen,
   screenToWorld,
   ZOOM_DEFAULT,
-} from '@visualli-sdk/core';
+} from '@visualli/core';
 
 export interface IViewportStore extends ViewportState {
   canvasWidth:  number;

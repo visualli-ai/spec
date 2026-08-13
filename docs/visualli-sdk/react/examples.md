@@ -19,7 +19,7 @@ Practical recipes for `<VisualliRenderer />`. For prop details see the [Props Re
 
 ```tsx
 import { useState } from 'react';
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 
 function ThemeSwitcher() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');

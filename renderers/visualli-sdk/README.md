@@ -9,11 +9,11 @@ A powerful React SDK for rendering interactive hierarchical visualizations from 
 ## 🚀 Quick Start
 
 ```bash
-npm install @visualli-sdk/react
+npm install @visualli/react
 ```
 
 ```tsx
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 
 function App() {
   return (
@@ -64,19 +64,19 @@ The Visualli SDK provides a complete solution for rendering interactive, hierarc
 ### npm
 
 ```bash
-npm install @visualli-sdk/react
+npm install @visualli/react
 ```
 
 ### yarn
 
 ```bash
-yarn add @visualli-sdk/react
+yarn add @visualli/react
 ```
 
 ### pnpm
 
 ```bash
-pnpm add @visualli-sdk/react
+pnpm add @visualli/react
 ```
 
 ### Peer Dependencies
@@ -96,7 +96,7 @@ npm install react@^18.3.1 react-dom@^18.3.1
 The simplest way to use the SDK - just provide a path to your `.visualli` file:
 
 ```tsx
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 
 function MyApp() {
   return (
@@ -135,7 +135,7 @@ function App() {
 Handle user-uploaded files:
 
 ```tsx
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 import { useState } from 'react';
 
 function FileViewer() {
@@ -370,7 +370,7 @@ function StyledViewer() {
 
 ```tsx
 import { useState } from 'react';
-import { VisualliRenderer, VisualliTheme } from '@visualli-sdk/react';
+import { VisualliRenderer, VisualliTheme } from '@visualli/react';
 
 function ThemeSwitcher() {
   const [theme, setTheme] = useState<VisualliTheme>('light');
@@ -490,20 +490,20 @@ import {
   VisualliRenderer,
   VisualliTheme,
   VisualliRendererProps 
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 
 import type {
   VisualliDocument,
   VisualliLayer,
   FlatNode,
   Connection
-} from '@visualli-sdk/core';
+} from '@visualli/core';
 ```
 
 ### Example with Types
 
 ```tsx
-import { VisualliRenderer, VisualliTheme } from '@visualli-sdk/react';
+import { VisualliRenderer, VisualliTheme } from '@visualli/react';
 import { useState } from 'react';
 
 function TypedViewer() {

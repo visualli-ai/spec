@@ -10,8 +10,8 @@
 
 import React, { useMemo, memo } from 'react';
 import { KGroup as Group, KLine as Line, KTextPath as TextPath } from '../konvaCompat';
-import type { FlatNode, MindMapConnection } from '@visualli-sdk/core';
-import { NODE_HEIGHT } from '@visualli-sdk/core';
+import type { FlatNode, MindMapConnection } from '@visualli/core';
+import { NODE_HEIGHT } from '@visualli/core';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

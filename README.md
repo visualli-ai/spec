@@ -1,38 +1,39 @@
-<table border="0">
-  <tr>
-    <td width="200" style="border: none;">
-      <img src=".github/assets/V-spec-logo.png" alt="Visualli Logo" width="200">
-    </td>
-    <td style="border: none; vertical-align: middle;">
-      <h1>Visualli Specification</h1>
-      <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
-      <p>
-        <a href="https://spec.visualli.ai"><img src="https://img.shields.io/badge/Docs-spec.visualli.ai-5b21b6?style=for-the-badge&logo=materialformkdocs&logoColor=white" alt="Docs"></a></br>
-        <a href="#"><img src="https://img.shields.io/badge/Version-0.1.1-orange?style=for-the-badge" alt="Version"></a>
-        <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
-        <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
-      </p>
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <img src="docs/assets/V-spec-logo.png" alt="Visualli Logo" width="200">
+  <h1>Visualli Specification</h1>
+  <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
 
-## 👉 Full Documentation: [spec.visualli.ai](https://spec.visualli.ai)
+  <a href="https://spec.visualli.ai"><img src="https://img.shields.io/badge/Docs-spec.visualli.ai-5b21b6?style=for-the-badge&logo=materialformkdocs&logoColor=white" alt="Docs"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Version-0.1.1-orange?style=for-the-badge" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
+</div>
 
-Everything — concepts, format reference, bindings, SDK, examples, and contributing guide — lives in the official docs.
+---
 
-## Quick Links
+## What is Visualli?
 
-| Section | Link |
-|---|---|
-| 🧠 Concepts | [spec.visualli.ai/concepts](https://spec.visualli.ai/concepts.html) |
-| 📘 Format Specification | [spec.visualli.ai/spec](https://spec.visualli.ai/spec.html) |
-| 🔧 Bindings (Python / TS) | [spec.visualli.ai/ecosystem](https://spec.visualli.ai/ecosystem.html) |
-| ⚛️ React SDK | [spec.visualli.ai/visualli-sdk/react/getting-started](https://spec.visualli.ai/visualli-sdk/react/getting-started.html) |
-| 💡 Examples | [spec.visualli.ai/examples](https://spec.visualli.ai/examples.html) |
-| 🛠️ Development | [spec.visualli.ai/development](https://spec.visualli.ai/development.html) |
-| 🤝 Contributing | [spec.visualli.ai/contributing](https://spec.visualli.ai/contributing.html) |
+**Visualli** is an open standard for building comprehensible visualizations focused towards visual learners. Unlike traditional mind-maps or infographics built over rigid formats like XML or images, Visualli is designed from the ground-up to be streamable, hierarchical, and deeply extensible.
 
-## Schema (Single Source of Truth)
+## Why Visualli?
 
-The formal validation rules live in [visualli.schema.json](visualli.schema.json).
+- 🧶 **Layered** — Independent layers and levels enabling **detail on demand** for the end user.
+- 🌳 **Hierarchical, yet flatter** — Deeply nested structures stay serializable as a **simple, editable** list of lines (JSONL).
+- 🏗️ **Streamable** — Parse and render content **line by line** as it arrives. No waiting for the full download.
+- 🧩 **Extensible** — First-class support for **semantic metadata**, visual themes, and custom payloads via the extension mechanism.
 
+---
+
+## 📖 Full Documentation
+
+For the complete specification, core concepts, language bindings, and SDK guides, please visit:
+
+### 👉 [**spec.visualli.ai**](https://spec.visualli.ai)
+
+---
+
+## 🚀 Build your own
+
+Ready to experience the power of Visualli? Create your own visual vault and start mapping your knowledge today.
+
+### 👉 [**visualli.ai**](https://visualli.ai)

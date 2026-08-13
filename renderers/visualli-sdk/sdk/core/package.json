@@ -1,5 +1,5 @@
 {
-  "name": "@visualli-sdk/core",
+  "name": "@visualli/core",
   "version": "0.1.0",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "type": "module",

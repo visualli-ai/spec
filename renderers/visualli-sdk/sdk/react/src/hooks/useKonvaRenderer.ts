@@ -12,7 +12,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import type Konva from 'konva';
-import { ZOOM_MIN, ZOOM_MAX } from '@visualli-sdk/core';
+import { ZOOM_MIN, ZOOM_MAX } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useRenderConfigStore } from '../stores/stores';
 

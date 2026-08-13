@@ -15,7 +15,7 @@ export {
   computeNodeTextScreenScale,
   computeOverlayScale,
   computeEdgeLabelScale,
-} from '@visualli-sdk/core';
+} from '@visualli/core';
 
 export { buildBlobPathData } from './blobShapes';
-export type { BlobPoint, BlobShape } from '@visualli-sdk/core';
+export type { BlobPoint, BlobShape } from '@visualli/core';

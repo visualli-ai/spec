@@ -1,4 +1,4 @@
-# Visualli Specification
+# 📐 Visualli Specification
 
 Visualli uses **JSONL (JSON Lines)** as its primary interchange format. Each line in a `.visualli` file is a single JSON object representing exactly one entity: `Meta`, `Extension`, or `Layer`.
 

@@ -10,6 +10,6 @@ export {
   calculateFitCenter,
   getContainersForLayer,
   calculateFitView,
-} from '@visualli-sdk/core';
+} from '@visualli/core';
 
-export type { FitResult, ContainerGroupInfo } from '@visualli-sdk/core';
+export type { FitResult, ContainerGroupInfo } from '@visualli/core';

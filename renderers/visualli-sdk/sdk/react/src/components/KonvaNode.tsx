@@ -11,8 +11,8 @@
 
 import React, { useMemo } from 'react';
 import { KGroup as Group, KShape as Shape, KText as Text } from '../konvaCompat';
-import type { FlatNode } from '@visualli-sdk/core';
-import { CANVAS_COLORS, NODE_HEIGHT, TEXT_LABEL_HIDE_BELOW_ZOOM, darkenHexColor } from '@visualli-sdk/core';
+import type { FlatNode } from '@visualli/core';
+import { CANVAS_COLORS, NODE_HEIGHT, TEXT_LABEL_HIDE_BELOW_ZOOM, darkenHexColor } from '@visualli/core';
 import { getBlobTypeForLayer, BLOB_TEXT_OFFSETS, BLOB_LAYER_CONFIG, NODE_LAYER_CONFIG, drawBlobPath, computeNodeTextWorldScale } from '../config';
 
 // ── Component ─────────────────────────────────────────────────────────────────

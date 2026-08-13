@@ -1,7 +1,7 @@
 // ─── Node Store ───────────────────────────────────────────────────────────────
 
 import { create } from 'zustand';
-import type { FlatNode, NodeMap } from '@visualli-sdk/core';
+import type { FlatNode, NodeMap } from '@visualli/core';
 
 export interface INodeStore {
   nodes: NodeMap;

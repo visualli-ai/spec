@@ -5,7 +5,7 @@
 //
 // Matches the visualli.ai textScaling logic exactly.
 
-import { NODE_HEIGHT } from '@visualli-sdk/core';
+import { NODE_HEIGHT } from '@visualli/core';
 
 export const NODE_TEXT_BASE_FONT_PX = 30;
 export const DESCRIPTION_TEXT_BASE_FONT_PX = 12;

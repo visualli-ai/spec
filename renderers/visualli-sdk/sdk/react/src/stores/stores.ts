@@ -1,8 +1,8 @@
 // ─── Selection Store ──────────────────────────────────────────────────────────
 
 import { create } from 'zustand';
-import { selectionStore, renderConfigStore } from '@visualli-sdk/core';
-import type { ISelectionStore, IRenderConfigStore } from '@visualli-sdk/core';
+import { selectionStore, renderConfigStore } from '@visualli/core';
+import type { ISelectionStore, IRenderConfigStore } from '@visualli/core';
 
 export const useSelectionStore = create<ISelectionStore>((set, get, store) => {
   selectionStore.subscribe((state) => set(state));

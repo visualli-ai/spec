@@ -6,7 +6,7 @@
 import React, { useRef, useLayoutEffect, useEffect, useMemo } from 'react';
 import { KLayer as Layer } from '../konvaCompat';
 import type Konva from 'konva';
-import type { FlatNode } from '@visualli-sdk/core';
+import type { FlatNode } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useNodeStore } from '../stores/useNodeStore';
 import { useViewportNodes } from '../hooks/useViewportNodes';

@@ -6,7 +6,7 @@
 //   • Inline styles (no Tailwind required in SDK)
 
 import React, { useCallback, memo } from 'react';
-import { ZOOM_MIN, ZOOM_MAX } from '@visualli-sdk/core';
+import { ZOOM_MIN, ZOOM_MAX } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 
 export interface ZoomControlsProps {

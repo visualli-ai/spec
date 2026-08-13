@@ -1,4 +1,4 @@
-# Concepts
+# 📖 Concepts
 
 The core mental model of Visualli. The Specification page covers the exact JSONL format; this page explains *what* the pieces are and *why* they exist.
 

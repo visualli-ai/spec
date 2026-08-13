@@ -1,5 +1,5 @@
 import React from 'react';
-import { VisualliRenderer } from '@visualli-sdk/react';
+import { VisualliRenderer } from '@visualli/react';
 import { VISUALLI_STRING } from '../public/examples/example_string';
 
 export default function App() {

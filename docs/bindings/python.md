@@ -4,23 +4,22 @@ Official [Pydantic v2](https://docs.pydantic.dev/) models for the Visualli speci
 
 ## Installation
 
-Install directly from the repository (Python ≥ 3.11):
+Install from [PyPI](https://pypi.org/project/visualli-bindings/) (Python ≥ 3.11):
+
+```bash
+pip install visualli-bindings
+```
+
+Or, install directly from the repository:
 
 ```bash
 pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindings/python"
 ```
 
-Or, if you've cloned the repo:
-
-```bash
-pip install ./spec/bindings/python
-```
-
 Import as:
 
 ```python
-import visualli
-from visualli import Meta, Extension, Layer, Node, Connection, Container
+from visualli import Meta, Layer, Node, Connection, Container, VisualliSpec011
 ```
 
 ## Usage

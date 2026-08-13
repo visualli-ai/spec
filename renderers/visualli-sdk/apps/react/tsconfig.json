@@ -1,5 +1,5 @@
 {
-  "extends": "@repo/typescript-config/react-library.json",
+  "extends": "@visualli/typescript-config/react-library.json",
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,

@@ -1,4 +1,4 @@
-# @visualli-sdk/react
+# @visualli/react
 
 React canvas rendering for Visualli — powered by Konva. Drop-in component that displays a `VisualliDocument` as an interactive, zoomable, navigable mind-map.
 
@@ -19,7 +19,7 @@ React canvas rendering for Visualli — powered by Konva. Drop-in component that
 ## Installation
 
 ```bash
-npm install @visualli-sdk/react @visualli-sdk/core konva react-konva zustand
+npm install @visualli/react @visualli/core konva react-konva zustand
 ```
 
 Peer dependencies: `react@^18`, `react-dom@^18`
@@ -27,10 +27,10 @@ Peer dependencies: `react@^18`, `react-dom@^18`
 ## Quick Start
 
 ```tsx
-import { VisualliCanvas } from '@visualli-sdk/react';
+import { VisualliCanvas } from '@visualli/react';
 
 // Option A — pass a pre-parsed VisualliDocument
-import { parseVisualliFile } from '@visualli-sdk/core';
+import { parseVisualliFile } from '@visualli/core';
 
 const doc = parseVisualliFile(rawJsonlString);
 
@@ -83,7 +83,7 @@ VisualliCanvas
 Access any store directly for advanced use cases:
 
 ```ts
-import { useViewportStore, useNodeStore, useSelectionStore } from '@visualli-sdk/react';
+import { useViewportStore, useNodeStore, useSelectionStore } from '@visualli/react';
 
 // Read viewport
 const { centerX, centerY, zoomLevel } = useViewportStore();
@@ -99,7 +99,7 @@ const selectedId = useSelectionStore(s => s.selectedId);
 ### Hooks
 
 ```ts
-import { useViewportNodes } from '@visualli-sdk/react';
+import { useViewportNodes } from '@visualli/react';
 
 // Get nodes currently visible in the viewport (culled)
 const visible = useViewportNodes(allNodes, /* optional level filter */ 0);
@@ -119,7 +119,7 @@ The extension system allows you to inject custom parser middlewares and UI compo
 ### Basic Setup with Provider
 
 ```tsx
-import { VisualliProvider, VisualliCanvas } from '@visualli-sdk/react';
+import { VisualliProvider, VisualliCanvas } from '@visualli/react';
 
 function App() {
   return (
@@ -128,13 +128,12 @@ function App() {
     </VisualliProvider>
   );
 }
-```
 
 ### With Custom Middleware
 
 ```tsx
-import { VisualliProvider } from '@visualli-sdk/react';
-import type { ParserMiddleware } from '@visualli-sdk/core';
+import { VisualliProvider } from '@visualli/react';
+import type { ParserMiddleware } from '@visualli/core';
 
 const myMiddleware: ParserMiddleware = (data) => {
   if (data.type === 'extension') {
@@ -151,7 +150,7 @@ const myMiddleware: ParserMiddleware = (data) => {
 ### With Extension Components
 
 ```tsx
-import type { ExtensionComponentProps } from '@visualli-sdk/react';
+import type { ExtensionComponentProps } from '@visualli/react';
 
 function MyExtension({ extension, document }: ExtensionComponentProps) {
   return (
@@ -173,7 +172,7 @@ const extensions = {
 ### Stream Fetching
 
 ```tsx
-import { useVisualliStream, VisualliCanvas } from '@visualli-sdk/react';
+import { useVisualliStream, VisualliCanvas } from '@visualli/react';
 
 function MindMapViewer({ apiUrl }: { apiUrl: string }) {
   const { document, isLoading, error, progress } = useVisualliStream(apiUrl);
@@ -193,11 +192,11 @@ import {
   VisualliProvider,
   useVisualliStream,
   VisualliCanvas
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 import type {
   ParserMiddleware,
   ExtensionComponentProps
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 
 // Middleware
 const middleware: ParserMiddleware = (data) => {
@@ -246,35 +245,35 @@ function App() {
 ### Component
 
 ```ts
-import { VisualliCanvas } from '@visualli-sdk/react';
+import { VisualliCanvas } from '@visualli/react';
 ```
 
 ### Context & Provider 🆕
 
 ```ts
-import { VisualliProvider, useVisualli } from '@visualli-sdk/react';
+import { VisualliProvider, useVisualli } from '@visualli/react';
 import type {
   VisualliProviderProps,
   VisualliContextValue,
   ExtensionComponentProps,
   ExtensionRegistry
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 ```
 
 ### Stores
 
 ```ts
-import { useNodeStore, useViewportStore, useSelectionStore, useRenderConfigStore } from '@visualli-sdk/react';
+import { useNodeStore, useViewportStore, useSelectionStore, useRenderConfigStore } from '@visualli/react';
 ```
 
 ### Hooks
 
 ```ts
-import { useKonvaRenderer, useKonvaLayerTransition, useViewportNodes } from '@visualli-sdk/react';
+import { useKonvaRenderer, useKonvaLayerTransition, useViewportNodes } from '@visualli/react';
 
 // 🆕 Stream fetching hook
-import { useVisualliStream } from '@visualli-sdk/react';
-import type { UseVisualliStreamReturn } from '@visualli-sdk/react';
+import { useVisualliStream } from '@visualli/react';
+import type { UseVisualliStreamReturn } from '@visualli/react';
 ```
 
 ### Sub-components (composition)
@@ -285,7 +284,7 @@ import {
   KonvaNodeLayer, KonvaEdgeLayer,
   KonvaContainerLayer,
   NavigationStack, ZoomControls,
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 ```
 
 ### Utilities
@@ -294,7 +293,7 @@ import {
 import {
   getChildLayerForNode, getConnectionsForLayer,
   calculateFitView, calculateFitZoom, calculateFitCenter,
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 ```
 
 ### Config helpers
@@ -303,7 +302,7 @@ import {
 import {
   getBlobTypeForLayer, buildBlobPathData, ALL_BLOB_SHAPES,
   computeNodeTextWorldScale, computeNodeTextScreenScale,
-} from '@visualli-sdk/react';
+} from '@visualli/react';
 ```
 
 ## TypeScript
@@ -323,7 +322,7 @@ import {
 
 - Node.js ≥ 22
 - React 18
-- `@visualli-sdk/core` must be built (`npm run build` in `sdk-core/`) before typechecking
+- `@visualli/core` must be built (`npm run build` in `sdk-core/`) before typechecking
 
 ## Typecheck
 

@@ -1,5 +1,5 @@
 {
-  "name": "@visualli-sdk/app-react",
+  "name": "@visualli/react-app",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@visualli-sdk/react": "*",
+    "@visualli/react": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*",
+    "@visualli/typescript-config": "*",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",

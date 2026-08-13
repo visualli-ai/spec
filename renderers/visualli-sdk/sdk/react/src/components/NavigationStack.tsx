@@ -8,7 +8,7 @@
 //   • Font: Nunito
 
 import React, { memo, useState } from 'react';
-import type { VisualliLayer } from '@visualli-sdk/core';
+import type { VisualliLayer } from '@visualli/core';
 
 export interface NavStackEntry {
   layerId: string;
