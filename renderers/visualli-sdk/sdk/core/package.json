@@ -2,6 +2,10 @@
   "name": "@visualli/core",
   "version": "0.1.1",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/visualli-ai/spec.git"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

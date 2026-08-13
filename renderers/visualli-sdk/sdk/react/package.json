@@ -1,7 +1,11 @@
 {
   "name": "@visualli/react",
   "version": "0.1.1",
-  "description": "React canvas renderer for .visualli files \u2014 built on @visualli/core",
+  "description": "React canvas renderer for .visualli files — built on @visualli/core",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/visualli-ai/spec.git"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

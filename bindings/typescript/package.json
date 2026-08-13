@@ -2,6 +2,10 @@
   "name": "@visualli/bindings",
   "version": "0.1.1",
   "description": "Official Visualli TypeScript models and type definitions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/visualli-ai/spec.git"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
