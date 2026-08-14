@@ -2,7 +2,7 @@
 
 Visualli uses **JSONL (JSON Lines)** as its primary interchange format. Each line in a `.visualli` file is a single JSON object representing exactly one entity: `Meta`, `Extension`, or `Layer`.
 
-> **Single source of truth.** The formal validation rules are defined in [visualli.schema.json](../visualli.schema.json).
+> **Single source of truth.** The formal validation rules are defined in [visualli.schema.json](https://github.com/visualli-ai/spec/blob/main/visualli.schema.json#Lvisualli.schema.json).
 >
 > **Reading the concepts first?** See [Concepts](concepts.md) for the mental model — infinite canvas, layers vs. levels, and the role of each entity.
 
@@ -30,7 +30,7 @@ Layer       → required, one or more, after Meta/Extensions
 {"type": "layer", "id": "layer-1", "level": 0, "nodes": [{"id": "n1", "position": {"x": 0, "y": 0}, "data": {"label": "Root Node", "summary": "The starting point"}}]}
 ```
 
-## Entity Relationship Diagram
+## Entity Relationships
 
 How the top-level entities and their embedded components relate:
 

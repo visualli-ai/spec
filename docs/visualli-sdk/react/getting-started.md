@@ -91,16 +91,15 @@ function FileViewer() {
 
 ## ✨ Features
 
-- 🎨 **Beautiful visualizations** — sketchy, hand-drawn aesthetic with smooth animations
-- 🚀 **High performance** — spatial indexing keeps 10,000+ nodes smooth
+- 🚀 **Smooth Animations** — Spatial indexing keeps 10,000+ nodes smooth during operation
 - 🌓 **Themes** — `light`, `dark`, or `auto` (follows system preference)
-- ⚡ **Web Worker parsing** — non-blocking parsing, on by default
-- 🗺️ **Interactive navigation** — pan, zoom, auto layer navigation, breadcrumbs
-- 🔧 **Fully typed** — complete TypeScript definitions included
+- ⚡ **Web Worker parsing** — Non-blocking parsing, on by default
+- 🗺️ **Interactive navigation** — Pan, zoom, auto layer navigation, breadcrumbs
+- 🔧 **Fully typed** — All TypeScript definitions included
 
 ## ⚠️ Error Handling
 
-The renderer shows built-in states so you don't have to:
+The renderer handles errors and shows built-in states so you don't have to:
 
 | State | What the user sees |
 |---|---|
@@ -110,14 +109,15 @@ The renderer shows built-in states so you don't have to:
 
 ## 🌐 Browser Support
 
-| Browser | Version |
-|---|---|
-| Chrome | ≥ 90 |
-| Firefox | ≥ 88 |
-| Safari | ≥ 14 |
-| Edge | ≥ 90 |
+The renderer is designed to work with almost any browser that supports ES2020, Canvas API, and CSS Grid/Flexbox. Web Workers and `prefers-color-scheme` are optional (used by `useWorker` and `theme="auto"`).
 
-Requires ES2020, Canvas API, and CSS Grid/Flexbox. Web Workers and `prefers-color-scheme` are optional (used by `useWorker` and `theme="auto"`).
+| Browser | Version | Release Date |
+|---|---|---|
+| Chrome | ≥ 80 | Feb 2020 |
+| Firefox | ≥ 74 | Mar 2020 |
+| Safari | ≥ 13.1 | Mar 2020 |
+| Edge | ≥ 80 | Mar 2020 |
+| Opera | ≥ 67 | Feb 2020 |
 
 ## ➡️ Next steps
 

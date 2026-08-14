@@ -82,7 +82,7 @@ graph TD
     style L2 stroke-dasharray: 5 5
 ```
 
-## Entities (mental model)
+## Key Entities
 
 These are the building blocks. See the Specification page for exact JSONL fields and validation rules.
 
@@ -92,26 +92,3 @@ These are the building blocks. See the Specification page for exact JSONL fields
 | **Connection** | A directed relationship between two nodes in the same layer. | `from` → `to` node IDs, label and style (solid / dashed) |
 | **Container** | A visual grouping of nodes in the same layer. | List of node IDs, label, formation (radial / linear / …), border style |
 | **Extension** | An optional payload for behavior or metadata that isn't in the core schema. | String ID + free-form `data[]` — examples: semantic anchors, themes, visual effects |
-
-### Extension example
-
-Extensions are identified by ID, and their payload shape is up to the extension's contract. For instance, a `semantic-anchors` extension links terms to descriptions:
-
-```json
-{
-  "type": "extension",
-  "id": "semantic-anchors",
-  "data": [
-    {
-      "word": "atmosphere",
-      "description": "The envelope of gases surrounding the earth or another planet.",
-      "knowMoreUrl": null
-    },
-    {
-      "word": "water circulation",
-      "description": "The continuous movement of water on, above and below the surface of the Earth.",
-      "knowMoreUrl": null
-    }
-  ]
-}
-```
