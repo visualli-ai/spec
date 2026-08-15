@@ -25,10 +25,12 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
   "dependencies": {
     "@visualli/core": "*",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
     "zustand": "^4.5.2",
     "konva": "^9.3.6",
     "react-konva": "^18.2.10"

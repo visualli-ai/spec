@@ -1,20 +1,18 @@
 # @visualli/react
 
-React canvas rendering for Visualli — powered by Konva. Drop-in component that displays a `VisualliDocument` as an interactive, zoomable, navigable mind-map.
+React canvas rendering for Visualli — powered by Konva. A high-performance component suite that displays `.visualli` documents as interactive, zoomable, and navigable mind-maps.
 
 ## Features
 
-- **GPU-accelerated canvas** via `react-konva` — handles thousands of nodes at 60 fps
-- **Organic blob nodes** — 6 quadratic-bezier blob shapes that cycle by level
-- **Layer navigation** — double-click any node to drill into its child layer, breadcrumb back
-- **Animated transitions** — rAF-driven zoom-into-layer / zoom-out-to-parent with color crossfade
-- **Zoom controls** — +/− buttons, %, fit-to-screen
-- **Viewport culling** — RBush spatial index keeps only visible nodes on the canvas
-- **Zustand stores** — fine-grained subscriptions for nodes, viewport, selection, render config
-- **Light / dark theme** — single `isDark` prop
-- **🆕 Extension system** — inject custom parser middlewares and UI components at runtime
-- **🆕 Stream fetching** — `useVisualliStream` hook for backend JSONL streams
-- **🆕 Context provider** — `VisualliProvider` for dependency injection
+- **High-Performance Canvas** — GPU-accelerated rendering via `react-konva` capable of handling thousands of nodes at 60fps
+- **Organic Visuals** — Dynamic blob-based node shapes that cycle by hierarchy level
+- **Layer Navigation** — Drill down into child layers and navigate back via breadcrumb UI
+- **Smooth Transitions** — Animated zoom effects with color crossfading during layer changes
+- **Chromatic Immersion** — Optional background effects that adapt to the current layer's context
+- **Viewport Culling** — Spatial indexing ensures only visible elements are rendered
+- **Worker-based Parsing** — Parse large documents off the main thread to prevent UI blocking
+- **Flexible Theming** — Light, Dark, and System-aware (auto) theme support
+- **State Management** — Fine-grained control via Zustand stores for viewport, nodes, and selection
 
 ## Installation
 
@@ -22,293 +20,151 @@ React canvas rendering for Visualli — powered by Konva. Drop-in component that
 npm install @visualli/react @visualli/core konva react-konva zustand
 ```
 
-Peer dependencies: `react@^18`, `react-dom@^18`
+**Peer dependencies:** `react@^18`, `react-dom@^18`
 
 ## Quick Start
 
+Use `VisualliRenderer` for the simplest integration — it handles loading, parsing, error states, and responsive sizing automatically.
+
 ```tsx
-import { VisualliCanvas } from '@visualli/react';
-
-// Option A — pass a pre-parsed VisualliDocument
-import { parseVisualliFile } from '@visualli/core';
-
-const doc = parseVisualliFile(rawJsonlString);
+import { VisualliRenderer } from '@visualli/react';
 
 export default function App() {
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <VisualliCanvas document={doc} isDark={false} />
-    </div>
-  );
-}
-
-// Option B — pass the raw JSONL string directly
-export default function App() {
-  return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <VisualliCanvas visualliString={rawJsonlString} isDark={true} />
-    </div>
+    <VisualliRenderer 
+      visualliFile="/data/mindmap.visualli" 
+      theme="auto"
+      width="100%"
+      height="100vh"
+    />
   );
 }
 ```
 
-## `VisualliCanvas` Props
+### Alternative: Pass Raw JSONL String
+
+```tsx
+<VisualliRenderer 
+  visualliString={rawJsonlString}
+  theme="dark"
+  chromaticImmersion={true}
+/>
+```
+
+### Alternative: Load from File Input
+
+```tsx
+function FileUploader() {
+  const [file, setFile] = useState<File | null>(null);
+
+  return (
+    <>
+      <input 
+        type="file" 
+        accept=".visualli"
+        onChange={(e) => setFile(e.target.files?.[0] || null)} 
+      />
+      {file && <VisualliRenderer visualliFile={file} theme="light" />}
+    </>
+  );
+}
+```
+
+## API Reference
+
+### `VisualliRenderer` (Recommended)
+
+The primary component for rendering `.visualli` documents. Manages the full document lifecycle including loading, parsing (with optional Web Worker), error handling, and responsive layout.
+
+#### Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `document` | `VisualliDocument` | — | Pre-parsed document |
-| `visualliString` | `string` | — | Raw JSONL — parsed internally |
-| `isDark` | `boolean` | `false` | Light / dark canvas theme |
-| `onNodeClick` | `(node: FlatNode) => void` | — | Single-click callback |
-| `onLayerChange` | `(id: string, layer: VisualliLayer) => void` | — | Fired after navigation |
-| `className` | `string` | `''` | Extra CSS classes on the wrapper div |
-| `style` | `React.CSSProperties` | — | Inline styles on the wrapper div |
+| `visualliFile` | `File \| string` | — | A `.visualli` file as a File object or URL path |
+| `visualliString` | `string` | — | Raw JSONL content as a string |
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | Color theme. `'auto'` follows system preference |
+| `chromaticImmersion` | `boolean` | `false` | Enable background color effects based on layer context |
+| `useWorker` | `boolean` | `true` | Parse documents in a Web Worker (recommended for large files) |
+| `width` | `string \| number` | `'100%'` | Width as CSS value or pixel number |
+| `height` | `string \| number` | `'100%'` | Height as CSS value or pixel number |
+| `className` | `string` | — | Additional CSS classes |
+| `style` | `React.CSSProperties` | — | Inline styles |
 
-> The component fills its parent container — set an explicit `width` / `height` on the wrapper.
+> **Note:** Provide either `visualliFile` or `visualliString`, not both.
 
-## Architecture
+### `VisualliCanvas` (Advanced)
 
+The low-level canvas component used internally by `VisualliRenderer`. Use this if you need direct control over the rendering pipeline or already have a parsed `VisualliDocument`.
+
+#### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `preParsedVisualli` | `VisualliDocument` | Pre-parsed document from `@visualli/core` |
+| `visualliString` | `string` | Raw JSONL string (parsed on mount) |
+| `isDark` | `boolean` | Dark mode flag |
+| `chromaticImmersion` | `boolean` | Enable chromatic background |
+| `onNodeClick` | `(node: FlatNode) => void` | Callback fired on node click |
+| `onLayerChange` | `(id: string, layer: VisualliLayer) => void` | Callback fired on layer navigation |
+
+#### Example
+
+```tsx
+import { VisualliCanvas } from '@visualli/react';
+import { parseVisualliFile } from '@visualli/core';
+
+const document = parseVisualliFile(jsonlString);
+
+<VisualliCanvas 
+  preParsedVisualli={document}
+  isDark={true}
+  onNodeClick={(node) => console.log('Clicked:', node.data.label)}
+/>
 ```
-VisualliCanvas
-├── KonvaStage              react-konva <Stage>, position/scale from viewport store
-│   ├── KonvaContainerLayer <Layer> — convex-hull outlines (non-interactive)
-│   ├── KonvaEdgeLayer      <Layer> — bezier edges between visible nodes
-│   └── KonvaNodeLayer      <Layer> — blob nodes, handles click/dblclick
-├── NavigationStack         DOM overlay — breadcrumb trail, click to go back
-└── ZoomControls            DOM overlay — +/−/% buttons, fit-to-screen
-```
 
-### Stores (Zustand)
+## Customization & Extensions
 
-Access any store directly for advanced use cases:
+The SDK is designed to be extensible. While the core renderer provides a complete visualization experience, you can extend it with custom UI overlays, data processing pipelines, or application-specific behaviors without modifying the core library. This allows developers to build specialized features on top of the base canvas while maintaining upgrade compatibility.
 
-```ts
+## State Management
+
+The renderer uses Zustand stores for reactive state management. You can access these stores for advanced use cases like programmatic navigation or custom UI controls.
+
+```tsx
 import { useViewportStore, useNodeStore, useSelectionStore } from '@visualli/react';
 
-// Read viewport
-const { centerX, centerY, zoomLevel } = useViewportStore();
+function CustomControls() {
+  const { zoomLevel, setZoom, setCenter } = useViewportStore();
+  const selectedNode = useSelectionStore(s => s.selectedId);
 
-// Programmatic zoom
-useViewportStore.getState().setZoom(1.5);
-useViewportStore.getState().setCenter(0, 0);
-
-// Read selected node
-const selectedId = useSelectionStore(s => s.selectedId);
-```
-
-### Hooks
-
-```ts
-import { useViewportNodes } from '@visualli/react';
-
-// Get nodes currently visible in the viewport (culled)
-const visible = useViewportNodes(allNodes, /* optional level filter */ 0);
-```
-
-### Navigation Stack
-
-Layer navigation is fully internal but observable via the `onLayerChange` callback. The breadcrumb UI renders automatically — no props required.
-
-Drill-in: **double-click** a node that has a child layer.  
-Back: click any crumb in the breadcrumb bar, or use `onNavigateBack` exposed by `NavigationStack` directly.
-
-## Extension System 🆕
-
-The extension system allows you to inject custom parser middlewares and UI components at runtime without modifying the SDK.
-
-### Basic Setup with Provider
-
-```tsx
-import { VisualliProvider, VisualliCanvas } from '@visualli/react';
-
-function App() {
   return (
-    <VisualliProvider>
-      <VisualliCanvas document={document} />
-    </VisualliProvider>
-  );
-}
-
-### With Custom Middleware
-
-```tsx
-import { VisualliProvider } from '@visualli/react';
-import type { ParserMiddleware } from '@visualli/core';
-
-const myMiddleware: ParserMiddleware = (data) => {
-  if (data.type === 'extension') {
-    return { ...data, enhanced: true };
-  }
-  return data;
-};
-
-<VisualliProvider middlewares={[myMiddleware]}>
-  <App />
-</VisualliProvider>
-```
-
-### With Extension Components
-
-```tsx
-import type { ExtensionComponentProps } from '@visualli/react';
-
-function MyExtension({ extension, document }: ExtensionComponentProps) {
-  return (
-    <div style={{ position: 'absolute', top: 20, right: 20 }}>
-      <p>{extension.data?.message}</p>
+    <div>
+      <button onClick={() => setZoom(zoomLevel * 1.2)}>Zoom In</button>
+      <button onClick={() => setCenter(0, 0)}>Reset View</button>
+      <p>Selected: {selectedNode}</p>
     </div>
   );
 }
-
-const extensions = {
-  'my-ext-id': MyExtension,
-};
-
-<VisualliProvider extensions={extensions}>
-  <VisualliCanvas document={document} />
-</VisualliProvider>
 ```
 
-### Stream Fetching
+## Advanced Hooks
 
-```tsx
-import { useVisualliStream, VisualliCanvas } from '@visualli/react';
+The SDK exports low-level hooks for building custom rendering pipelines:
 
-function MindMapViewer({ apiUrl }: { apiUrl: string }) {
-  const { document, isLoading, error, progress } = useVisualliStream(apiUrl);
+- **`useKonvaRenderer`** — Access the Konva stage and rendering loop
+- **`useViewportNodes`** — Get nodes currently visible in the viewport (post-culling)
+- **`useKonvaLayerTransition`** — Control layer transition animations
+- **`useVisualli`** — Access the Visualli context (when wrapped in `VisualliProvider`)
 
-  if (isLoading) return <div>Loading... {progress}%</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  if (!document) return null;
+## Requirements
 
-  return <VisualliCanvas document={document} />;
-}
-```
+- Node.js ≥ 22
+- React 18
+- TypeScript 5+ (recommended)
 
-### Complete Example
+## TypeScript Configuration
 
-```tsx
-import {
-  VisualliProvider,
-  useVisualliStream,
-  VisualliCanvas
-} from '@visualli/react';
-import type {
-  ParserMiddleware,
-  ExtensionComponentProps
-} from '@visualli/react';
-
-// Middleware
-const middleware: ParserMiddleware = (data) => {
-  if (data.type === 'extension') {
-    return { ...data, processed: true };
-  }
-  return data;
-};
-
-// Extension Component
-function TooltipExtension({ extension }: ExtensionComponentProps) {
-  return (
-    <div style={{
-      position: 'absolute',
-      top: 20,
-      right: 20,
-      background: 'white',
-      padding: '12px',
-      borderRadius: '8px',
-      pointerEvents: 'auto'
-    }}>
-      {extension.data?.message}
-    </div>
-  );
-}
-
-// App
-function App() {
-  const { document, isLoading } = useVisualliStream('/api/mindmap');
-
-  return (
-    <VisualliProvider
-      middlewares={[middleware]}
-      extensions={{ 'tooltip': TooltipExtension }}
-    >
-      {isLoading ? <Loading /> : <VisualliCanvas document={document} />}
-    </VisualliProvider>
-  );
-}
-```
-
-📚 **See `EXTENSION_GUIDE.md` for comprehensive documentation and examples.**
-
-## Exports
-
-### Component
-
-```ts
-import { VisualliCanvas } from '@visualli/react';
-```
-
-### Context & Provider 🆕
-
-```ts
-import { VisualliProvider, useVisualli } from '@visualli/react';
-import type {
-  VisualliProviderProps,
-  VisualliContextValue,
-  ExtensionComponentProps,
-  ExtensionRegistry
-} from '@visualli/react';
-```
-
-### Stores
-
-```ts
-import { useNodeStore, useViewportStore, useSelectionStore, useRenderConfigStore } from '@visualli/react';
-```
-
-### Hooks
-
-```ts
-import { useKonvaRenderer, useKonvaLayerTransition, useViewportNodes } from '@visualli/react';
-
-// 🆕 Stream fetching hook
-import { useVisualliStream } from '@visualli/react';
-import type { UseVisualliStreamReturn } from '@visualli/react';
-```
-
-### Sub-components (composition)
-
-```ts
-import {
-  KonvaStage, KonvaNode, KonvaEdge,
-  KonvaNodeLayer, KonvaEdgeLayer,
-  KonvaContainerLayer,
-  NavigationStack, ZoomControls,
-} from '@visualli/react';
-```
-
-### Utilities
-
-```ts
-import {
-  getChildLayerForNode, getConnectionsForLayer,
-  calculateFitView, calculateFitZoom, calculateFitCenter,
-} from '@visualli/react';
-```
-
-### Config helpers
-
-```ts
-import {
-  getBlobTypeForLayer, buildBlobPathData, ALL_BLOB_SHAPES,
-  computeNodeTextWorldScale, computeNodeTextScreenScale,
-} from '@visualli/react';
-```
-
-## TypeScript
-
-```jsonc
-// tsconfig.json
+```json
 {
   "compilerOptions": {
     "moduleResolution": "bundler",
@@ -316,20 +172,4 @@ import {
     "target": "ES2020"
   }
 }
-```
-
-## Requirements
-
-- Node.js ≥ 22
-- React 18
-- `@visualli/core` must be built (`npm run build` in `sdk-core/`) before typechecking
-
-## Typecheck
-
-```bash
-# Build core first
-cd ../sdk-core && npm run build
-
-# Typecheck react package
-cd ../sdk-react && npx tsc --noEmit
 ```
