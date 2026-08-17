@@ -2,6 +2,10 @@
 
 This directory contains example files demonstrating the Visualli specification.
 
+## Try It Out
+
+Visit [https://spec.visualli.ai/#try-it-out](https://spec.visualli.ai/#try-it-out) to try out Visualli examples online.
+
 ## How To View 
 
 - Clone the repo and run a local server (e.g., `python3 -m http.server`) in the root directory.   
