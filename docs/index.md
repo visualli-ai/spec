@@ -34,8 +34,9 @@ Four design choices that set Visualli apart from every other mind-map format out
   </div>
 </div>
 
-## Try it out! ✨
-_Place an embeddable of .visualli example here_
+## ✨ Try it out!
+
+<div id="visualli-renderer-root" data-source="assets/example.visualli"></div>
 
 ---
 

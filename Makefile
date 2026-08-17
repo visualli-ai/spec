@@ -58,8 +58,17 @@ update-version:
 	@echo "Regenerating bindings to reflect new version..."
 	@$(MAKE) generate
 
-docs-serve:
+build-loader:
+	@echo "⏳ Building Visualli Loader bundle..."
+	@cd renderers/visualli-sdk/apps/react && npm run build:loader
+	@mkdir -p docs/js docs/assets
+	@mv renderers/visualli-sdk/apps/react/dist-loader/visualli-loader.bundle.js docs/js/
+	@cp examples/example.visualli docs/assets/example.visualli
+	@echo "✅ Loader bundle moved to docs/js/visualli-loader.bundle.js"
+	@echo "✅ Master example.visualli copied to docs/assets/"
+
+docs-serve: build-loader
 	@cd docs && ../$(VENV)/bin/mkdocs serve -f mkdocs.yml
 
-docs-build:
+docs-build: build-loader
 	@cd docs && ../$(VENV)/bin/mkdocs build -f mkdocs.yml

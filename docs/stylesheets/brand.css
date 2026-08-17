@@ -43,7 +43,14 @@
 .md-header {
   background-color: #000000;
   background-image: none; /* remove previous gradient fill */
-  position: relative; /* enable bottom border pseudo-element */
+  position: fixed; /* make header sticky */
+  top: 0;
+  z-index: 100;
+}
+
+/* Add padding to body to account for fixed header */
+.md-container {
+  padding-top: 3rem;
 }
 
 .md-header::after {
@@ -431,6 +438,38 @@
 .hero__lead {
   margin: 0;
   color: var(--md-typeset-color);
+}
+
+/* --- Visualli Renderer tooltip fix --- */
+/* 
+ * The SDK uses position:fixed for tooltips with canvas-relative coordinates.
+ * We use transform on the container to create a containing block, making
+ * position:fixed relative to the canvas container instead of the viewport.
+ * This is set via inline style in visualli-embed.tsx: transform: translate(0, 0)
+ */
+
+/* Ensure the content areas allow overflow for tooltips */
+.md-content,
+.md-content__inner {
+  overflow: visible !important;
+}
+
+/* Ensure tooltips appear above all MkDocs content */
+#visualli-renderer-root [data-node-tooltip="true"],
+#visualli-renderer-root [data-semantic-tooltip="true"] {
+  z-index: 9999 !important;
+}
+
+/*
+ * Visualli Renderer Custom Styling
+ */
+#visualli-renderer-root {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 /* --- Premium Terminal Code Blocks --- */
