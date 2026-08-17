@@ -1,6 +1,6 @@
 {
   "name": "@visualli/react",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React canvas renderer for .visualli files \u2014 built on @visualli/core",
   "repository": {
     "type": "git",
