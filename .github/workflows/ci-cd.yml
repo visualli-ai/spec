@@ -57,6 +57,10 @@ jobs:
           # Build TS Bindings & SDK
           cd bindings/typescript && npm install && npm run build
           cd ../../renderers/visualli-sdk && npm run build
+          
+          # Build Try-It-Out Bundle
+          cd ../../
+          make build-loader
 
       # 4. Build Documentation
       - name: Build MkDocs Site

@@ -797,7 +797,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const handleStageContextMenu = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     e.evt.preventDefault();
     if (navStack.length <= 1) { setCanvasContextMenu(null); return; }
-    setCanvasContextMenu({ x: e.evt.clientX, y: e.evt.clientY });
+    const rect = containerRef.current?.getBoundingClientRect();
+    const localX = rect ? e.evt.clientX - rect.left : e.evt.clientX;
+    const localY = rect ? e.evt.clientY - rect.top : e.evt.clientY;
+    setCanvasContextMenu({ x: localX, y: localY });
   }, [navStack.length]);
 
   // Touch passthrough
@@ -987,7 +990,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           role="menu"
           aria-label="Canvas options"
           style={{
-            position: 'fixed',
+            position: 'absolute',
             zIndex: 60,
             pointerEvents: 'auto',
             left: `${Math.min(canvasContextMenu.x, Math.max(8, (canvasSizeRef.current.width  || 800)  - 152))}px`,
@@ -1041,7 +1044,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           <div
             data-node-tooltip="true"
             style={{
-              position: 'fixed',
+              position: 'absolute',
               zIndex: 50,
               left: safeLeft,
               top: safeTop,

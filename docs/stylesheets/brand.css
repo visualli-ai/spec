@@ -460,6 +460,18 @@
   z-index: 9999 !important;
 }
 
+/*
+ * Visualli Renderer Custom Styling
+ */
+#visualli-renderer-root {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 /* --- Premium Terminal Code Blocks --- */
 
 /* Give all code blocks a sleek, elevated card look */
