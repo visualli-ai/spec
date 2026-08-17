@@ -459,3 +459,85 @@
 #visualli-renderer-root [data-semantic-tooltip="true"] {
   z-index: 9999 !important;
 }
+
+/* --- Premium Terminal Code Blocks --- */
+
+/* Give all code blocks a sleek, elevated card look */
+.md-typeset pre > code {
+  background: transparent;
+}
+
+.md-typeset .highlight,
+.md-typeset pre {
+  position: relative;
+  margin: 1.5em 0;
+  border-radius: 0.5rem;
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.03), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+/* Mac-like terminal header buttons for an IDE feel */
+.md-typeset .highlight::before,
+.md-typeset pre::before {
+  content: "";
+  display: block;
+  height: 2.25rem;
+  background: color-mix(in srgb, var(--md-default-fg-color) 3%, var(--md-default-bg-color));
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .highlight::after,
+.md-typeset pre::after {
+  content: "";
+  position: absolute;
+  top: 0.8rem;
+  left: 1rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #ff5f56;
+  box-shadow: 1.15rem 0 0 #ffbd2e, 2.3rem 0 0 #27c93f;
+  z-index: 1;
+}
+
+.md-typeset .highlight pre {
+  margin: 0;
+  padding: 1.15rem 1.25rem;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.md-typeset .highlight pre::before,
+.md-typeset .highlight pre::after {
+  display: none;
+}
+
+/* Make the copy button highly discoverable */
+.md-typeset .highlight .md-clipboard,
+.md-typeset pre .md-clipboard {
+  top: 0.3rem;
+  right: 0.5rem;
+  background-color: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  border-radius: 0.35rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.md-typeset .highlight:hover .md-clipboard,
+.md-typeset pre:hover .md-clipboard {
+  opacity: 1;
+  color: var(--md-typeset-color);
+}
+
+.md-typeset .highlight .md-clipboard:hover,
+.md-typeset pre .md-clipboard:hover {
+  color: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color);
+  background-color: color-mix(in srgb, var(--md-primary-fg-color) 8%, var(--md-default-bg-color));
+}

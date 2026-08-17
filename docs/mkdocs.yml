@@ -1,4 +1,4 @@
-site_name: spec.visualli.ai
+site_name: Visualli Specification & SDK
 site_url: https://spec.visualli.ai
 
 repo_url: https://github.com/visualli-ai/spec
@@ -12,6 +12,7 @@ nav:
   - 📖 Concepts: concepts.md
   - 📐 Specification: spec.md
   - 💻 Running it locally: run-locally.md
+  - ⬇️ Downloads: downloads.md
   - Visualli SDK:
       - Overview: visualli-sdk/index.md
       - ⚛️ React:
@@ -70,6 +71,9 @@ markdown_extensions:
       toc_depth: 3
   - attr_list
   - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
