@@ -193,14 +193,14 @@ function convertLayerWithContainers(
     );
   }
 
-  const byId = new Map(flatNodes.map(n => [n.id, n]));
+  const byId = new Map(flatNodes.map((n: FlatNode) => [n.id, n]));
   const containerNodeIds = new Set<string>();
   const containerGroups = new Map<string, FlatNode[]>();
 
   for (const container of layer.containers) {
-    const group = container.nodes.map(id => byId.get(id)).filter((n): n is FlatNode => !!n);
+    const group = container.nodes.map((id: string) => byId.get(id)).filter((n: FlatNode | undefined): n is FlatNode => !!n);
     if (!group.length) continue;
-    container.nodes.forEach(id => containerNodeIds.add(id));
+    container.nodes.forEach((id: string) => containerNodeIds.add(id));
     const formation = ((container.data as unknown as Record<string, unknown> | undefined)?.['formation'] as string | undefined) ?? 'radial';
     applyFormation(group, formation);
     containerGroups.set(container.id, group);

@@ -104,12 +104,7 @@ export function parseVisualliFile(content: string): VisualliDocument {
   return doc;
 }
 
-/**
- * Fetch and parse a .visualli file from a URL.
- *
- * @throws VisualliParseError | Error
- */
-export async function loadVisualliFile(url: string): Promise<VisualliDocument> {
+export async function fetchAndParseVisualli(url: string): Promise<VisualliDocument> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);

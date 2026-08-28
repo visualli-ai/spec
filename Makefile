@@ -33,8 +33,8 @@ install:
 	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]==0.72.3"
 	@echo "Installing MkDocs + Material theme + Mermaid..."
 	@$(VENV)/bin/pip install mkdocs-material mkdocs-mermaid2-plugin
-	@echo "Installing TypeScript dependencies..."
-	cd bindings/typescript && npm install
+	@echo "Installing workspace dependencies..."
+	npm install
 	@echo "Installing code generation tools (dev only)..."
 	npm install -g json-schema-to-typescript
 

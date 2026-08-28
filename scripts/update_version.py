@@ -18,7 +18,12 @@ def update_version():
     if os.path.exists(schema_path):
         with open(schema_path, "r") as f:
             schema = json.load(f)
-        schema["title"] = f"Visualli Spec {version}"
+        
+        # Keep title constant so generated types don't change names on version bumps
+        schema["title"] = "VisualliSpec"
+        # We can store the version in a custom property or description if needed
+        # but changing title breaks downstream type imports.
+        
         with open(schema_path, "w") as f:
             json.dump(schema, f, indent=2)
         print(f"Updated {schema_path}")
@@ -35,6 +40,7 @@ def update_version():
 
     # 3. Update package.json files
     paths = [
+        "package.json",
         "bindings/typescript/package.json",
         "renderers/visualli-sdk/sdk/core/package.json",
         "renderers/visualli-sdk/sdk/react/package.json"
@@ -48,11 +54,31 @@ def update_version():
                 json.dump(pkg, f, indent=2)
             print(f"Updated {p}")
 
-    # 4. Sync package-lock.json if needed
-    sdk_root = "renderers/visualli-sdk"
-    if os.path.exists(os.path.join(sdk_root, "package.json")):
-        print(f"Syncing {sdk_root}/package-lock.json...")
-        os.system(f"cd {sdk_root} && npm install --package-lock-only")
+    # 4. Sync package-lock.json using JSON parser to preserve OS-specific optional dependencies
+    lockfile_paths = [
+        "package-lock.json",
+        "bindings/typescript/package-lock.json"
+    ]
+    for p in lockfile_paths:
+        if os.path.exists(p):
+            print(f"Syncing {p}...")
+            with open(p, "r") as f:
+                lock = json.load(f)
+            
+            # Update root version only if it exists
+            if "version" in lock:
+                lock["version"] = version
+            
+            # Update root workspace version if it exists
+            if "packages" in lock and "" in lock["packages"]:
+                if "version" in lock["packages"][""]:
+                    lock["packages"][""]["version"] = version
+                
+            with open(p, "w") as f:
+                json.dump(lock, f, indent=2)
+            # Add newline at EOF to match npm format
+            with open(p, "a") as f:
+                f.write("\n")
 
     # 5. Update README.md badge
     readme_path = "README.md"

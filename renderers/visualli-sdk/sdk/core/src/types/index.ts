@@ -12,6 +12,5 @@ export {
   type Layer,
   type Connection,
   type Extension,
-  type VisualliSpec011,
   type VisualliFragment,
 } from './schema.js';

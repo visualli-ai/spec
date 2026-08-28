@@ -10,3 +10,7 @@ __pycache__
 docs/js/visualli-loader.bundle.js
 docs/assets/example.visualli
 dist-loader/
+
+# Turborepo
+.turbo
+.turbo/
