@@ -16,12 +16,11 @@ import type {
   Container,
   Layer,
   Extension,
-  VisualliSpec011,
 } from '@visualli/bindings';
 
 // ─── Re-exports ────────────────────────────────────────────────────────────────
 // Export the generated types from bindings
-export type { Meta, Node, Connection, Container, Layer, Extension, VisualliSpec011 };
+export type { Meta, Node, Connection, Container, Layer, Extension };
 
 // Union type for JSONL fragments
 export type VisualliFragment = Meta | Layer;
