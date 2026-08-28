@@ -150,12 +150,12 @@ class Layer(BaseModel):
     containers: Annotated[list[Container] | None, Field(validate_default=True)] = []
 
 
-class VisualliSpec012(RootModel[Meta | Extension | Layer]):
+class VisualliSpec013(RootModel[Meta | Extension | Layer]):
     root: Annotated[
         Meta | Extension | Layer,
         Field(
             description="Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.",
             discriminator="type",
-            title="Visualli Spec 0.1.2",
+            title="Visualli Spec 0.1.3",
         ),
     ]

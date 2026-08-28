@@ -8,7 +8,7 @@
 /**
  * Schema for a single line in a .visualli (JSONL) file. Each line must be one of: Meta, Extension, or Layer.
  */
-export type VisualliSpec012 = Meta | Extension | Layer;
+export type VisualliSpec013 = Meta | Extension | Layer;
 
 export interface Meta {
   type: "meta";
