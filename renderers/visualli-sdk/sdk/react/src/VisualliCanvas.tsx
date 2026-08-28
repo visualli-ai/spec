@@ -220,7 +220,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const setCenter = useViewportStore(s => s.setCenter);
     const setZoom = useViewportStore(s => s.setZoom);
 
-    const nodes = useNodeStore(s => s.nodes)
+    const nodes = useNodeStore(s => s.nodes);
     const setNodes = useNodeStore(s => s.setNodes);
     const updateNodePosition = useNodeStore(s => s.updateNodePosition);
 
