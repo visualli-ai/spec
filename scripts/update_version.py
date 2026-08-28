@@ -59,12 +59,14 @@ def update_version():
             with open(p, "r") as f:
                 lock = json.load(f)
             
-            # Update root version
-            lock["version"] = version
+            # Update root version only if it exists
+            if "version" in lock:
+                lock["version"] = version
             
             # Update root workspace version if it exists
             if "packages" in lock and "" in lock["packages"]:
-                lock["packages"][""]["version"] = version
+                if "version" in lock["packages"][""]:
+                    lock["packages"][""]["version"] = version
                 
             with open(p, "w") as f:
                 json.dump(lock, f, indent=2)
