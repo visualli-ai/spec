@@ -32,11 +32,16 @@ export function getChildLayerForNode(
   currentLayerId: string,
 ): VisualliLayer | null {
   // Walk all layers looking for one whose `parentNodeId` matches
-  for (const [, layer] of doc.layers) {
-    if (layer.parentLayerId === currentLayerId && layer.parentNodeId === nodeId) {
-      return layer;
+    for (const [, layer] of doc.layers) {
+      if (layer.parentLayerId === currentLayerId && layer.parentNodeId === nodeId) {
+        return layer;
+      }
     }
-  }
+    return null;
+}
+
+/**
+ * 
  */
 export function getLayerForNavigation(
   doc: VisualliDocument,

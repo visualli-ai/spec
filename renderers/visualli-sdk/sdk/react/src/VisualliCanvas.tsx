@@ -211,12 +211,21 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         connections: getConnectionsForLayer(doc, currentLayerId),
         containers: getContainersForLayer(doc, currentLayerId) as ContainerGroup[],
       };
-    } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] };onst viewport  = useViewportStore(s => ({
-    centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel,
-    canvasWidth: s.canvasWidth, canvasHeight: s.canvasHeight,
-  }));
-  const clearSel  = useSelectionStore(s => s.clear);
-  const select    = useSelectionStore(s => s.select);
+    } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] }; }
+    }, [doc, currentLayerId]);
+    const viewport  = useViewportStore(s => ({
+      centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel,
+      canvasWidth: s.canvasWidth, canvasHeight: s.canvasHeight,
+    }));
+    const setCenter = useViewportStore(s => s.setCenter);
+    const setZoom = useViewportStore(s => s.setZoom);
+
+    const nodes = useNodeStore(s => s.nodes);
+    const setNodes = useNodeStore(s => s.setNodes);
+    const updateNodePosition = useNodeStore(s => s.updateNodePosition);
+
+    const clearSel  = useSelectionStore(s => s.clear);
+    const select    = useSelectionStore(s => s.select);
 
   // Sync nodes → store
   useEffect(() => {

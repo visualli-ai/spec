@@ -101,6 +101,10 @@ export function parseVisualliFile(content: string): VisualliDocument {
   if (!doc.meta) throw new VisualliParseError('Missing required meta section');
   if (!doc.rootLayer) throw new VisualliParseError('Missing root layer (level 0)');
 
+  return doc;
+}
+
+export async function fetchAndParseVisualli(url: string): Promise<VisualliDocument> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
