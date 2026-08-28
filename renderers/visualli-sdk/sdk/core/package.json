@@ -62,7 +62,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@visualli/bindings": "*",
+    "@visualli/bindings": "file:../../../../bindings/typescript",
     "rbush": "^3.0.1"
   },
   "devDependencies": {

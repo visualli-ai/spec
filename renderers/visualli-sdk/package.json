@@ -28,7 +28,6 @@
   "workspaces": [
     "apps/*",
     "sdk/*",
-    "tooling/*",
-    "../../bindings/typescript"
+    "tooling/*"
   ]
 }
