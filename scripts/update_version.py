@@ -48,16 +48,29 @@ def update_version():
                 json.dump(pkg, f, indent=2)
             print(f"Updated {p}")
 
-    # 4. Sync package-lock.json if needed
-    sdk_root = "renderers/visualli-sdk"
-    if os.path.exists(os.path.join(sdk_root, "package.json")):
-        print(f"Syncing {sdk_root}/package-lock.json...")
-        os.system(f"cd {sdk_root} && npm install --package-lock-only")
-
-    ts_bindings_root = "bindings/typescript"
-    if os.path.exists(os.path.join(ts_bindings_root, "package.json")):
-        print(f"Syncing {ts_bindings_root}/package-lock.json...")
-        os.system(f"cd {ts_bindings_root} && npm install --package-lock-only")
+    # 4. Sync package-lock.json using JSON parser to preserve OS-specific optional dependencies
+    lockfile_paths = [
+        "bindings/typescript/package-lock.json",
+        "renderers/visualli-sdk/package-lock.json"
+    ]
+    for p in lockfile_paths:
+        if os.path.exists(p):
+            print(f"Syncing {p}...")
+            with open(p, "r") as f:
+                lock = json.load(f)
+            
+            # Update root version
+            lock["version"] = version
+            
+            # Update root workspace version if it exists
+            if "packages" in lock and "" in lock["packages"]:
+                lock["packages"][""]["version"] = version
+                
+            with open(p, "w") as f:
+                json.dump(lock, f, indent=2)
+            # Add newline at EOF to match npm format
+            with open(p, "a") as f:
+                f.write("\n")
 
     # 5. Update README.md badge
     readme_path = "README.md"
