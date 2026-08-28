@@ -18,7 +18,12 @@ def update_version():
     if os.path.exists(schema_path):
         with open(schema_path, "r") as f:
             schema = json.load(f)
-        schema["title"] = f"Visualli Spec {version}"
+        
+        # Keep title constant so generated types don't change names on version bumps
+        schema["title"] = "VisualliSpec"
+        # We can store the version in a custom property or description if needed
+        # but changing title breaks downstream type imports.
+        
         with open(schema_path, "w") as f:
             json.dump(schema, f, indent=2)
         print(f"Updated {schema_path}")

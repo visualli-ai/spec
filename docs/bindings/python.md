@@ -19,7 +19,7 @@ pip install "git+https://github.com/visualli-ai/spec.git@main#subdirectory=bindi
 Import as:
 
 ```python
-from visualli import Meta, Layer, Node, Connection, Container, VisualliSpec011
+from visualli import Meta, Layer, Node, Connection, Container, VisualliSpec
 ```
 
 ## Usage
@@ -67,7 +67,7 @@ except ValidationError as e:
 
 ```python
 import json
-from visualli import VisualliSpec011
+from visualli import VisualliSpec
 
 entities = []
 with open("document.visualli") as f:
@@ -76,7 +76,7 @@ with open("document.visualli") as f:
         if not line:
             continue
         obj = json.loads(line)
-        entities.append(VisualliSpec011.model_validate(obj))
+        entities.append(VisualliSpec.model_validate(obj))
 
 print("Parsed", len(entities), "entities")
 ```
