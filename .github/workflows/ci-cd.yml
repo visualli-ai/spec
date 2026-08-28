@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install
-          cd renderers/visualli-sdk && npm ci
+          cd renderers/visualli-sdk && npm install
 
       # 2. Verify Bindings & Version Propagation
       - name: Verify bindings and version propagation
@@ -55,7 +55,7 @@ jobs:
           cd ../../
           
           # Build TS Bindings & SDK
-          cd bindings/typescript && npm ci && npm run build
+          cd bindings/typescript && npm install && npm run build
           cd ../../renderers/visualli-sdk && npm run build
           
           # Build Try-It-Out Bundle
