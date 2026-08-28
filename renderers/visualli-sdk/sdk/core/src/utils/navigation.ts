@@ -37,12 +37,6 @@ export function getChildLayerForNode(
       return layer;
     }
   }
-  return null;
-}
-
-/**
- * Returns the layer to navigate INTO when double-clicking `nodeId` in `currentLayerId`.
- * Returns null when the node has no child layer.
  */
 export function getLayerForNavigation(
   doc: VisualliDocument,
@@ -141,7 +135,12 @@ export function getContainersForLayer(
 ): ContainerGroupInfo[] {
   const layer = doc.layers.get(layerId);
   if (!layer) return [];
-  return layer.containers.map(c => {
+  
+  // Defensive: ensure containers is an array
+  const containers = layer.containers ?? [];
+  if (!Array.isArray(containers)) return [];
+  
+  return containers.map(c => {
     // Schema Container has nested data.label structure
     const label = c.data?.label ?? c.id;
     return { id: c.id, label, nodeIds: c.nodes, level: layer.level };

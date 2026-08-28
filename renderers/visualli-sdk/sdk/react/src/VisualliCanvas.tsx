@@ -211,16 +211,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         connections: getConnectionsForLayer(doc, currentLayerId),
         containers: getContainersForLayer(doc, currentLayerId) as ContainerGroup[],
       };
-    } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] }; }
-  }, [doc, currentLayerId]);
-
-  // ── Stores ────────────────────────────────────────────────────────────────
-  const setNodes  = useNodeStore(s => s.setNodes);
-  const nodes     = useNodeStore(s => s.nodes);
-  const updateNodePosition = useNodeStore(s => s.updateNodePosition);
-  const setCenter = useViewportStore(s => s.setCenter);
-  const setZoom   = useViewportStore(s => s.setZoom);
-  const viewport  = useViewportStore(s => ({
+    } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] };onst viewport  = useViewportStore(s => ({
     centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel,
     canvasWidth: s.canvasWidth, canvasHeight: s.canvasHeight,
   }));
