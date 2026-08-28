@@ -26,8 +26,10 @@
     }
   },
   "workspaces": [
-    "apps/*",
-    "sdk/*",
-    "tooling/*"
-  ]
+    "bindings/typescript",
+    "renderers/visualli-sdk/apps/*",
+    "renderers/visualli-sdk/sdk/*",
+    "renderers/visualli-sdk/tooling/*"
+  ],
+  "version": "0.1.3"
 }

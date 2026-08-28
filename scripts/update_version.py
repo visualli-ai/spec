@@ -40,6 +40,7 @@ def update_version():
 
     # 3. Update package.json files
     paths = [
+        "package.json",
         "bindings/typescript/package.json",
         "renderers/visualli-sdk/sdk/core/package.json",
         "renderers/visualli-sdk/sdk/react/package.json"
@@ -55,8 +56,8 @@ def update_version():
 
     # 4. Sync package-lock.json using JSON parser to preserve OS-specific optional dependencies
     lockfile_paths = [
-        "bindings/typescript/package-lock.json",
-        "renderers/visualli-sdk/package-lock.json"
+        "package-lock.json",
+        "bindings/typescript/package-lock.json"
     ]
     for p in lockfile_paths:
         if os.path.exists(p):

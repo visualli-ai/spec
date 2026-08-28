@@ -30,7 +30,7 @@
     "react-dom": "^18.0.0"
   },
   "dependencies": {
-    "@visualli/bindings": "file:../../../../bindings/typescript",
+    "@visualli/bindings": "*",
     "@visualli/core": "*",
     "zustand": "^4.5.2",
     "konva": "^9.3.6",
