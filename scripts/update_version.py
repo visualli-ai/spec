@@ -54,6 +54,11 @@ def update_version():
         print(f"Syncing {sdk_root}/package-lock.json...")
         os.system(f"cd {sdk_root} && npm install --package-lock-only")
 
+    ts_bindings_root = "bindings/typescript"
+    if os.path.exists(os.path.join(ts_bindings_root, "package.json")):
+        print(f"Syncing {ts_bindings_root}/package-lock.json...")
+        os.system(f"cd {ts_bindings_root} && npm install --package-lock-only")
+
     # 5. Update README.md badge
     readme_path = "README.md"
     if os.path.exists(readme_path):
