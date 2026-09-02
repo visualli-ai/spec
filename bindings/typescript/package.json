@@ -1,6 +1,6 @@
 {
   "name": "@visualli/bindings",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Official Visualli TypeScript models and type definitions",
   "repository": {
     "type": "git",
