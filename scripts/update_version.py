@@ -69,10 +69,20 @@ def update_version():
             if "version" in lock:
                 lock["version"] = version
             
-            # Update root workspace version if it exists
-            if "packages" in lock and "" in lock["packages"]:
-                if "version" in lock["packages"][""]:
+            # Update workspace versions inside the lockfile's "packages" section
+            if "packages" in lock:
+                # Update the root workspace ""
+                if "" in lock["packages"] and "version" in lock["packages"][""]:
                     lock["packages"][""]["version"] = version
+                
+                # Update all other workspace packages that we bumped in step 3
+                for pkg_path in paths:
+                    if pkg_path == "package.json":
+                        continue
+                    
+                    workspace_key = pkg_path.replace("/package.json", "")
+                    if workspace_key in lock["packages"] and "version" in lock["packages"][workspace_key]:
+                        lock["packages"][workspace_key]["version"] = version
                 
             with open(p, "w") as f:
                 json.dump(lock, f, indent=2)

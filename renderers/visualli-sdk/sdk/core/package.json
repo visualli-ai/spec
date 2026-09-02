@@ -1,6 +1,6 @@
 {
   "name": "@visualli/core",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "repository": {
     "type": "git",

@@ -4,7 +4,7 @@
   <p><b>A modern, streamable, and hierarchical standard for mind mapping and visualization.</b></p>
 
   <a href="https://spec.visualli.ai"><img src="https://img.shields.io/badge/Docs-spec.visualli.ai-5b21b6?style=for-the-badge&logo=materialformkdocs&logoColor=white" alt="Docs"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Version-0.1.3-orange?style=for-the-badge" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Version-0.1.4-orange?style=for-the-badge" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"></a>
   <a href="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml"><img src="https://github.com/visualli-ai/spec/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD"></a>
 </div>

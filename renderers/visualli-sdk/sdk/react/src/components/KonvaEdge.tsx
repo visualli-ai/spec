@@ -46,12 +46,14 @@ export interface KonvaEdgeProps {
 
 const EDGE_SPACING = 25; // Increased spacing to ensure arrow head stays out of organic shapes
 const STROKE_COLOR = '#000000';
+const STROKE_COLOR_DARK = '#ffffff';
 const STROKE_WIDTH = 2.5;
 
 const KonvaEdge = memo(function KonvaEdge({
   sourceNode: from,
   targetNode: to,
   connection,
+  isDark = false,
   zoomLevel = 1.0,
 }: KonvaEdgeProps) {
   const label = (connection as { label?: string } | undefined)?.label;
@@ -194,11 +196,13 @@ const KonvaEdge = memo(function KonvaEdge({
   }, [from.x, from.y, from.width, from.branchCount, to.x, to.y, to.width, to.branchCount, label, zoomLevel]);
 
   // ── Render ────────────────────────────────────────────────────────────────
+  const strokeColor = isDark ? STROKE_COLOR_DARK : STROKE_COLOR;
+  
   return (
     <Group>
       <Line
         points={points}
-        stroke={STROKE_COLOR}
+        stroke={strokeColor}
         strokeWidth={STROKE_WIDTH}
         tension={0}
         opacity={0.9}
@@ -209,7 +213,7 @@ const KonvaEdge = memo(function KonvaEdge({
       />
       <Line
         points={arrowHeadPoints}
-        stroke={STROKE_COLOR}
+        stroke={strokeColor}
         strokeWidth={STROKE_WIDTH}
         lineCap="round"
         lineJoin="round"
