@@ -59,6 +59,8 @@ update-version:
 	@$(MAKE) generate
 
 build-loader:
+	@echo "⏳ Building Visualli SDK dependencies..."
+	@npm run build
 	@echo "⏳ Building Visualli Loader bundle..."
 	@cd renderers/visualli-sdk/apps/react && npm run build:loader
 	@mkdir -p docs/js docs/assets
