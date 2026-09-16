@@ -14,5 +14,4 @@ export * from './spatial/index.js';
 export * from './stores/index.js';
 export * from './utils/navigation.js';
 export * from './rendering/culling.js';
-export * from './config/textScaling.js';
-export * from './config/blobShapes.js';
+export * from './config/index.js';
