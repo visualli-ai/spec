@@ -1,6 +1,6 @@
 {
   "name": "@visualli/core",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "repository": {
     "type": "git",
@@ -50,6 +50,11 @@
       "types": "./dist/animations/index.d.ts",
       "import": "./dist/animations/index.js",
       "require": "./dist/animations/index.cjs"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js",
+      "require": "./dist/config/index.cjs"
     }
   },
   "files": [
