@@ -569,16 +569,8 @@
   padding: 0.1rem 0.32rem;
   border-radius: 999px;
   border: 1px solid var(--md-primary-fg-color);
-  color: var(--md-primary-fg-color) !important;
-  background: transparent;
-  text-decoration: none !important;
+  color: var(--md-primary-fg-color);
   line-height: 1.2;
   white-space: nowrap;
   margin-top: 0.25rem;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.version-tag:hover {
-  background: var(--md-primary-fg-color);
-  color: #000 !important;
 }
