@@ -60,6 +60,9 @@ extra_css:
 extra_javascript:
   - js/mermaid-loader.js
 
+hooks:
+  - hooks/version.py
+
 plugins:
   - search
   - mermaid2

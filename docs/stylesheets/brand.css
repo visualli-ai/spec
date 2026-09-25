@@ -553,3 +553,32 @@
   border-color: var(--md-primary-fg-color);
   background-color: color-mix(in srgb, var(--md-primary-fg-color) 8%, var(--md-default-bg-color));
 }
+
+/* --- GitHub version badge --- */
+.gh-version-wrapper {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.version-tag {
+  display: inline-block;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.32rem;
+  border-radius: 999px;
+  border: 1px solid var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color) !important;
+  background: transparent;
+  text-decoration: none !important;
+  line-height: 1.2;
+  white-space: nowrap;
+  margin-top: 0.25rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.version-tag:hover {
+  background: var(--md-primary-fg-color);
+  color: #000 !important;
+}
