@@ -1,4 +1,4 @@
-site_name: Visualli Specification & SDK
+site_name: Visualli™ Specification & SDK
 site_url: https://spec.visualli.ai
 
 repo_url: https://github.com/visualli-ai/spec
@@ -13,7 +13,7 @@ nav:
   - 📐 Specification: spec.md
   - ✨ Try it out!: try-it-out.md
   - ⬇️ Downloads: downloads.md
-  - Visualli SDK:
+  - Visualli™ SDK:
       - Overview: visualli-sdk/index.md
       - ⚛️ React:
           - Getting Started: visualli-sdk/react/getting-started.md
@@ -59,6 +59,9 @@ extra_css:
 
 extra_javascript:
   - js/mermaid-loader.js
+
+hooks:
+  - hooks/version.py
 
 plugins:
   - search
