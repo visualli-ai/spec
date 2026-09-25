@@ -30,12 +30,6 @@ jobs:
       - name: Install dependencies
         run: make install
 
-      - name: Install SDK dependencies
-        run: cd renderers/visualli-sdk && npm install
-
-      - name: Build SDK packages
-        run: cd renderers/visualli-sdk && npx turbo run build
-
       - name: Build Docs
         run: make docs-build
 
