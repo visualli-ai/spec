@@ -3,6 +3,8 @@ name: Visualli CI/CD
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "docs/**"
   pull_request:
     branches: ["main"]
   workflow_dispatch:
