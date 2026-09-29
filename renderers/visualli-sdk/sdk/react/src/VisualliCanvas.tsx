@@ -130,6 +130,7 @@ export interface VisualliCanvasProps {
   chromaticImmersion?: boolean;
   onNodeClick?: (node: FlatNode) => void;
   onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
+  onNodeHover?: (nodeId: string | null) => void;
   
   // Extension points for private features (implement in consuming app)
   renderOverlay?: (params: { isDark: boolean; containerWidth: number; containerHeight: number }) => React.ReactNode;
@@ -149,7 +150,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
+  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
 
   // Read file if provided (handles both File objects and string paths)
   const [fileText, setFileText] = useState<string | undefined>(undefined);
@@ -746,6 +747,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (hovered !== pointerNodeIdRef.current) {
         pointerNodeIdRef.current = hovered;
         setPointerNodeId(hovered);
+        onNodeHover?.(hovered);
       }
       if (hovered) {
         stage.container().style.cursor = 'pointer';

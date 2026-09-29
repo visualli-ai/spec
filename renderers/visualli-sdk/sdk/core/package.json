@@ -1,6 +1,6 @@
 {
   "name": "@visualli/core",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "repository": {
     "type": "git",
@@ -63,7 +63,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
