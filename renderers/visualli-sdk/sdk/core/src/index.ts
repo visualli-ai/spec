@@ -17,3 +17,6 @@ export * from './rendering/culling.js';
 export * from './config/index.js';
 export * from './theme/index.js';
 
+// The design system's choreography (layer reveal, step inside, back out, hover, reduced motion), verbatim.
+export { MOTION, EASE, revealDelay, connectorDelay, revealTotal, bloomOffset, swapDelay, cssEase, ease as easeBezier, motionVars } from './generated/geometry/motion.js';
+export type { Bezier } from './generated/geometry/motion.js';

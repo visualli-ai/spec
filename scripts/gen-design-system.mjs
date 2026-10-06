@@ -7,7 +7,7 @@
 //
 // Writes:
 //   sdk/core/src/generated/designSystem.ts   tokens (all 8 themes), metrics, fonts, type styles
-//   sdk/core/src/generated/geometry/*.ts     blob.ts + blobShapes.ts, verbatim copies
+//   sdk/core/src/generated/geometry/*.ts     blob.ts + blobShapes.ts + motion.ts, verbatim copies
 //   sdk/react/src/generated/specCss.ts       tokens.css + spec.css as strings (injected at runtime)
 //   sdk/{core,react}/design-system/          LICENSE + NOTICE.md (shipped with the packages)
 //   sdk/react/fonts/Caveat-Variable.ttf      bundled font file (shipped with the package)
@@ -151,6 +151,7 @@ export const CANVAS_STYLE = ${j(canvasStyle)} as const;
 // ── geometry (verbatim) ──────────────────────────────────────────────────────
 copy(resolve(ds, 'geometry/blob.ts'), resolve(core, 'src/generated/geometry/blob.ts'));
 copy(resolve(ds, 'geometry/blobShapes.ts'), resolve(core, 'src/generated/geometry/blobShapes.ts'));
+copy(resolve(ds, 'geometry/motion.ts'), resolve(core, 'src/generated/geometry/motion.ts'));
 
 // ── spec CSS for the DOM overlays ────────────────────────────────────────────
 // The page must keep its own <body> styles, so the spec's global `body{}` rule
