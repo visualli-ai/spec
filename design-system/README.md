@@ -18,7 +18,7 @@ Comfort attributes on `<html>`: `data-motion="reduced"`, `data-type="readable"`,
 | `index.css` | Loads fonts, tokens and component CSS in order |
 | `tokens/tokens.css` · `tokens.json` | 70 spec tokens for every theme, plus the canvas type styles (`.node-label`, `.edge-label`, …) |
 | `css/spec.css` | Map, nodes, connectors, peek, term cards, depth trail and canvas controls |
-| `geometry/` | `blob.ts` (`blobPath`, `drawBlob`, `shapeForLevel`, `RINGS`, `edgePath`, `arrowPath`), the six outlines, `geometry.json`, `container.ts` — container hulls and where their names go (`placeContainerLabel`) — and `motion.ts` — the choreography (layer reveal, step inside, back out, hover, reduced motion) as constants and functions, for renderers that animate in their own loop (e.g. canvas) |
+| `geometry/` | `blob.ts` (`blobPath`, `drawBlob`, `shapeForLevel`, `RINGS`, `edgePath`, `arrowPath`), the six outlines, `geometry.json`, `container.ts` — container hulls and where their names go (`placeContainerLabel`) — `motion.ts`, and `interaction.ts` — how terms, the peek, the touch sheet, zoom and fit behave (hover 250ms / close 300ms, click pins, Escape, the peek's 180ms grace, sheet drag and height, zoom step and limits), and `color.ts` — which topic an idea is drawn in (`topicFor`: a topic name, else the topics in sibling order when there's no color) — the choreography (layer reveal, step inside, back out, hover, reduced motion) as constants and functions, for renderers that animate in their own loop (e.g. canvas) |
 | `fonts/` | Caveat (bundled) and the Google Fonts import for Kalam and Atkinson Hyperlegible |
 
 The rules these implement are the **SPEC** rules of the Visualli canvas language. Licenses: see `LICENSE` and `NOTICE.md`.
