@@ -25,7 +25,10 @@ const CONTROLS = (params.get('controls') ?? undefined) as 'bottom-right' | undef
 const USE_EXAMPLE = params.get('doc') === 'example';
 // ?doc=noparent: a root with two differently coloured ideas, each with a child layer (the trail dot must match the clicked idea).
 const NO_PARENT = params.get('doc') === 'noparent';
-const COMFORT = (params.get('comfort') ?? '').split(',').filter(Boolean);
+const COMFORT_FLAGS = (params.get('comfort') ?? '').split(',').filter(Boolean);
+// ?comfort=readable,large,reduced
+const COMFORT = { readableType: COMFORT_FLAGS.includes('readable'), largerText: COMFORT_FLAGS.includes('large'), reducedMotion: COMFORT_FLAGS.includes('reduced') };
+const REVEAL = (params.get('reveal') ?? undefined) as 'gradual' | 'instant' | undefined;
 
 // ── Synthetic document ───────────────────────────────────────────────────────
 
@@ -135,7 +138,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     fontBaseUrl="/fonts"
     controlsPosition={CONTROLS}
     // `theme` is the new prop; older SDK builds only know `isDark`.
-    {...({ theme: THEME, comfort: COMFORT, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
+    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
     style={{ width: '100vw', height: '100vh' }}
     onLayerChange={() => { const t = performance.now(); layerResolvers.splice(0).forEach(r => r(t)); }}
   />,

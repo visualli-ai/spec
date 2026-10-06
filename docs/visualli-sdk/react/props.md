@@ -21,6 +21,7 @@ All props accepted by `<VisualliRenderer />`.
 | `respectForcedColors` | `boolean` | `true` | Switch to the matching high-contrast theme when the browser forces colors (Windows high contrast and similar). |
 | `fontBaseUrl` | `string` | jsDelivr copy of the package | Directory URL that serves `Caveat-Variable.ttf` (shipped in the package's `fonts/` folder). Set it when you self-host. |
 | `loadWebFonts` | `boolean` | `true` | Load Kalam and Atkinson Hyperlegible from Google Fonts. Set `false` if your page already loads them. |
+| `reveal` | `'gradual' \| 'instant'` | `'gradual'` | How a layer arrives. `gradual`: ideas bloom in one by one, then connectors draw, as the design system's motion describes. `instant`: everything fades in together (what `reducedMotion` does). |
 | `controlsPosition` | `'top-right' \| 'bottom-right'` | `'top-right'` | Where the zoom / fit controls sit. `top-right` is the SDK's placement (as before 0.2); `bottom-right` is the design system's (`.vi-map__ctrls`). |
 | `layout` | `'auto' \| 'touch' \| 'pointer'` | `'auto'` | Interaction layout. `auto` follows the reader's input and the map's size: touch devices get the design system's bottom-sheet peek and larger controls, pointer devices the floating peek on hover. Narrow maps (< 560px) collapse the depth trail. Force one with `touch` or `pointer`. |
 | `chromaticImmersion` | `boolean` | `false` | When enabled, child layers are tinted with their parent idea's topic color (at the design system's `immersion-alpha`), creating visual hierarchy. |

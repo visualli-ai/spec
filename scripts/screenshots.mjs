@@ -42,14 +42,17 @@ try {
     await page.evaluate(() => window.__bench.ready);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.move(4, 4); // park the pointer on empty canvas so no idea is hovered
-    await sleep(800);
+    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 });
+    await sleep(300);
     await page.screenshot({ path: resolve(out, `${theme}-root.png`) });
     const hub = await page.evaluate(() => window.__bench.hubScreen());
     await page.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
     await page.mouse.click(hub.x, hub.y);
     await page.evaluate(() => window.__bench.changed);
     await page.mouse.move(4, 4);
-    await sleep(2200);
+    await sleep(400);
+    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 });
+    await sleep(300);
     await page.screenshot({ path: resolve(out, `${theme}-layer.png`) });
     await ctx.close();
     console.error(`${theme} done`);

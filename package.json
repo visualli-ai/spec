@@ -14,7 +14,8 @@
     "bench": "node scripts/bench.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "smoke:mobile": "node scripts/smoke-mobile.mjs"
+    "smoke:mobile": "node scripts/smoke-mobile.mjs",
+    "smoke:motion": "node scripts/smoke-motion.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",

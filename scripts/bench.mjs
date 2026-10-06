@@ -52,6 +52,7 @@ try {
     await page.goto(`http://localhost:${port}/bench.html?n=${n}&theme=${theme}`);
     await page.evaluate(() => window.__bench.ready);
     await page.waitForSelector('canvas');
+    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 }); // the arrival animation is not part of the pan/zoom numbers
     const row = { n, dpr, buildMs: await page.evaluate(() => window.__bench.buildMs) };
 
     // ── layer transition (root -> N-node layer) ──
@@ -65,6 +66,7 @@ try {
     row.layerReadyMs = Math.round(tChange - t0);
     await sleep(1800);
     row.transition = await page.evaluate(() => window.__bench.stop());
+    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 });
     await sleep(500);
 
     // ── pan: drag in a sinusoid for 3 s ──

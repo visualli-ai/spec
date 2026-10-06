@@ -17,6 +17,14 @@
 - `design-system/LICENSE` and `NOTICE.md` ship inside both packages; `@visualli/react` also ships `fonts/Caveat-Variable.ttf`.
 - `npm run bench` / `scripts/bench.mjs`, `scripts/screenshots.mjs`, `scripts/smoke.mjs`; CI checks that generated files are current and that no colour, font or blob literal exists outside `src/generated/`.
 
+- Choreography from the design system's `geometry/motion.ts` (copied verbatim into `@visualli/core`: `MOTION`, `EASE`, `revealDelay`, `connectorDelay`, `revealTotal`, `bloomOffset`, `swapDelay`, `cssEase`, `easeBezier`, `motionVars`), run on the canvas:
+  - a layer arrives with ideas blooming in one by one in sibling order (scale from .55, starting half-way toward the layer's centre, ease-bloom), then connectors drawing from source to target (dashed ones fade in), while the layer settles from scale .94;
+  - Step inside zooms the current layer toward the idea (scale 3.2, ease-zoom 500 ms) and fades it; Back out shrinks it toward the centre (scale .6, 220 ms); the layers swap at the design system's swap times (320 / 220 ms);
+  - ideas lift (ease-bloom) and their rings turn and grow (ease-standard) over `duration-base` on hover, press and select, instead of snapping;
+  - reduced motion: no zoom, the layers swap at once and the new one fades in together (120 ms). New `reveal="instant"` prop gives the same arrival without turning motion off. The map root carries `data-reveal` and `data-vi-reveal="running" | "idle"`.
+  - For performance, layers of more than 30 ideas compress the stagger (ideas and connectors share slots), and layers of more than 150 ideas fade in together; hover lifts snap on layers of more than 150 ideas.
+- `scripts/smoke-motion.mjs` (`npm run smoke:motion`) checks the choreography in a real browser against the numbers in `design-system/geometry/motion.ts`.
+
 ### Fixed
 - Touch: tapping an idea no longer shows the peek for a moment and closes it. Touch events were treated as non-primary presses (they carry no `button`), so a tap only reached the idea through the browser's compatibility mouse events, which also cleared the peek. Touch is now handled directly, compatibility mouse events after a tap are ignored, and the peek is pinned until dismissed.
 
@@ -34,6 +42,9 @@
 
 ### Deprecated
 - `isDark` (use `theme`); `'light' | 'dark' | 'auto'` remain valid `theme` values for this release.
+
+### Deprecated (animation)
+- `useKonvaLayerTransition`, `KonvaLayerTransitionAnimator` / `konvaLayerTransitionAnimator`: no longer used by `VisualliCanvas` (its transitions now follow the design system's choreography); kept exported for one release.
 
 ### Removed
 - `SketchyBoxKonva`; `DS_COLORS`, `DS_TYPOGRAPHY`, `DS_RADII`, `BRAND_COLORS`, `LEVEL_COLORS`, `SEMANTIC_COLORS`, `THEME_COLORS`, `CANVAS_COLORS`, `FONTS`, `FONT_SIZES`, `SPACING`, `getThemeBackground/Text/Border`, `darkenHexColor`, `getColorForLevel`, `COLOR_*` and `BORDER_WIDTH_*` / `CORNER_RADIUS` constants; `ALL_BLOB_SHAPES`, `ACTIVE_BLOB_TYPES`, `BLOB_LAYER_CONFIG`, `NODE_LAYER_CONFIG`, `BLOB_TEXT_OFFSETS`, `getBlobTypeForLayer`, `drawBlobPath`, `buildBlobPathData` (use the design system's `blobPath`, `RINGS`, `shapeForLevel`).

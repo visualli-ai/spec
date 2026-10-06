@@ -24,14 +24,14 @@ try {
     const ctx = await browser.newContext({ viewport: vp, hasTouch: touch, isMobile: touch, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
     await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=${theme}`);
-    await page.evaluate(() => window.__bench.ready); await page.waitForSelector('canvas'); await page.waitForTimeout(800);
+    await page.evaluate(() => window.__bench.ready); await page.waitForSelector('canvas'); await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 }); await page.waitForTimeout(300);
     const pos = t => page.evaluate(x => window.__bench.nodeScreen(x), t);
     const go = async (t) => {
       const p = await pos(t);
       await page.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
       if (touch) { await page.touchscreen.tap(p.x, p.y); await page.waitForSelector('.vi-fact--sheet .vi-fact__step'); await page.tap('.vi-fact--sheet .vi-fact__step'); }
       else { await page.mouse.click(p.x, p.y); }
-      await page.evaluate(() => window.__bench.changed); await page.waitForTimeout(1800);
+      await page.evaluate(() => window.__bench.changed); await page.waitForTimeout(400); await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 }); await page.waitForTimeout(300);
     };
     await go('The Water Cycle'); await go('Condensation');
     const leaf = await pos('Cloud Formation');
