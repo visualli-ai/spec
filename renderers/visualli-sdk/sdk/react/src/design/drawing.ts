@@ -1,6 +1,6 @@
 // ─── Canvas drawing ──────────────────────────────────────────────────────────
 //
-// Draws ideas, connectors and group frames onto a native 2D context using the
+// Draws ideas and connectors onto a native 2D context using the
 // design system's geometry and tokens. Konva owns the stage, layers, viewport
 // and layer transitions; these functions only paint.
 //
@@ -307,42 +307,3 @@ export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector,
   c.restore();
 }
 
-// ── Group frames ──────────────────────────────────────────────────────────────
-
-export interface GroupRect { x: number; y: number; w: number; h: number }
-
-/** Frame around a group of ideas: the outermost ring of each member plus padding. */
-export function groupRect(nodes: ReadonlyArray<FlatNode>, padding: number): GroupRect | null {
-  if (nodes.length === 0) return null;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const n of nodes) {
-    const { rx, ry } = nodeRadii(n.width);
-    const rs = ringsFor(n.branchCount);
-    const s = rs.length ? RINGS[rs.length - 1]!.scale : 1;
-    minX = Math.min(minX, n.x - rx * s); maxX = Math.max(maxX, n.x + rx * s);
-    minY = Math.min(minY, n.y - ry * s); maxY = Math.max(maxY, n.y + ry * s);
-  }
-  return { x: minX - padding, y: minY - padding, w: maxX - minX + padding * 2, h: maxY - minY + padding * 2 };
-}
-
-export function drawGroup(c: CanvasRenderingContext2D, r: GroupRect, label: string | undefined, d: Design, zoom: number): void {
-  c.save();
-  c.strokeStyle = d.tokens['line-strong']!;
-  c.lineWidth = CANVAS_STYLE.group.strokeWidth;
-  c.setLineDash([...CANVAS_STYLE.group.dash]);
-  c.beginPath();
-  c.roundRect(r.x, r.y, r.w, r.h, d.metrics.radiusMd);
-  c.stroke();
-  c.setLineDash([]);
-  if (label) {
-    // Constant on-screen size, anchored to the frame's top-left corner.
-    const inv = Math.min(1 / Math.max(zoom, 0.0001), 3);
-    const px = CANVAS_STYLE.group.labelSize * inv;
-    c.font = `${CANVAS_STYLE.group.labelWeight} ${px}px ${d.fontNote}`;
-    c.fillStyle = d.tokens['ink-muted']!;
-    c.textAlign = 'left';
-    c.textBaseline = 'alphabetic';
-    c.fillText(label, r.x + d.metrics.space4 * inv, r.y + d.metrics.space4 * inv + px * 0.8);
-  }
-  c.restore();
-}

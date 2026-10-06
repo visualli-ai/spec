@@ -7,7 +7,7 @@
 //
 // Writes:
 //   sdk/core/src/generated/designSystem.ts   tokens (all 8 themes), metrics, fonts, type styles
-//   sdk/core/src/generated/geometry/*.ts     blob.ts + blobShapes.ts + motion.ts, verbatim copies
+//   sdk/core/src/generated/geometry/*.ts     blob.ts + blobShapes.ts + motion.ts + container.ts, verbatim copies
 //   sdk/react/src/generated/specCss.ts       tokens.css + spec.css as strings (injected at runtime)
 //   sdk/{core,react}/design-system/          LICENSE + NOTICE.md (shipped with the packages)
 //   sdk/react/fonts/Caveat-Variable.ttf      bundled font file (shipped with the package)
@@ -87,7 +87,12 @@ const pick = (re, what) => {
 };
 const numList = (v) => v.trim().split(/\s+/).map(Number);
 const edgeFont = pick(/\.vi-edge__label \{ font: (\d+) calc\((\d+)px/, '.vi-edge__label font');
-const groupFont = pick(/\.vi-map__group-label \{[^}]*?font: (\d+) (\d+)px/, '.vi-map__group-label font');
+// The group name pill (.vi-map__group-label): weight / line height from `font`, the size from the `font-size: calc(Npx …)`
+// that overrides it (scaled by label scale and the zoom compensation at draw time), box, colours and the contrast border.
+const groupLabelRule = pick(/(?:^|\n)\.vi-map__group-label \{([^}]*)\}/, '.vi-map__group-label rule')[1];
+const gl = (re, what) => { const m = re.exec(groupLabelRule); if (!m) throw new Error(`design-system/css/spec.css: .vi-map__group-label has no ${what}`); return m; };
+const groupFont = gl(/font: (\d+) \d+px\/([\d.]+)/, 'font');
+const groupPad = numList(gl(/padding: ([\d px]+);/, 'padding')[1].replace(/px/g, ''));
 const readableEdge = pick(/\[data-type="readable"\] \.vi-edge__label \{ font-size: calc\((\d+)px[^}]*font-weight: (\d+)/, 'readable edge label');
 const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\(var\(--vi-ring-turn, (-?[\d.]+)deg\)\) scale\(var\(--vi-ring-grow, ([\d.]+)\)\)/, 'node hover rings transform');
 const lift = pick(/button\.vi-node:hover \{ transform: translateY\(calc\(var\(--vi-lift, (-?[\d.]+)px\) \* -1\)\)/, 'node hover lift');
@@ -117,7 +122,16 @@ const canvasStyle = {
     strokeWidth: +pick(/\.vi-map__group rect \{[^}]*stroke-width: ([\d.]+)/, 'group stroke width')[1],
     dash: numList(pick(/\.vi-map__group rect \{[^}]*stroke-dasharray: ([\d ]+);/, 'group dash')[1]),
     labelWeight: +groupFont[1],
-    labelSize: +groupFont[2],
+    labelLineHeight: +groupFont[2],
+    labelSize: +gl(/font-size: calc\((\d+)px/, 'font-size calc')[1],
+    labelPadding: { top: groupPad[0], x: groupPad[1], bottom: groupPad[2] ?? groupPad[0] },
+    labelMaxWidth: +gl(/max-width: (\d+)px/, 'max-width')[1],
+    labelBorderWidth: +gl(/border: ([\d.]+)px solid/, 'border width')[1],
+    labelFill: gl(/background: var\(--([\w-]+)\)/, 'background token')[1],
+    labelBorder: gl(/border: [\d.]+px solid var\(--([\w-]+)\)/, 'border token')[1],
+    labelInk: gl(/[^-]color: var\(--([\w-]+)\)/, 'text colour token')[1],
+    contrastLabelBorderWidth: +pick(/\[data-theme\^="contrast"\] \.vi-map__group-label \{ border: ([\d.]+)px solid/, 'contrast group label border')[1],
+    contrastLabelBorder: pick(/\[data-theme\^="contrast"\] \.vi-map__group-label \{ border: [\d.]+px solid var\(--([\w-]+)\)/, 'contrast group label border token')[1],
   },
 };
 
@@ -152,6 +166,7 @@ export const CANVAS_STYLE = ${j(canvasStyle)} as const;
 copy(resolve(ds, 'geometry/blob.ts'), resolve(core, 'src/generated/geometry/blob.ts'));
 copy(resolve(ds, 'geometry/blobShapes.ts'), resolve(core, 'src/generated/geometry/blobShapes.ts'));
 copy(resolve(ds, 'geometry/motion.ts'), resolve(core, 'src/generated/geometry/motion.ts'));
+copy(resolve(ds, 'geometry/container.ts'), resolve(core, 'src/generated/geometry/container.ts'));
 
 // ── spec CSS for the DOM overlays ────────────────────────────────────────────
 // The page must keep its own <body> styles, so the spec's global `body{}` rule

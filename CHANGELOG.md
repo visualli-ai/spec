@@ -3,7 +3,7 @@
 ## 0.2.0 — Visualli design system rendering
 
 `@visualli/core` and `@visualli/react` 0.2.0 render a `.visualli` map exactly like the Visualli design system.
-**Conforms to design system 0.1.0** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
+**Conforms to design system 0.1.1** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
 
 ### Added
 - All 8 design-system themes (`light`, `dark`, `focus-*`, `colorsafe-*`, `contrast-*`) via the `theme` prop; family names (`focus`, `colorsafe`, `contrast`) and `'auto'` follow the reader. Forced-colors switches to the high-contrast theme (`respectForcedColors`).
@@ -23,6 +23,7 @@
   - ideas lift (ease-bloom) and their rings turn and grow (ease-standard) over `duration-base` on hover, press and select, instead of snapping;
   - reduced motion: no zoom, the layers swap at once and the new one fades in together (120 ms). New `reveal="instant"` prop gives the same arrival without turning motion off. The map root carries `data-reveal` and `data-vi-reveal="running" | "idle"`.
   - For performance, layers of more than 30 ideas compress the stagger (ideas and connectors share slots), and layers of more than 150 ideas fade in together; hover lifts snap on layers of more than 150 ideas.
+- `@visualli/core`: the design system's `geometry/container.ts`, copied verbatim (`HULL`, `containerHull`, `labelCandidates`, `placeContainerLabel`, `connectorSamples`; types `Hull`, `LabelBox`, `LabelPlacement`, `LabelSide`), with conformance tests against `design-system/`. `@visualli/react`: `KonvaContainerLabelLayer` (container names above ideas), `layoutContainers`, `measurePill`, `drawHull`, `drawPill`; `KonvaContainerLayer` takes the layer's `connections` so names avoid them. The generator reads the pill's size, box, colours and contrast border from `.vi-map__group-label` in `css/spec.css` (the label size now comes from its `font-size`, 26px, not the 22px `font` shorthand it overrides).
 - `scripts/smoke-motion.mjs` (`npm run smoke:motion`) checks the choreography in a real browser against the numbers in `design-system/geometry/motion.ts`.
 
 ### Fixed
@@ -35,10 +36,10 @@
 ### Changed
 - Colours, fonts, radii, motion and geometry are generated from `design-system/` at build time (`scripts/gen-design-system.mjs`); a token-only design-system change re-renders after `npm run build` with no code edits.
 - Culling uses the idea's centred visual bounds (ideas were culled as if `x, y` were a top-left corner); the node layer culls from the live stage transform, so panning never shows blank areas.
-- Ideas, connectors and group frames are painted by one Konva shape per layer with cached `Path2D` outlines.
+- Ideas, connectors and container hulls are painted by one Konva shape per layer with cached `Path2D` outlines.
 - The canvas follows `devicePixelRatio` (including changes while running). The old `pixelRatio={1}` prop had no effect on Konva's stage and is removed.
 - Document colours map to the nearest of the design system's eight topics.
-- Group frames use the design system's dashed frame with the label on its top-left corner.
+- Containers follow the design system's `geometry/container.ts` (design system 0.1.1): the dashed hull is a fixed 150 / 125 beyond the member ideas' centres with radius-48 corners (was padding around the ideas' outlines with `radius-md`), and the group's name is a pill straddling the hull's edge — `topic-stone` fill, `topic-stone-ring` border (the contrast themes: `line-strong`, 2px), `node-ink` text in the note face at 26px × label scale, growing up to 1.3× when zoomed out like idea labels, one line with an ellipsis past 420px (was muted text at the frame's top-left corner). Its spot comes from `placeContainerLabel`: bottom centre when clear, else the candidate along the four edges that best avoids every idea (with its rings), every connector curve and the names placed before it. Names are painted on a layer above connectors and ideas, so nothing runs over them; placement uses the size at 100% so names don't hop while zooming, and follows dragged ideas.
 
 ### Deprecated
 - `isDark` (use `theme`); `'light' | 'dark' | 'auto'` remain valid `theme` values for this release.

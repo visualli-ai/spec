@@ -20,3 +20,7 @@ export * from './theme/index.js';
 // The design system's choreography (layer reveal, step inside, back out, hover, reduced motion), verbatim.
 export { MOTION, EASE, revealDelay, connectorDelay, revealTotal, bloomOffset, swapDelay, cssEase, ease as easeBezier, motionVars } from './generated/geometry/motion.js';
 export type { Bezier } from './generated/geometry/motion.js';
+// Containers: the dashed hull around a group's ideas and where its name goes (a pill on the hull, placed clear of
+// ideas, connectors and other names), verbatim from the design system's geometry/container.ts.
+export { HULL, containerHull, labelCandidates, placeContainerLabel, connectorSamples } from './generated/geometry/container.js';
+export type { Hull, Box as LabelBox, LabelPlacement, LabelSide, Pt } from './generated/geometry/container.js';

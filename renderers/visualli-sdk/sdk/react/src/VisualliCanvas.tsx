@@ -42,6 +42,7 @@ import KonvaStage           from './components/KonvaStage';
 import KonvaNodeLayer       from './components/KonvaNodeLayer';
 import KonvaEdgeLayer       from './components/KonvaEdgeLayer';
 import KonvaContainerLayer  from './components/KonvaContainerLayer';
+import KonvaContainerLabelLayer from './components/KonvaContainerLabelLayer';
 import NavigationStack, { type NavStackEntry } from './components/NavigationStack';
 import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
 import { A11yLayer } from './components/A11yLayer';
@@ -992,7 +993,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
             onTouchMove={handleStageTouchMove}
             onTouchEnd={handleStageTouchEnd}
           >
-            <KonvaContainerLayer nodes={flatNodes} containers={containers} design={design} />
+            <KonvaContainerLayer nodes={flatNodes} containers={containers} connections={connections} design={design} />
             <KonvaEdgeLayer nodes={flatNodes} connections={connections} design={design} isDragging={isDraggingState} clock={clock} />
             <KonvaNodeLayer
               design={design}
@@ -1004,6 +1005,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
               selectedNodeId={selectedNodeId}
               focusedNodeId={focusedNodeId}
             />
+            {/* Container names above connectors and ideas, so nothing runs over them. */}
+            <KonvaContainerLabelLayer containers={containers} connections={connections} design={design} />
           </KonvaStage>
         )}
       </div>

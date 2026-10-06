@@ -73,6 +73,7 @@ export { default as KonvaNodeLayer }      from './components/KonvaNodeLayer';
 export { default as KonvaEdgeLayer }      from './components/KonvaEdgeLayer';
 export { default as KonvaContainer }      from './components/KonvaContainer';
 export { default as KonvaContainerLayer } from './components/KonvaContainerLayer';
+export { default as KonvaContainerLabelLayer } from './components/KonvaContainerLabelLayer';
 export { default as NavigationStack }     from './components/NavigationStack';
 export { default as ZoomControls }        from './components/ZoomControls';
 export { PeekCard, TermCard, DepthTrail, splitTerms } from './components/Overlays';
@@ -83,4 +84,6 @@ export type { KonvaNodeProps }            from './components/KonvaNode';
 export type { KonvaEdgeProps }            from './components/KonvaEdge';
 export type { KonvaStageProps }           from './components/KonvaStage';
 export type { ContainerGroup }            from './components/KonvaContainerLayer';
+export { layoutContainers, measurePill, drawHull, drawPill } from './design/containers';
+export type { PlacedContainer, PlacedPill } from './design/containers';
 

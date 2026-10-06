@@ -741,6 +741,19 @@ export const CANVAS_STYLE = {
       6
     ],
     "labelWeight": 700,
-    "labelSize": 22
+    "labelLineHeight": 1.1,
+    "labelSize": 26,
+    "labelPadding": {
+      "top": 6,
+      "x": 22,
+      "bottom": 8
+    },
+    "labelMaxWidth": 420,
+    "labelBorderWidth": 1.5,
+    "labelFill": "topic-stone",
+    "labelBorder": "topic-stone-ring",
+    "labelInk": "node-ink",
+    "contrastLabelBorderWidth": 2,
+    "contrastLabelBorder": "line-strong"
   }
 } as const;
