@@ -26,12 +26,12 @@ button.vi-node { cursor: pointer; }
 [data-theme^="contrast"] .vi-node__body { filter: none; }
 .vi-node__rings { transform-origin: center; transition: transform var(--duration-base) var(--ease-standard); }
 @media (hover: hover) {
-  button.vi-node:hover .vi-node__rings { transform: rotate(-2deg) scale(1.015); }
-  button.vi-node:hover { transform: translateY(-2px); }
+  button.vi-node:hover .vi-node__rings { transform: rotate(var(--vi-ring-turn, -2deg)) scale(var(--vi-ring-grow, 1.015)); }
+  button.vi-node:hover { transform: translateY(calc(var(--vi-lift, 2px) * -1)); }
 }
 .vi-node { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .vi-node.is-selected { transform: translateY(-2px); }
-.vi-node.is-selected .vi-node__rings { transform: rotate(-2deg) scale(1.015); }
+.vi-node.is-selected .vi-node__rings { transform: rotate(var(--vi-ring-turn, -2deg)) scale(var(--vi-ring-grow, 1.015)); }
 .vi-node.is-selected .vi-node__body { stroke-width: 4; }
 .vi-node:focus-visible { outline: none; }
 .vi-node:focus-visible .vi-node__body { stroke: var(--focus); stroke-width: 4; }
@@ -78,14 +78,14 @@ button.vi-node { cursor: pointer; }
 .vi-map__slot { position: absolute; transform: translate(-50%, -50%); }
 .vi-map.is-reveal .vi-map__slot { animation: vi-bloom var(--duration-reveal) var(--ease-bloom) backwards; }
 .vi-map.is-reveal .vi-edge { animation: vi-fade var(--duration-base) var(--ease-standard) backwards; }
-.vi-map.is-reveal .vi-edge__line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: vi-line .5s var(--ease-standard) forwards; animation-delay: inherit; }
-.vi-map.is-reveal .vi-edge.is-dashed .vi-edge__line { stroke-dasharray: 7 7; stroke-dashoffset: 0; animation: vi-fade .5s var(--ease-standard) backwards; animation-delay: inherit; }
+.vi-map.is-reveal .vi-edge__line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: vi-line var(--vi-line-draw, .5s) var(--ease-standard) forwards; animation-delay: inherit; }
+.vi-map.is-reveal .vi-edge.is-dashed .vi-edge__line { stroke-dasharray: 7 7; stroke-dashoffset: 0; animation: vi-fade var(--vi-line-draw, .5s) var(--ease-standard) backwards; animation-delay: inherit; }
 .vi-map:not(.is-reveal) .vi-edge__line { stroke-dasharray: none; }
 .vi-map:not(.is-reveal) .vi-edge.is-dashed .vi-edge__line { stroke-dasharray: 7 7; }
 .vi-map__lens { position: absolute; inset: 0; transform-origin: var(--vi-ox) var(--vi-oy); }
-.vi-map.is-diving .vi-map__lens { transform: scale(3.2); opacity: 0; transition: transform var(--duration-zoom) var(--ease-zoom), opacity 160ms 150ms; }
-.vi-map.is-surfacing .vi-map__lens { transform: scale(.6); opacity: 0; transform-origin: 50% 50%; transition: transform 220ms var(--ease-zoom), opacity 200ms; }
-.vi-map.is-reveal .vi-map__lens { animation: vi-settle 260ms var(--ease-standard); }
+.vi-map.is-diving .vi-map__lens { transform: scale(var(--vi-dive-scale, 3.2)); opacity: 0; transition: transform var(--duration-zoom) var(--ease-zoom), opacity var(--vi-dive-fade, 160ms) var(--vi-dive-fade-delay, 150ms); }
+.vi-map.is-surfacing .vi-map__lens { transform: scale(var(--vi-surface-scale, .6)); opacity: 0; transform-origin: 50% 50%; transition: transform var(--vi-surface-dur, 220ms) var(--ease-zoom), opacity var(--vi-surface-fade, 200ms); }
+.vi-map.is-reveal .vi-map__lens { animation: vi-settle var(--vi-settle-dur, 260ms) var(--ease-standard); }
 [data-motion="reduced"] .vi-map__lens { animation: none !important; transform: none !important; }
 .vi-map__fact { position: absolute; }
 .vi-map.is-idle .vi-map__world { transition: transform var(--duration-base) var(--ease-standard); }
@@ -109,10 +109,10 @@ button.vi-node { cursor: pointer; }
 }
 .vi-map__trail { position: absolute; top: var(--space-4); left: var(--space-4); z-index: var(--z-chrome); }
 .vi-map__ctrls { position: absolute; bottom: var(--space-4); right: var(--space-4); z-index: var(--z-chrome); }
-[data-reveal="instant"] .vi-map.is-reveal .vi-map__slot, [data-motion="reduced"] .vi-map.is-reveal .vi-map__slot { animation: vi-fade 120ms backwards; animation-delay: 0ms !important; }
+[data-reveal="instant"] .vi-map.is-reveal .vi-map__slot, [data-motion="reduced"] .vi-map.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
 [data-reveal="instant"] .vi-map.is-reveal .vi-edge, [data-reveal="instant"] .vi-map.is-reveal .vi-edge__line, [data-motion="reduced"] .vi-map.is-reveal .vi-edge, [data-motion="reduced"] .vi-map.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .vi-map.is-reveal .vi-map__slot { animation: vi-fade 120ms backwards; animation-delay: 0ms !important; }
+  .vi-map.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
   .vi-map.is-reveal .vi-edge, .vi-map.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
 }
 [data-motion="reduced"] *, [data-motion="reduced"] *::before, [data-motion="reduced"] *::after { transition-duration: 1ms !important; }
@@ -148,7 +148,7 @@ button.vi-node { cursor: pointer; }
 .vi-map__group.is-selected text { fill: var(--focus); }
 @keyframes vi-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes vi-fade { from { opacity: 0; } }
-@keyframes vi-bloom { from { opacity: 0; transform: translate(calc(-50% + var(--vi-dx)), calc(-50% + var(--vi-dy))) scale(.55); } }
+@keyframes vi-bloom { from { opacity: 0; transform: translate(calc(-50% + var(--vi-dx)), calc(-50% + var(--vi-dy))) scale(var(--vi-bloom-from, .55)); } }
 @keyframes vi-line { to { stroke-dashoffset: 0; } }
-@keyframes vi-settle { from { transform: scale(.94); } }
+@keyframes vi-settle { from { transform: scale(var(--vi-settle-from, .94)); } }
 @keyframes vi-sheet-in { from { transform: translateY(100%); } }
