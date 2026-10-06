@@ -87,7 +87,7 @@ const pick = (re, what) => {
 };
 const numList = (v) => v.trim().split(/\s+/).map(Number);
 const edgeFont = pick(/\.vi-edge__label \{ font: (\d+) calc\((\d+)px/, '.vi-edge__label font');
-const groupFont = pick(/\.vi-map__group text \{ font: (\d+) (\d+)px/, '.vi-map__group text font');
+const groupFont = pick(/\.vi-map__group-label \{[^}]*?font: (\d+) (\d+)px/, '.vi-map__group-label font');
 const readableEdge = pick(/\[data-type="readable"\] \.vi-edge__label \{ font-size: calc\((\d+)px[^}]*font-weight: (\d+)/, 'readable edge label');
 const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\(var\(--vi-ring-turn, (-?[\d.]+)deg\)\) scale\(var\(--vi-ring-grow, ([\d.]+)\)\)/, 'node hover rings transform');
 const lift = pick(/button\.vi-node:hover \{ transform: translateY\(calc\(var\(--vi-lift, (-?[\d.]+)px\) \* -1\)\)/, 'node hover lift');
