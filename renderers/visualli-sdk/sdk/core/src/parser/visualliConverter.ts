@@ -7,7 +7,7 @@ import type { VisualliDocument } from '../types/document.js';
 import type { VisualliLayer } from '../types/layer.js';
 import type { FlatNode, NodeMap } from '../types/mindmap.js';
 import { countLayersBeneath } from './visualliParser.js';
-import { TOKENS, topicForColor, type TopicName } from '../theme/index.js';
+import { TOKENS, topicForColor, topicFromName, type TopicName } from '../theme/index.js';
 import { applyCircularLayout, calculateOptimalRadiusPercentage } from '../layout/circularLayout.js';
 import { applyLinearHorizontalLayout, applyLinearVerticalLayout } from '../layout/linearLayout.js';
 
@@ -61,13 +61,15 @@ export function resolveNodeOverlaps(nodes: FlatNode[], maxIterations = 10): void
 // ── Colour → design-system topic ─────────────────────────────────────────────
 
 /**
- * Document colours are free-form; the design system only has topics. The
- * authored colour is kept on the node and the nearest topic is resolved here
- * (missing colours fall back to a stable pick from the node id).
+ * Document colours are topic names or free-form colours; the design system only
+ * has topics. Names resolve to their topic, missing colours take the topics in
+ * sibling order, free-form colours the nearest topic (theme/topicForColor).
  */
-function resolveNodeColor(nodeId: string, authored: string | undefined): { color: string; topic: TopicName } {
-  const topic = topicForColor(authored, nodeId);
-  return { color: authored || TOKENS.light[`topic-${topic}`]!, topic };
+function resolveNodeColor(nodeId: string, authored: string | undefined, siblingIndex: number): { color: string; topic: TopicName } {
+  const topic = topicForColor(authored, nodeId, siblingIndex);
+  // A named or missing colour is carried as its topic's fill; a free-form colour is kept as authored.
+  const named = !authored || !authored.trim() || topicFromName(authored);
+  return { color: named ? TOKENS.light[`topic-${topic}`]! : authored!, topic };
 }
 
 // ── Container-formation Layout ────────────────────────────────────────────────
@@ -145,8 +147,10 @@ function makeFlatNode(
   branchCount: number,
   x = 0,
   y = 0,
+  /** Position among the layer's ideas (file order): missing colours cycle the topics by it. */
+  siblingIndex = 0,
 ): FlatNode {
-  const { color, topic } = resolveNodeColor(nodeId, authoredColor);
+  const { color, topic } = resolveNodeColor(nodeId, authoredColor, siblingIndex);
   return {
     id: nodeId,
     parentId: layer.parentNodeId ?? null,
@@ -173,7 +177,7 @@ function convertLayerWithContainers(
   const PADDING = 80;
   const flatNodes: FlatNode[] = [];
 
-  for (const node of layer.nodes) {
+  layer.nodes.forEach((node, i) => {
     const label = Array.isArray(node.data.label)
       ? (node.data.label as string[]).join(' ')
       : (node.data.label || 'Untitled');
@@ -181,10 +185,10 @@ function convertLayerWithContainers(
     flatNodes.push(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
-        node.data.color, branchCount,
+        node.data.color, branchCount, 0, 0, i,
       ),
     );
-  }
+  });
 
   const byId = new Map(flatNodes.map((n: FlatNode) => [n.id, n]));
   const containerNodeIds = new Set<string>();
@@ -247,7 +251,7 @@ export function convertLayerToFlatNodes(
 
   const flatNodes: FlatNode[] = [];
 
-  for (const node of layer.nodes) {
+  layer.nodes.forEach((node, i) => {
     const label = Array.isArray(node.data.label)
       ? (node.data.label as string[]).join(' ')
       : (node.data.label || 'Untitled');
@@ -256,10 +260,10 @@ export function convertLayerToFlatNodes(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
         node.data.color, branchCount,
-        0, 0,
+        0, 0, i,
       ),
     );
-  }
+  });
 
   if (flatNodes.length > 0) {
     const layout = layer.layout || 'radial';

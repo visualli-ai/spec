@@ -157,13 +157,29 @@ function hashSeed(seed: string | number): number {
 }
 
 /**
- * Map a document colour to the design system's topic palette.
- * A .visualli file carries free-form hex colours; the design system only has
- * eight topics, so a colour resolves to the perceptually nearest topic fill
- * (exact topic fills in any theme match exactly). Missing or unparsable colours
- * fall back to a stable pick derived from `seed` (e.g. the node id).
+ * The topic a colour names ('teal', ' Harbor'), or null. The design system's
+ * colour rule (design-system 0.1.2 `geometry/color.ts` → `topicFromName`).
  */
-export function topicForColor(color: string | undefined, seed: string | number = 0): TopicName {
+export function topicFromName(color: string | null | undefined): TopicName | null {
+  if (!color) return null;
+  const c = color.trim().toLowerCase();
+  return (TOPICS as readonly string[]).includes(c) ? (c as TopicName) : null;
+}
+
+/**
+ * Map a document colour to the design system's topic palette, following the
+ * design system's colour rule (`geometry/color.ts` → `topicFor`):
+ *  - a topic name ('teal', 'Harbor') → that topic;
+ *  - no colour → the topics in order by the idea's position among its siblings
+ *    (`siblingIndex`), so siblings differ; without an index, a stable pick from `seed`;
+ *  - any other colour → the perceptually nearest topic fill (exact topic fills in
+ *    any theme match exactly) — a .visualli file's free-form hex colours only get
+ *    themed fills this way. Unparsable colours fall back to a stable pick from `seed`.
+ */
+export function topicForColor(color: string | undefined, seed: string | number = 0, siblingIndex?: number): TopicName {
+  const named = topicFromName(color);
+  if (named) return named;
+  if ((!color || !color.trim()) && siblingIndex !== undefined) return TOPICS[((siblingIndex % TOPICS.length) + TOPICS.length) % TOPICS.length]!;
   const { lab, exact } = palettes();
   if (color) {
     const hit = exact.get(color.trim().toLowerCase());
