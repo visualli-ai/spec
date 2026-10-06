@@ -76,7 +76,7 @@ export default function KonvaNodeLayer({
 
     const c = ctx._context;
     const m = c.getTransform();
-    const opt = { shadows: !isDragging && visible.length <= SHADOW_MAX_VISIBLE, labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b) };
+    const opt = { shadows: !isDragging && visible.length <= SHADOW_MAX_VISIBLE, labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b), base: m };
     const st: IdeaState = { ...IDLE };
     for (let i = 0; i < visible.length; i++) {
       const n = visible[i]!;
@@ -87,6 +87,8 @@ export default function KonvaNodeLayer({
       st.dimmed = dimOthers && n.id !== highlighted;
       drawIdea(c, n, design, zoom, st, opt);
     }
+    c.setTransform(m);
+    c.globalAlpha = 1;
   };
 
   return (

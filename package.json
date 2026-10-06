@@ -7,7 +7,13 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen:design-system": "node scripts/gen-design-system.mjs",
+    "check:design": "node scripts/gen-design-system.mjs --check && node scripts/check-design-literals.mjs",
+    "test": "turbo run test",
+    "bench": "node scripts/bench.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",

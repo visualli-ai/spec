@@ -52,9 +52,11 @@ export function blobPath2D(shape: number, rx: number, ry: number): Path2D {
 /** Test hook. */
 export const _pathCacheSize = (): number => pathCache.size;
 
+const NO_DASH: number[] = [];
+const NO_RINGS: ReadonlyArray<never> = [];
 const dashCache = new Map<string, number[]>();
 function dashOf(spec: string): number[] {
-  if (!spec) return [];
+  if (!spec) return NO_DASH;
   let d = dashCache.get(spec);
   if (!d) { d = spec.split(/\s+/).map(Number); dashCache.set(spec, d); }
   return d;
@@ -120,6 +122,8 @@ export interface IdeaOptions {
   labels: boolean;
   /** Device pixels per world unit (canvas shadows are in device space). Computed once per frame by the caller; derived from the transform when omitted. */
   k?: number;
+  /** The context's transform at the start of the frame. When given, ideas are placed with setTransform (no save/restore); the caller must restore it afterwards. */
+  base?: DOMMatrix;
 }
 
 /**
@@ -128,19 +132,26 @@ export interface IdeaOptions {
  * LOD_DETAIL_PX only the body (no rings, shadow or label). Both are invisible
  * differences at those sizes and keep 10k-idea maps interactive.
  */
-export const LOD_TINY_PX = 6;
+export const LOD_TINY_PX = 12;
 export const LOD_DETAIL_PX = 24;
 
 /** The topic an idea is drawn with. */
 export const topicOf = (n: Pick<FlatNode, 'topic' | 'color' | 'id'>) => n.topic ?? topicForColor(n.color, n.id);
 
-/** Paint one idea (rings, body, label) centred on node.x / node.y. */
+/**
+ * Paint one idea (rings, body, label) centred on node.x / node.y.
+ *
+ * With `opt.base` (the context's transform at the start of the frame) the idea is
+ * positioned with a single setTransform and no save/restore: the caller restores
+ * the base transform after the last idea. Without it, state is saved and restored.
+ */
 export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design, zoom: number, st: IdeaState, opt: IdeaOptions): void {
   const { rx, ry } = nodeRadii(node.width);
   const { fill, ring } = topicStyle(d.theme, topicOf(node));
   const screenW = node.width * zoom;
+  const base = opt.base;
 
-  // Specks: one filled box, no save/restore.
+  // Specks: one filled box, no transform changes.
   if (screenW < LOD_TINY_PX && !st.selected && !st.focused && !st.hovered) {
     if (st.dimmed) c.globalAlpha = CANVAS_STYLE.node.dimmedOpacityFocus;
     c.fillStyle = fill;
@@ -151,49 +162,53 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
 
   const detailed = screenW >= LOD_DETAIL_PX || st.selected || st.focused || st.hovered;
   const shape = shapeOfLevel(node.level);
-  const rings = detailed ? ringsFor(node.branchCount) : ringsFor(0);
+  const rings = detailed ? ringsFor(node.branchCount) : NO_RINGS;
   const raised = st.hovered || st.pressed || st.selected;
+  const y = node.y + (raised ? CANVAS_STYLE.node.hoverLift : 0);
   let k = opt.k;
   if (k === undefined) { const m = c.getTransform(); k = Math.hypot(m.a, m.b); } // device px per world unit
 
-  c.save();
-  if (st.dimmed) c.globalAlpha = CANVAS_STYLE.node.dimmedOpacityFocus;
-  c.translate(node.x, node.y + (raised ? CANVAS_STYLE.node.hoverLift : 0));
+  if (base) c.setTransform(base.a, base.b, base.c, base.d, base.e + base.a * node.x + base.c * y, base.f + base.b * node.x + base.d * y);
+  else { c.save(); c.translate(node.x, y); }
   c.lineJoin = 'round';
+  const baseAlpha = st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1;
+  c.globalAlpha = baseAlpha;
 
   // Rings, outermost first so the inner ones sit on top.
-  const baseAlpha = c.globalAlpha;
-  const ringSpin = raised ? CANVAS_STYLE.node.hoverRingsRotate : 0;
-  const ringGrow = raised ? CANVAS_STYLE.node.hoverRingsScale : 1;
-  c.fillStyle = fill;
-  c.strokeStyle = ring;
-  for (let i = rings.length - 1; i >= 0; i--) {
-    const r = rings[i]!;
-    c.save();
-    c.rotate((r.rotate + ringSpin) * DEG);
-    c.globalAlpha = baseAlpha * r.opacity;
-    const path = blobPath2D(shape, rx * r.scale * ringGrow, ry * r.scale * ringGrow);
-    c.fill(path);
-    c.lineWidth = r.width;
-    c.setLineDash(dashOf(r.dash));
-    c.stroke(path);
-    c.restore();
+  if (rings.length) {
+    const ringSpin = raised ? CANVAS_STYLE.node.hoverRingsRotate : 0;
+    const ringGrow = raised ? CANVAS_STYLE.node.hoverRingsScale : 1;
+    c.fillStyle = fill;
+    c.strokeStyle = ring;
+    let dashed = false;
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const r = rings[i]!;
+      const angle = (r.rotate + ringSpin) * DEG;
+      c.rotate(angle);
+      c.globalAlpha = baseAlpha * r.opacity;
+      const path = blobPath2D(shape, rx * r.scale * ringGrow, ry * r.scale * ringGrow);
+      c.fill(path);
+      c.lineWidth = r.width;
+      if (r.dash) { c.setLineDash(dashOf(r.dash)); dashed = true; } else if (dashed) { c.setLineDash(NO_DASH); dashed = false; }
+      c.stroke(path);
+      c.rotate(-angle);
+    }
+    if (dashed) c.setLineDash(NO_DASH);
+    c.globalAlpha = baseAlpha;
   }
-  c.setLineDash([]);
 
   // Body.
   const body = blobPath2D(shape, rx, ry);
-  if (detailed && opt.shadows && d.nodeShadow) {
-    c.shadowColor = d.nodeShadow.color;
-    c.shadowBlur = d.nodeShadow.blur * k;
-    c.shadowOffsetX = d.nodeShadow.x * k;
-    c.shadowOffsetY = d.nodeShadow.y * k;
+  c.fillStyle = fill;
+  const shadow = detailed && opt.shadows ? d.nodeShadow : null;
+  if (shadow) {
+    c.shadowColor = shadow.color;
+    c.shadowBlur = shadow.blur * k;
+    c.shadowOffsetX = shadow.x * k;
+    c.shadowOffsetY = shadow.y * k;
   }
   c.fill(body);
-  c.shadowColor = 'transparent';
-  c.shadowBlur = 0;
-  c.shadowOffsetX = 0;
-  c.shadowOffsetY = 0;
+  if (shadow) { c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetX = 0; c.shadowOffsetY = 0; }
   c.strokeStyle = st.focused ? d.tokens['focus']! : st.selected ? d.tokens['ink']! : ring;
   c.lineWidth = st.selected || st.focused ? CANVAS_STYLE.node.selectedStrokeWidth : d.metrics.nodeStroke;
   c.stroke(body);
@@ -214,7 +229,7 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
     const y0 = -((lines.length - 1) * lh) / 2;
     for (let i = 0; i < lines.length; i++) c.fillText(lines[i]!, 0, y0 + i * lh);
   }
-  c.restore();
+  if (base) c.globalAlpha = 1; else c.restore();
 }
 
 // ── Connectors ────────────────────────────────────────────────────────────────
@@ -228,7 +243,12 @@ export function prepareConnector(g: ConnectorGeometry): PreparedConnector {
   return { ...g, path: new Path2D(g.d), arrowPath: new Path2D(g.arrow) };
 }
 
+/** Connectors shorter than this on screen, and labels smaller than LABEL_MIN_SCREEN_PX, are invisible: skipped. */
+const CONNECTOR_MIN_SCREEN_PX = 3;
+const LABEL_MIN_SCREEN_PX = 6;
+
 export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector, d: Design, zoom: number, dashed: boolean, label: string | undefined): void {
+  if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * zoom < CONNECTOR_MIN_SCREEN_PX) return;
   c.save();
   c.strokeStyle = d.tokens['edge']!;
   c.lineWidth = d.metrics.edgeWidth;
@@ -239,9 +259,10 @@ export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector,
   c.setLineDash([]);
   c.stroke(g.arrowPath);
 
-  if (label) {
+  const labelPx = label ? computeEdgeLabelScale(zoom) * (d.edgeLabel.size / EDGE_LABEL_BASE_FONT_PX) : 0;
+  if (label && labelPx * zoom >= LABEL_MIN_SCREEN_PX) {
     // Constant on-screen size, like the spec's `--vi-inv`; the readable face is smaller and bolder.
-    const px = computeEdgeLabelScale(zoom) * (d.edgeLabel.size / EDGE_LABEL_BASE_FONT_PX);
+    const px = labelPx;
     c.font = `${d.edgeLabel.weight} ${px}px ${d.fontNote}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
