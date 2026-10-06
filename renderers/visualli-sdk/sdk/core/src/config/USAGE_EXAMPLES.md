@@ -267,7 +267,6 @@ console.log('Shape 0 bounding box:', bbox);
 import { 
   BLOB_LAYER_CONFIG, 
   NODE_LAYER_CONFIG,
-  BLOB_TEXT_OFFSETS,
   ACTIVE_BLOB_TYPES 
 } from '@visualli/core/config';
 
@@ -276,9 +275,6 @@ console.log(BLOB_LAYER_CONFIG); // 3 layers with opacity, rotation, scale, etc.
 
 // Node layer configuration
 console.log(NODE_LAYER_CONFIG); // Main node rendering config
-
-// Text offsets for each shape
-console.log(BLOB_TEXT_OFFSETS); // [0, 0, 0, 0, 0, -0.10]
 
 // Active shape indices
 console.log(ACTIVE_BLOB_TYPES); // [0, 1, 2, 3, 4, 5]
