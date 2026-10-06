@@ -1,0 +1,126 @@
+// End-to-end smoke test of the read-only viewer behaviours, in a real browser:
+// peek, term definitions, step inside, depth trail, zoom/fit, keyboard + the
+// accessible DOM mirror, theme attributes. Uses docs/assets/example.visualli.
+//
+//   node scripts/smoke.mjs            (builds the playground first unless --no-build)
+
+import { spawn } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
+const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const port = 4178;
+
+if (!process.argv.includes('--no-build')) { await run('npm', ['run', 'build'], { cwd: root }); }
+await run('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir, stdio: 'ignore' });
+const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
+await sleep(2500);
+
+let failures = 0;
+const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`); if (!ok) failures++; };
+
+const browser = await chromium.launch();
+try {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error' && !/favicon|404/.test(m.text())) errors.push(m.text()); });
+  await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=light`);
+  await page.evaluate(() => window.__bench.ready);
+  await page.waitForSelector('canvas', { timeout: 8000 }); // the first draw waits for the fonts
+  await page.waitForTimeout(800);
+  // Hover an idea by title: two moves (the canvas throttles hover checks to one per 50 ms) and wait for its peek.
+  const hover = async (title) => {
+    const pos = await page.evaluate((t) => window.__bench.nodeScreen(t), title);
+    await page.mouse.move(pos.x - 25, pos.y - 25);
+    await page.waitForTimeout(80);
+    await page.mouse.move(pos.x, pos.y);
+    await page.waitForFunction((t) => document.querySelector('.vi-peek .vi-fact__title')?.textContent === t, title, { timeout: 4000 });
+  };
+  const layerChange = () => page.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+  const awaitLayer = async () => {
+    await Promise.race([page.evaluate(() => window.__bench.changed), new Promise((_, rej) => setTimeout(() => rej(new Error('layer did not change')), 8000))]);
+    await page.waitForTimeout(1800);
+  };
+
+  // ── theme attributes + design-system CSS ──
+  check('map carries data-theme', await page.getAttribute('.vi-map', 'data-theme') === 'light');
+  check('tokens reach the DOM', (await page.evaluate(() => getComputedStyle(document.querySelector('.vi-map')).getPropertyValue('--topic-teal').trim())) === '#87f2f8');
+  check('canvas follows devicePixelRatio', await page.evaluate(() => { const c = document.querySelector('canvas'); return c.width === Math.round(c.getBoundingClientRect().width * devicePixelRatio); }));
+
+  // ── accessible mirror ──
+  const rootBtn = page.locator('.vi-sr button[data-node-id]').first();
+  check('root idea is mirrored for screen readers', (await page.locator('.vi-sr button[data-node-id]').count()) === 1);
+  const label = await rootBtn.getAttribute('aria-label');
+  check('mirror exposes label, depth and "has more inside"', /The Water Cycle\. Depth 1\. Has more inside/.test(label ?? ''), label ?? '');
+  await page.keyboard.press('Tab'); // first focusable: the mirrored idea
+  check('Tab reaches the idea', await page.evaluate(() => document.activeElement?.getAttribute('data-node-id') !== null));
+
+  // ── step inside with the keyboard ──
+  await layerChange();
+  await page.keyboard.press('Enter');
+  await awaitLayer();
+  check('Enter steps inside', (await page.locator('.vi-trail li').count()) === 2);
+  check('depth trail shows the path', /Home/.test(await page.textContent('.vi-trail') ?? '') && /The Water Cycle/.test(await page.textContent('.vi-trail') ?? ''));
+  check('mirror lists the new layer', (await page.locator('.vi-sr button[data-node-id]').count()) >= 5);
+
+  // ── peek on hover, with Step inside ──
+  await hover('Evaporation');
+  check('hover opens the peek card', /Evaporation/.test(await page.textContent('.vi-peek .vi-fact__title') ?? ''));
+  check('peek has Step inside for ideas with a layer', (await page.locator('.vi-peek .vi-fact__step').count()) === 1);
+  check('peek takes the topic colours as CSS variables', /--topic-/.test(await page.getAttribute('.vi-peek', 'style') ?? ''));
+
+  // ── step inside via the peek button, find a term ──
+  await hover('Condensation');
+  await layerChange();
+  await page.click('.vi-peek .vi-fact__step');
+  await awaitLayer();
+  check('Step inside navigates', (await page.locator('.vi-trail li').count()) === 3);
+  await hover('Cloud Formation');
+  await page.waitForSelector('.vi-peek .vi-term', { timeout: 3000 });
+  await page.click('.vi-peek .vi-term');
+  check('clicking a term opens its definition card', /Water Vapor/i.test(await page.textContent('.vi-anchor-card') ?? ''));
+  check('term card shows the definition', (await page.textContent('.vi-anchor-card__desc'))?.length > 20);
+
+  // ── controls ──
+  await page.mouse.move(5, 5);
+  const pct0 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  await page.click('button[aria-label="Zoom in"]');
+  await page.waitForTimeout(200);
+  const pct1 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  check('zoom in raises the percentage', pct1 > pct0, `${pct0}% -> ${pct1}%`);
+  await page.click('button[aria-label="Zoom out"]'); await page.click('button[aria-label="Zoom out"]');
+  await page.waitForTimeout(200);
+  const pct2 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  check('zoom out lowers it', pct2 < pct1, `${pct1}% -> ${pct2}%`);
+  await page.click('button[aria-label="Fit to screen"]');
+  await page.waitForTimeout(300);
+  const pctFit = parseInt(await page.textContent('.vi-ctrls__pct'));
+  check('fit changes the zoom', pctFit !== pct2, `${pct2}% -> ${pctFit}%`);
+
+  // ── go back up: trail click and Escape ──
+  await layerChange();
+  await page.click('.vi-trail li:nth-child(2) button');
+  await awaitLayer();
+  check('trail click steps back out', (await page.locator('.vi-trail li').count()) === 2);
+  await layerChange();
+  await page.mouse.click(30, 400); // focus the map by clicking empty canvas
+  await page.keyboard.press('Escape');
+  await awaitLayer();
+  check('Escape steps back out', (await page.locator('.vi-trail li').count()) === 1);
+
+  // ── read-only: none of the product features exist ──
+  const text = (await page.textContent('body')) ?? '';
+  check('no product features in the UI', !/Go deeper|Map it|Export|Sources|Chat/i.test(text));
+  check('no console / page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
+} finally {
+  await browser.close();
+  server.kill();
+}
+console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
+process.exit(failures ? 1 : 0);

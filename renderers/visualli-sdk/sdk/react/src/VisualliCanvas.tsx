@@ -905,6 +905,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
 
   const stepInside = useCallback((nodeId: string) => { setHoveredNode(null); handleNavigate(nodeId); }, [handleNavigate]);
 
+  // The peek can unmount while the pointer is on it (Step inside, layer change): no mouseleave
+  // fires then, so clear the "pointer is on the peek" flag whenever it closes.
+  useEffect(() => { if (!hoveredNode) tooltipHoverRef.current = false; }, [hoveredNode]);
+
   // Keyboard: Esc steps back out, + / - zoom, 0 fits.
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -936,7 +940,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       role="group"
       aria-label={`${doc.meta?.title ?? 'Map'}${currentLayerTitle ? `, ${currentLayerTitle}` : ''}`}
       onKeyDown={handleKeyDown}
-      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', ...style }}
+      // Focusable by pointer so Esc / + / - / 0 work after clicking the map (Tab order is the mirrored ideas).
+      tabIndex={-1}
+      onPointerDownCapture={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) containerRef.current?.focus({ preventScroll: true }); }}
+      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
         // Only close the peek on mouse leave if not keeping it open

@@ -13,7 +13,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { VisualliCanvas, useViewportStore } from '@visualli/react';
+import { VisualliCanvas, useViewportStore, useNodeStore } from '@visualli/react';
 import { parseVisualliFile } from '@visualli/core';
 import exampleString from '../../../../../examples/example.visualli?raw';
 
@@ -97,6 +97,16 @@ const buildMs = performance.now() - t0;
     const p = s.worldToScreen(0, 0);
     const el = document.querySelector('canvas')!.getBoundingClientRect();
     return { x: el.left + p.x, y: el.top + p.y };
+  },
+  /** Screen position of the idea with this title in the current layer (for hover / click tests). */
+  nodeScreen(title: string) {
+    for (const n of useNodeStore.getState().nodes.values()) {
+      if (n.title !== title) continue;
+      const p = useViewportStore.getState().worldToScreen(n.x, n.y);
+      const el = document.querySelector('canvas')!.getBoundingClientRect();
+      return { x: el.left + p.x, y: el.top + p.y };
+    }
+    return null;
   },
   canvasRect() { const r = document.querySelector('canvas')!.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
   nextLayerChange() { return new Promise<number>(r => layerResolvers.push(r)); },
