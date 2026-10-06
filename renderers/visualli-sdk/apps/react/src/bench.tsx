@@ -21,7 +21,7 @@ const params = new URLSearchParams(location.search);
 const N = Number(params.get('n') ?? 500);
 const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
-const CONTROLS = (params.get('controls') ?? undefined) as 'top-right' | undefined;
+const CONTROLS = (params.get('controls') ?? undefined) as 'bottom-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
 const COMFORT = (params.get('comfort') ?? '').split(',').filter(Boolean);
 
