@@ -18,5 +18,9 @@ export default defineConfig({
   },
   server: {
     port: 1100,
-  }
+  },
+  build: {
+    // bench.html is the benchmark page driven by scripts/bench.mjs.
+    rollupOptions: { input: { main: 'index.html', bench: 'bench.html' } },
+  },
 });
