@@ -12,4 +12,13 @@ export interface VisualliDocument {
   layersByLevel: Map<number, VisualliLayer[]>;
   /** The level-0 layer */
   rootLayer: VisualliLayer | null;
+  /** Extension payloads by extension id (e.g. 'semantic-anchors'). */
+  extensions?: Record<string, unknown[]>;
+}
+
+/** A term with a definition (the `semantic-anchors` extension). */
+export interface SemanticAnchor {
+  word: string;
+  description: string;
+  knowMoreUrl?: string | null;
 }

@@ -1,36 +1,33 @@
 // ─── VisualliCanvas ───────────────────────────────────────────────────────────
 //
-// Main canvas component for rendering a VisualliDocument.
-// Matches the visualli.ai enhanced canvas implementation:
+// Main canvas component for rendering a VisualliDocument, drawn with the Visualli
+// design system (tokens, fonts and geometry from design-system/):
+//   • Konva canvas for ideas, rings and connectors; DOM overlays for the peek,
+//     term cards, depth trail and controls (the design system's own CSS)
 //   • Stage-level hit detection via RBush spatial index (no Konva hit-canvas)
-//   • Node description tooltip (sketchy-box style)
-//   • Chromatic immersion background (color from current node)
+//   • 8 themes + comfort settings (readable type, larger text, reduced motion)
 //   • Auto-zoom navigation (zoom in → child layer, zoom out → parent layer)
-//   • Professional layer transitions (zoom in / zoom out animations)
-//   • Vertical left-side navigation stack
-//   • Zoom controls (icon-based, top-right)
-//   • Context menu (right-click to go back)
+//   • Layer transitions (CSS-transform driven, no canvas redraws while animating)
+//   • A visually hidden DOM mirror of the visible ideas for screen readers / Tab
 //
-// NOT included (SDK-only, no generation UI):
-//   • Sidebar, search, generation
-//   • Semantic anchor tooltips (special word meanings)
-//   • Branding logo
-//   • Help overlay / view-source panel
+// NOT included (read-only viewer): editing, generation, chat, sources, export.
 
 import React, { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '@visualli/core';
+import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection, Comfort, ThemeInput, TopicName } from '@visualli/core';
 import {
   parseVisualliFile,
   getNodesForLayer,
-  getThemeBackground,
-  darkenHexColor,
+  getSemanticAnchors,
+  topicForColor,
+  topicStyle,
+  nodeRadii,
   RBushSpatialIndex,
-  NODE_HEIGHT,
   TEXT_LABEL_HIDE_BELOW_ZOOM,
   ZOOM_NAV_IN_THRESHOLD,
   ZOOM_NAV_OUT_THRESHOLD,
   ZOOM_MIN,
+  ZOOM_MAX,
 } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
@@ -45,36 +42,16 @@ import KonvaNodeLayer       from './components/KonvaNodeLayer';
 import KonvaEdgeLayer       from './components/KonvaEdgeLayer';
 import KonvaContainerLayer  from './components/KonvaContainerLayer';
 import NavigationStack, { type NavStackEntry } from './components/NavigationStack';
-import ZoomControls         from './components/ZoomControls';
-import SketchyBoxKonva      from './components/SketchyBoxKonva';
+import { ZoomControls, PeekCard } from './components/Overlays';
+import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './animations/konvaLayerTransition';
-import { DESCRIPTION_TEXT_BASE_FONT_PX } from './config/textScaling';
 import { useVisualli } from './context/VisualliContext';
-
-// Helper to convert hex color to rgba with transparency
-function hexToRgba(hex: string, alpha: number): string {
-  // Remove # if present
-  hex = hex.replace(/^#/, '');
-  
-  // Parse hex values
-  let r: number, g: number, b: number;
-  if (hex.length === 3) {
-    r = parseInt(hex[0] + hex[0], 16);
-    g = parseInt(hex[1] + hex[1], 16);
-    b = parseInt(hex[2] + hex[2], 16);
-  } else if (hex.length === 6) {
-    r = parseInt(hex.substring(0, 2), 16);
-    g = parseInt(hex.substring(2, 4), 16);
-    b = parseInt(hex.substring(4, 6), 16);
-  } else {
-    return `rgba(240, 237, 230, ${alpha})`; // fallback
-  }
-  
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+import { useDesign } from './design/useDesign';
+import { topicOf } from './design/drawing';
+import { ensureDesignSystemStyles, loadCanvasFonts, type DesignSystemAssets } from './design/runtime';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,6 +80,13 @@ function layerLabel(doc: VisualliDocument, layer: VisualliLayer, layerId: string
   return layer.description ?? layerId;
 }
 
+/** Topic of the idea a layer opens from (the first idea for the root layer). */
+function layerTopic(doc: VisualliDocument, layer: VisualliLayer, layerId: string): TopicName {
+  const parentLayer = layer.parentLayerId ? doc.layers.get(layer.parentLayerId) : null;
+  const parentNode = parentLayer?.nodes.find(n => n.id === layer.parentNodeId) ?? layer.nodes[0];
+  return topicForColor(parentNode?.data.color, parentNode?.id ?? layerId);
+}
+
 function getRootLayerId(doc: VisualliDocument): string | null {
   for (const [id, layer] of doc.layers) {
     if (!layer.parentLayerId) return id;
@@ -126,14 +110,28 @@ export interface VisualliCanvasProps {
    * Component handles all fetching and parsing automatically.
    */
   visualliFile?: File | string;
+  /**
+   * Theme: one of the 8 design-system themes ('light', 'dark', 'focus-light', …), a family
+   * ('focus' | 'colorsafe' | 'contrast') or 'auto' (follow the reader). Default 'light'.
+   */
+  theme?: ThemeInput;
+  /** @deprecated use `theme`. true -> 'dark', false -> 'light'. Kept for one release. */
   isDark?: boolean;
+  /** Comfort settings: readable type, larger text, reduced motion. */
+  comfort?: Comfort;
+  /** Switch to the high-contrast theme under forced-colors. Default true. */
+  respectForcedColors?: boolean;
+  /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
+  fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
+  /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
+  loadWebFonts?: DesignSystemAssets['loadWebFonts'];
   chromaticImmersion?: boolean;
   onNodeClick?: (node: FlatNode) => void;
   onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
   onNodeHover?: (nodeId: string | null) => void;
   
   // Extension points for private features (implement in consuming app)
-  renderOverlay?: (params: { isDark: boolean; containerWidth: number; containerHeight: number }) => React.ReactNode;
+  renderOverlay?: (params: { isDark: boolean; theme: string; containerWidth: number; containerHeight: number }) => React.ReactNode;
   renderNodeContent?: (params: { 
     summary: string; 
     nodeId: string; 
@@ -150,7 +148,14 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
+  const { chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
+
+  // Design system: resolve theme + comfort, inject its CSS once, and hold the first draw until its fonts are loaded.
+  const design = useDesign({ theme: props.theme ?? (props.isDark === undefined ? 'light' : undefined), isDark: props.isDark, comfort: props.comfort, respectForcedColors: props.respectForcedColors });
+  const isDark = design.isDark;
+  const [fontSheet] = useState(() => ensureDesignSystemStyles({ fontBaseUrl: props.fontBaseUrl, loadWebFonts: props.loadWebFonts }));
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => { let live = true; loadCanvasFonts(fontSheet).then(() => { if (live) setFontsReady(true); }); return () => { live = false; }; }, [fontSheet]);
 
   // Read file if provided (handles both File objects and string paths)
   const [fileText, setFileText] = useState<string | undefined>(undefined);
@@ -199,7 +204,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!rootId) return;
     const rootLayer = doc.layers.get(rootId)!;
     setCurrentLayerId(rootId);
-    setNavStack([{ layerId: rootId, layer: rootLayer, label: 'Home' }]);
+    setNavStack([{ layerId: rootId, layer: rootLayer, label: 'Home', topic: layerTopic(doc, rootLayer, rootId) }]);
     parentViewports.current = [];
   }, [doc]);
 
@@ -256,34 +261,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const dragMoveLatestRef   = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const dragStartPosRef     = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // ── Background color (with chromatic immersion support) ──────────────────
-  const baseBgColor = isDark ? '#141412' : '#F0EDE6';
-  
-  // For chromatic immersion: get the parent node color for child layers
-  const chromaticBgColor = useMemo(() => {
-    if (!chromaticImmersion || !doc || !currentLayerId) return baseBgColor;
-    
-    const currentLayer = doc.layers.get(currentLayerId);
-    if (!currentLayer) return baseBgColor;
-    
-    // Root layer always uses base background
-    if (currentLayer.level === 0 || !currentLayer.parentNodeId) return baseBgColor;
-    
-    // For child layers, find the parent node's color
-    const parentLayer = currentLayer.parentLayerId ? doc.layers.get(currentLayer.parentLayerId) : null;
-    if (parentLayer) {
-      const parentNode = parentLayer.nodes.find(n => n.id === currentLayer.parentNodeId);
-      if (parentNode) {
-        const nodeColor = parentNode.data.color || baseBgColor;
-        // Add transparency to the parent node color for subtle effect
-        return hexToRgba(nodeColor, 0.15);
-      }
-    }
-    
-    return baseBgColor;
-  }, [chromaticImmersion, doc, currentLayerId, baseBgColor]);
-  
-  const bgColor = chromaticImmersion ? chromaticBgColor : baseBgColor;
+  // ── Chromatic immersion: the parent idea's topic tints the canvas at `immersion-alpha` ──
+  const immersionTopic = useMemo<TopicName | null>(() => {
+    if (!chromaticImmersion || !doc || !currentLayerId) return null;
+    const layer = doc.layers.get(currentLayerId);
+    if (!layer || layer.level === 0 || !layer.parentNodeId) return null;
+    return layerTopic(doc, layer, currentLayerId);
+  }, [chromaticImmersion, doc, currentLayerId]);
 
   // ── Spatial index (for stage-level hit detection) ─────────────────────────
   const spatialIndexRef = useRef<RBushSpatialIndex | null>(null);
@@ -291,14 +275,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (flatNodes.length === 0) { spatialIndexRef.current?.clear(); return; }
     const idx = new RBushSpatialIndex();
     idx.bulkLoad(flatNodes.map(n => {
-      const blobHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (n.width / 2) * 0.74);
-      return {
-        nodeId: n.id,
-        bounds: {
-          minX: n.x - n.width / 2, minY: n.y - blobHalfH,
-          maxX: n.x + n.width / 2, maxY: n.y + blobHalfH,
-        },
-      };
+      const { rx, ry } = nodeRadii(n.width);
+      return { nodeId: n.id, bounds: { minX: n.x - rx, minY: n.y - ry, maxX: n.x + rx, maxY: n.y + ry } };
     }));
     spatialIndexRef.current = idx;
     return () => { spatialIndexRef.current?.clear(); };
@@ -352,16 +330,16 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (node) {
         const oldPos = dragStartPosRef.current.get(nodeId);
         if (oldPos) {
-          const oldHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (node.width / 2) * 0.74);
+          const { rx, ry } = nodeRadii(node.width);
           spatialIndexRef.current.remove(nodeId, {
-            minX: oldPos.x - node.width / 2, minY: oldPos.y - oldHalfH,
-            maxX: oldPos.x + node.width / 2, maxY: oldPos.y + oldHalfH,
+            minX: oldPos.x - rx, minY: oldPos.y - ry,
+            maxX: oldPos.x + rx, maxY: oldPos.y + ry,
           });
         }
-        const newHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (node.width / 2) * 0.74);
+        const { rx, ry } = nodeRadii(node.width);
         spatialIndexRef.current.insert(nodeId, {
-          minX: x - node.width / 2, minY: y - newHalfH,
-          maxX: x + node.width / 2, maxY: y + newHalfH,
+          minX: x - rx, minY: y - ry,
+          maxX: x + rx, maxY: y + ry,
         });
       }
     }
@@ -416,7 +394,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       const childLayer = doc?.layers.get(childLayerId);
       if (!childLayer || !doc) return;
       setCurrentLayerId(childLayerId);
-      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(doc, childLayer, childLayerId) }]);
+      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(doc, childLayer, childLayerId), topic: layerTopic(doc, childLayer, childLayerId) }]);
       onLayerChange?.(childLayerId, childLayer);
     },
     onSwapBack: () => {
@@ -556,10 +534,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
 
     zoomIntoLayer(
       doc, node, childLayerId, childNodes,
-      node.color ?? getThemeBackground(isDark, 'secondary'),
-      node.color ?? getThemeBackground(isDark, 'primary'),
+      topicStyle(design.theme, topicOf(node)).fill,
+      design.tokens['canvas']!,
     );
-  }, [doc, currentLayerId, nodes, isDark, isAnimating, zoomIntoLayer]);
+  }, [doc, currentLayerId, nodes, design, isAnimating, zoomIntoLayer]);
 
   const handleNavigateBack = useCallback((targetIndex: number) => {
     if (targetIndex >= navStack.length - 1) return;
@@ -569,8 +547,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     navBackTargetRef.current = targetIndex;
     setIsTransitioning(true);
     isTransitioningRef.current = true;
-    zoomOutToParent(savedVp, getThemeBackground(isDark, 'primary'), getThemeBackground(isDark, 'secondary'));
-  }, [navStack.length, isDark, isAnimating, zoomOutToParent]);
+    zoomOutToParent(savedVp, design.tokens['canvas']!, design.tokens['canvas']!);
+  }, [navStack.length, design, isAnimating, zoomOutToParent]);
 
   // ── Auto-zoom navigation (Google Maps style) ──────────────────────────────
   const baseZoomRef           = useRef(1.0);
@@ -679,6 +657,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('pointerdown', close); window.removeEventListener('keydown', onKey); };
   }, [canvasContextMenu]);
+
+  const selectedNodeId = useSelectionStore(st => st.selectedId);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const anchors = useMemo(() => (doc ? getSemanticAnchors(doc) : []), [doc]);
 
   // ── Stage event handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -914,77 +896,96 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     };
   }, []);
 
-  // ── Zoom controls ─────────────────────────────────────────────────────────
-  const handleZoomIn  = useCallback(() => setZoom(Math.min(viewport.zoomLevel * 1.2, 5)), [viewport.zoomLevel, setZoom]);
-  const handleZoomOut = useCallback(() => {
-    // Non-root: allow zoom to ZOOM_MIN so the wheel-driven ZOOM_NAV_OUT_THRESHOLD
-    // transition can still trigger via scroll; button just navigates zoom value.
-    // Root: also ZOOM_MIN (no parent layer to navigate to, allow full zoom-out).
-    setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN));
-  }, [viewport.zoomLevel, setZoom]);
+  // ── Activate an idea (click, or Enter/Space on its accessible button) ───────
+  const activateNode = useCallback((node: FlatNode) => {
+    const childLayer = doc ? getChildLayerForNode(doc, node.id, currentLayerId ?? '') : null;
+    if (childLayer) handleNavigate(node.id);
+    onNodeClick?.(node);
+  }, [doc, currentLayerId, handleNavigate, onNodeClick]);
 
-  // Extension rendering removed - not part of open spec
+  const stepInside = useCallback((nodeId: string) => { setHoveredNode(null); handleNavigate(nodeId); }, [handleNavigate]);
+
+  // Keyboard: Esc steps back out, + / - zoom, 0 fits.
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Escape' && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
+    else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * 1.2, ZOOM_MAX)); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN)); }
+    else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
+  }, [navStack.length, handleNavigateBack, setZoom, viewport.zoomLevel, fitToScreen]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!doc) {
     return (
-      <div className={className} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColor, ...style }}>
-        <span style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)', fontSize: 14 }}>No document</span>
+      <div className={`vi-map ${className}`} {...design.attrs} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
+        <span className="body-sm" style={{ color: 'var(--ink-muted)' }}>No document</span>
       </div>
     );
   }
 
   const hasBackOption = navStack.length > 1;
+  const currentLayerTitle = navStack[navStack.length - 1]?.label ?? '';
+  const peekNode = hoveredNode ? nodes.get(hoveredNode.nodeId) : undefined;
+  const peekHasChild = !!(peekNode && doc && getChildLayerForNode(doc, peekNode.id, currentLayerId ?? ''));
 
   return (
     <div
       ref={containerRef}
-      className={className}
-      style={{ 
-        position: 'relative', 
-        overflow: 'hidden', 
-        userSelect: 'none', 
-        background: bgColor, 
-        width: '100%', 
-        height: '100%', 
-        ...style 
-      }}
+      className={`vi-map ${className}`}
+      {...design.attrs}
+      role="group"
+      aria-label={`${doc.meta?.title ?? 'Map'}${currentLayerTitle ? `, ${currentLayerTitle}` : ''}`}
+      onKeyDown={handleKeyDown}
+      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
-        // Only close tooltip on mouse leave if not keeping it open
+        // Only close the peek on mouse leave if not keeping it open
         if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) {
           setHoveredNode(null);
         }
       }}
     >
-      {/* Konva canvas — opacity driven imperatively during transitions */}
+      {/* Chromatic immersion tint */}
+      <div className="vi-map__immersion" style={{ background: immersionTopic ? `var(--topic-${immersionTopic})` : 'transparent' }} aria-hidden="true" />
+
+      {/* Konva canvas — opacity driven imperatively during transitions. Held back until the fonts are ready. */}
       <div ref={canvasWrapperRef} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
-        <KonvaStage
-          ref={stageRef}
-          onWheel={handleWheel}
-          onMouseDown={handleStageMouseDown}
-          onMouseMove={handleStageMouseMove}
-          onMouseUp={handleStageMouseUp}
-          onContextMenu={handleStageContextMenu}
-          onTouchStart={handleStageTouchStart}
-          onTouchMove={handleStageTouchMove}
-          onTouchEnd={handleStageTouchEnd}
-        >
-          <KonvaContainerLayer nodes={flatNodes} containers={containers} isDark={isDark} />
-          <KonvaEdgeLayer 
-            nodes={flatNodes} 
-            connections={connections} 
-            isDark={isDark} 
-            isDragging={isDraggingState} 
-          />
-          <KonvaNodeLayer
-            isTransitioning={isTransitioning}
-            isDragging={isDraggingState}
-            hoveredNodeId={pointerNodeId}
-            pressedNodeId={pressedNodeId}
-          />
-        </KonvaStage>
+        {fontsReady && (
+          <KonvaStage
+            ref={stageRef}
+            onWheel={handleWheel}
+            onMouseDown={handleStageMouseDown}
+            onMouseMove={handleStageMouseMove}
+            onMouseUp={handleStageMouseUp}
+            onContextMenu={handleStageContextMenu}
+            onTouchStart={handleStageTouchStart}
+            onTouchMove={handleStageTouchMove}
+            onTouchEnd={handleStageTouchEnd}
+          >
+            <KonvaContainerLayer nodes={flatNodes} containers={containers} design={design} />
+            <KonvaEdgeLayer nodes={flatNodes} connections={connections} design={design} isDragging={isDraggingState} />
+            <KonvaNodeLayer
+              design={design}
+              isTransitioning={isTransitioning}
+              isDragging={isDraggingState}
+              hoveredNodeId={pointerNodeId}
+              pressedNodeId={pressedNodeId}
+              selectedNodeId={selectedNodeId}
+              focusedNodeId={focusedNodeId}
+            />
+          </KonvaStage>
+        )}
       </div>
+
+      {/* Screen-reader / keyboard mirror of the visible ideas */}
+      <A11yLayer
+        nodes={flatNodes}
+        label={`Ideas in ${currentLayerTitle || 'this map'}`}
+        hasChildLayer={(id) => !!getChildLayerForNode(doc, id, currentLayerId ?? '')}
+        onActivate={activateNode}
+        onFocusNode={setFocusedNodeId}
+        announcement={hasBackOption ? `Now inside ${currentLayerTitle}` : undefined}
+      />
 
       {/* Context menu (right-click to go back) */}
       {canvasContextMenu && hasBackOption && (
@@ -993,7 +994,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           aria-label="Canvas options"
           style={{
             position: 'absolute',
-            zIndex: 60,
+            zIndex: 'var(--z-menu)' as unknown as number,
             pointerEvents: 'auto',
             left: `${Math.min(canvasContextMenu.x, Math.max(8, (canvasSizeRef.current.width  || 800)  - 152))}px`,
             top: `${Math.min(canvasContextMenu.y, Math.max(8, (canvasSizeRef.current.height || 600) - 72))}px`,
@@ -1003,16 +1004,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         >
           <button
             type="button"
-            style={{
-              padding: '6px 16px',
-              borderRadius: '10px',
-              border: `1px solid ${isDark ? '#333330' : '#DDD9D0'}`,
-              background: isDark ? '#1C1C1A' : '#FAF8F4',
-              color: isDark ? '#F0EDE6' : '#1A1A18',
-              cursor: 'pointer',
-              fontSize: 13,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
+            role="menuitem"
+            className="vi-iconbtn vi-iconbtn--surface"
+            style={{ width: 'auto', padding: '6px var(--space-4)', boxShadow: 'var(--shadow-pop)' }}
             onClick={() => { setCanvasContextMenu(null); handleNavigateBack(navStack.length - 2); }}
           >
             Back
@@ -1020,21 +1014,19 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         </div>
       )}
 
-      {/* Navigation stack (left, matches reference) */}
-      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} isDark={isDark} top={navigationStackTop} left={navigationStackLeft} />
+      {/* Depth trail (top-left) */}
+      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Zoom controls (top-right) */}
-      <div data-help="zoom-controls" style={{ position: 'absolute', top: '24px', right: '16px', zIndex: 50, pointerEvents: 'auto' }}>
-        <ZoomControls isDark={isDark} />
+      {/* Canvas controls (bottom-right) */}
+      <div className="vi-map__ctrls">
+        <ZoomControls onFit={fitToScreen} />
       </div>
 
-      {/* Custom overlay from consuming app (for private features like help button, chromatic bg, etc.) */}
-      {renderOverlay?.({ isDark, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
+      {/* Custom overlay from the consuming app */}
+      {renderOverlay?.({ isDark, theme: design.theme, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
 
-      {/* Node description tooltip (sketchy-box, above node) - rendered before extensions so extensions appear on top */}
-      {hoveredNode && hoveredNodePosition && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
-        const nodeData = nodes.get(hoveredNode.nodeId);
-        const borderColor = nodeData?.color ? darkenHexColor(nodeData.color, 0.13) : '#5BA8D4';
+      {/* Peek: the idea's summary, terms and "Step inside" — rendered with the design system's card */}
+      {hoveredNode && hoveredNodePosition && peekNode && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
         const VP_PAD = 8;
         const HALF_W = 160;
         const APPROX_H = 90;
@@ -1044,46 +1036,25 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         const safeTop  = Math.max(VP_PAD + APPROX_H, rawTop);
         return (
           <div
-            data-node-tooltip="true"
-            style={{
-              position: 'absolute',
-              zIndex: 50,
-              left: safeLeft,
-              top: safeTop,
-              transform: 'translate(-50%, -100%)',
-              transformOrigin: 'bottom center',
-              pointerEvents: 'auto',
-            }}
+            className="vi-map__fact"
+            style={{ left: safeLeft, top: safeTop, transform: 'translate(-50%, -100%)', pointerEvents: 'auto', zIndex: 'var(--z-card)' as unknown as number }}
             onMouseEnter={() => { tooltipHoverRef.current = true; if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; } }}
-            onMouseLeave={() => { 
-              tooltipHoverRef.current = false; 
-              // Delay clearing to allow external extensions to request keeping tooltip open
+            onMouseLeave={() => {
+              tooltipHoverRef.current = false;
+              // Delay clearing to allow external extensions to request keeping the peek open
               if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
               clearTooltipTimerRef.current = setTimeout(() => {
                 if (!keepTooltipOpenRef.current) setHoveredNode(null);
               }, 100);
             }}
           >
-            <div style={{ maxWidth: '20rem', minWidth: '12rem', maxHeight: '15rem', overflowY: 'auto' }}>
-              <SketchyBoxKonva fill="#ffffff" stroke={borderColor} backStroke={borderColor} padding="1rem 1.25rem">
-                <p style={{
-                  fontFamily: "'Playpen Sans', cursive",
-                  fontSize: `${DESCRIPTION_TEXT_BASE_FONT_PX}px`,
-                  fontWeight: 300,
-                  color: '#000000',
-                  textAlign: 'center',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}>
-                  {renderNodeContent ? renderNodeContent({ 
-                    summary: hoveredNode.summary, 
-                    nodeId: hoveredNode.nodeId,
-                    nodeColor: nodeData?.color,
-                    zoom: viewport.zoomLevel,
-                  }) : hoveredNode.summary}
-                </p>
-              </SketchyBoxKonva>
-            </div>
+            <PeekCard
+              node={peekNode}
+              topic={topicOf(peekNode)}
+              anchors={anchors}
+              onStepInside={peekHasChild ? () => stepInside(peekNode.id) : undefined}
+              renderContent={renderNodeContent ? (summary) => renderNodeContent({ summary, nodeId: peekNode.id, nodeColor: peekNode.color, zoom: viewport.zoomLevel }) : undefined}
+            />
           </div>
         );
       })()}

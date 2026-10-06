@@ -729,6 +729,8 @@ export const CANVAS_STYLE = {
     ],
     "labelWeight": 500,
     "labelSize": 18,
+    "readableLabelSize": 14,
+    "readableLabelWeight": 600,
     "labelHaloWidth": 5,
     "selectedStrokeWidth": 3.5
   },

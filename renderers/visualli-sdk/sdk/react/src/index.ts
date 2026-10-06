@@ -33,23 +33,24 @@ export type { LayerTransitionHandlers } from './hooks/useKonvaLayerTransition';
 export { KonvaLayerTransitionAnimator, konvaLayerTransitionAnimator } from './animations/konvaLayerTransition';
 export type { AnimatorViewport, TransitionCallbacks } from './animations/konvaLayerTransition';
 
-// Config helpers
+// Design system: themes, comfort, tokens, geometry (generated from design-system/ in @visualli/core)
 export {
-  ALL_BLOB_SHAPES,
-  ACTIVE_BLOB_TYPES,
-  BLOB_LAYER_CONFIG,
-  NODE_LAYER_CONFIG,
-  getBlobTypeForLayer,
-  BLOB_TEXT_OFFSETS,
-  drawBlobPath,
-  buildBlobPathData,
+  THEME_NAMES, TOPICS, DESIGN_SYSTEM_VERSION, TOKENS, METRICS,
+  resolveTheme, resolveComfort, topicForColor, topicStyle, getTokens,
+  BLOB_SHAPES, RINGS, blobPath, blobRadius, edgePath, arrowPath, shapeForLevel,
   NODE_TEXT_BASE_FONT_PX,
   DESCRIPTION_TEXT_BASE_FONT_PX,
   computeNodeTextWorldScale,
   computeNodeTextScreenScale,
   computeOverlayScale,
   computeEdgeLabelScale,
-} from './config';
+} from '@visualli/core';
+export type { ThemeName, ThemeInput, TopicName, Comfort } from '@visualli/core';
+export { useDesign, useReaderEnv } from './design/useDesign';
+export { makeDesign, resolveDesign, DEFAULT_DESIGN } from './design/design';
+export type { Design, DesignProps } from './design/design';
+export { ensureDesignSystemStyles, loadCanvasFonts } from './design/runtime';
+export type { DesignSystemAssets } from './design/runtime';
 
 // Utils
 export {
@@ -72,8 +73,10 @@ export { default as KonvaContainer }      from './components/KonvaContainer';
 export { default as KonvaContainerLayer } from './components/KonvaContainerLayer';
 export { default as NavigationStack }     from './components/NavigationStack';
 export { default as ZoomControls }        from './components/ZoomControls';
-export { default as SketchyBoxKonva }     from './components/SketchyBoxKonva';
+export { PeekCard, TermCard, DepthTrail, splitTerms } from './components/Overlays';
+export { A11yLayer } from './components/A11yLayer';
 export type { NavStackEntry }             from './components/NavigationStack';
+export type { PeekCardProps, TrailEntry, DepthTrailProps } from './components/Overlays';
 export type { KonvaNodeProps }            from './components/KonvaNode';
 export type { KonvaEdgeProps }            from './components/KonvaEdge';
 export type { KonvaStageProps }           from './components/KonvaStage';

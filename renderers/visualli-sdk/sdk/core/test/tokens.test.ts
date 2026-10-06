@@ -112,3 +112,22 @@ describe('topics', () => {
     expect(topicStyle('dark', 'teal').ring).not.toBe(topicStyle('light', 'teal').ring);
   });
 });
+
+import { parseVisualliFile, getSemanticAnchors } from '../src/index';
+
+describe('semantic anchors', () => {
+  const doc = [
+    JSON.stringify({ type: 'meta', version: '0.1.1', title: 't', created: 'x', lastModified: 'x' }),
+    JSON.stringify({ type: 'extension', id: 'semantic-anchors', data: [{ word: 'Evaporation', description: 'd', knowMoreUrl: null }, { bad: true }] }),
+    JSON.stringify({ type: 'layer', id: 'l0', level: 0, nodes: [], connections: [], containers: [] }),
+  ].join('\n');
+  it('parses the extension and returns only well-formed terms', () => {
+    const d = parseVisualliFile(doc);
+    expect(d.extensions?.['semantic-anchors']).toHaveLength(2);
+    expect(getSemanticAnchors(d)).toEqual([{ word: 'Evaporation', description: 'd', knowMoreUrl: null }]);
+  });
+  it('documents without extensions still parse', () => {
+    const d = parseVisualliFile(doc.split('\n').filter((l) => !l.includes('extension')).join('\n'));
+    expect(getSemanticAnchors(d)).toEqual([]);
+  });
+});

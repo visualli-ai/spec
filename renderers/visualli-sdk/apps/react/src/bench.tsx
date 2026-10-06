@@ -106,6 +106,7 @@ const buildMs = performance.now() - t0;
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <VisualliCanvas
     preParsedVisualli={doc}
+    fontBaseUrl="/fonts"
     // `theme` is the new prop; older SDK builds only know `isDark`.
     {...({ theme: THEME, comfort: COMFORT, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
     style={{ width: '100vw', height: '100vh' }}

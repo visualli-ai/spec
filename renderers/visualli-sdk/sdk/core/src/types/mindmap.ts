@@ -105,6 +105,8 @@ export interface MindMapConnection {
   to: string;
   level: number;
   label?: string;
+  /** 'dashed' draws the connector dashed (design-system `is-dashed`). */
+  style?: 'solid' | 'dashed';
 }
 
 export interface TopLevelConnection {

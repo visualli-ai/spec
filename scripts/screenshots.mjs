@@ -41,12 +41,14 @@ try {
     await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=${theme}${comfort}`);
     await page.evaluate(() => window.__bench.ready);
     await page.evaluate(() => document.fonts.ready);
+    await page.mouse.move(4, 4); // park the pointer on empty canvas so no idea is hovered
     await sleep(800);
     await page.screenshot({ path: resolve(out, `${theme}-root.png`) });
     const hub = await page.evaluate(() => window.__bench.hubScreen());
     await page.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
     await page.mouse.click(hub.x, hub.y);
     await page.evaluate(() => window.__bench.changed);
+    await page.mouse.move(4, 4);
     await sleep(2200);
     await page.screenshot({ path: resolve(out, `${theme}-layer.png`) });
     await ctx.close();

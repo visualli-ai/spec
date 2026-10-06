@@ -19,6 +19,7 @@ export function getConnectionsForLayer(
     to: c.to,
     level: layer.level,
     label: c.data?.label,
+    style: c.data?.style === 'dashed' ? 'dashed' : 'solid',
   } satisfies MindMapConnection));
 }
 

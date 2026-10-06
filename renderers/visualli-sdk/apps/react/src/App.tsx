@@ -5,6 +5,7 @@ import exampleString from '../../../../../examples/example.visualli?raw';
 export default function App() {
   return (
     <VisualliRenderer
+      fontBaseUrl="/fonts"
       visualliString={exampleString}
       useWorker={true}
       theme="light"

@@ -88,6 +88,7 @@ const pick = (re, what) => {
 const numList = (v) => v.trim().split(/\s+/).map(Number);
 const edgeFont = pick(/\.vi-edge__label \{ font: (\d+) calc\((\d+)px/, '.vi-edge__label font');
 const groupFont = pick(/\.vi-map__group text \{ font: (\d+) (\d+)px/, '.vi-map__group text font');
+const readableEdge = pick(/\[data-type="readable"\] \.vi-edge__label \{ font-size: calc\((\d+)px[^}]*font-weight: (\d+)/, 'readable edge label');
 const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\((-?[\d.]+)deg\) scale\(([\d.]+)\)/, 'node hover rings transform');
 const lift = pick(/button\.vi-node:hover \{ transform: translateY\((-?[\d.]+)px\)/, 'node hover lift');
 const canvasStyle = {
@@ -107,6 +108,8 @@ const canvasStyle = {
     dash: numList(pick(/\.vi-edge\.is-dashed \.vi-edge__line \{ stroke-dasharray: ([\d ]+);/, 'dashed edge')[1]),
     labelWeight: +edgeFont[1],
     labelSize: +edgeFont[2],
+    readableLabelSize: +readableEdge[1],
+    readableLabelWeight: +readableEdge[2],
     labelHaloWidth: +pick(/\.vi-edge__label \{[^}]*stroke-width: ([\d.]+)px/, 'edge label halo')[1],
     selectedStrokeWidth: +pick(/\.vi-edge\.is-selected \.vi-edge__line[^{]*\{[^}]*stroke-width: ([\d.]+)/, 'selected edge stroke')[1],
   },
@@ -154,11 +157,23 @@ copy(resolve(ds, 'geometry/blobShapes.ts'), resolve(core, 'src/generated/geometr
 // is dropped; `@import` lines are dropped too (fonts are loaded by the SDK).
 const specCss = readFileSync(resolve(ds, 'css/spec.css'), 'utf8').replace(/^body\s*\{[^}]*\}\s*$/m, '').replace(/^@import[^\n]*\n/gm, '');
 const tokensCss = css.replace(/^@import[^\n]*\n/gm, '');
+// Bundled font files declared in fonts/fonts.css (@font-face with a local url()).
+const fontsCss = readFileSync(resolve(ds, 'fonts/fonts.css'), 'utf8');
+const bundledFonts = [...fontsCss.matchAll(/@font-face\s*\{([^}]*)\}/g)].flatMap((m) => {
+  const family = /font-family:\s*"([^"]+)"/.exec(m[1])?.[1];
+  const file = /src:\s*url\("\.\/([^"]+)"\)/.exec(m[1])?.[1];
+  const weight = /font-weight:\s*([\d ]+);/.exec(m[1])?.[1]?.trim();
+  return family && file ? [{ family, file, weight: weight ?? '400' }] : [];
+});
+if (!bundledFonts.length) throw new Error('design-system/fonts/fonts.css: no bundled @font-face found');
+
 out(resolve(react, 'src/generated/specCss.ts'), `${HEADER('tokens/tokens.css, css/spec.css')}
 export const SPEC_TOKENS_CSS = ${JSON.stringify(tokensCss)};
 export const SPEC_COMPONENT_CSS = ${JSON.stringify(specCss)};
 export const SPEC_FONTS_URL = ${JSON.stringify(/@import url\("([^"]+)"\)/.exec(readFileSync(resolve(ds, 'fonts/fonts.css'), 'utf8'))?.[1] ?? '')};
 export const SPEC_DESIGN_SYSTEM_VERSION = ${j(manifest.version)};
+/** Font files shipped with the package (fonts/ directory), from design-system/fonts/fonts.css. */
+export const SPEC_BUNDLED_FONTS = ${j(bundledFonts)} as const;
 `);
 
 // ── licences + bundled font ship with the packages ───────────────────────────
@@ -167,6 +182,8 @@ for (const pkg of [core, react]) {
   copy(resolve(ds, 'NOTICE.md'), resolve(pkg, 'design-system/NOTICE.md'));
 }
 copy(resolve(ds, 'fonts/Caveat-Variable.ttf'), resolve(react, 'fonts/Caveat-Variable.ttf'));
+// The playground / benchmark app serves the same file locally.
+copy(resolve(ds, 'fonts/Caveat-Variable.ttf'), resolve(root, 'renderers/visualli-sdk/apps/react/public/fonts/Caveat-Variable.ttf'));
 
 if (check) {
   if (stale.length) { console.error(`Generated design-system files are stale:\n  ${stale.join('\n  ')}\nRun: node scripts/gen-design-system.mjs`); process.exit(1); }
