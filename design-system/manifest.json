@@ -1,23 +1,24 @@
 {
   "name": "visualli-spec-design-system",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "generatedFrom": "visualli.ai/design-system",
   "license": "MIT",
   "tokens": 70,
-  "cssRules": 153,
+  "cssRules": 154,
   "files": {
     "LICENSE": "cd144bfc4c664b91",
     "NOTICE.md": "bcca09f4761fb367",
-    "README.md": "756a4a79521ddd74",
-    "css/spec.css": "f90aeda8cbf04dac",
+    "README.md": "10894c802849d12f",
+    "css/spec.css": "5265d0ba66528fc9",
     "fonts/Caveat-Variable.ttf": "635e030f2a6ed255",
     "fonts/fonts.css": "a1b6396db6bb3641",
     "geometry/blob.ts": "18506de0ba7b70b2",
     "geometry/blobShapes.ts": "a7d46761836fb186",
+    "geometry/container.ts": "ed82362ae02b2d06",
     "geometry/geometry.json": "b3fe097665c1071a",
     "geometry/motion.ts": "baa96e5558513998",
     "index.css": "25c140da6dc091a7",
-    "tokens/tokens.css": "f56b05a64890eec2",
-    "tokens/tokens.json": "4b13f5b43204c3e7"
+    "tokens/tokens.css": "bbd125beb9f3ea5d",
+    "tokens/tokens.json": "47736adf54ee2ac4"
   }
 }
