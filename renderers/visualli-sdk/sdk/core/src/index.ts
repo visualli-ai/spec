@@ -15,3 +15,5 @@ export * from './stores/index.js';
 export * from './utils/navigation.js';
 export * from './rendering/culling.js';
 export * from './config/index.js';
+export * from './theme/index.js';
+

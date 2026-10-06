@@ -3,7 +3,15 @@
 // Helpers for creating and generating MindMapConfig objects (pure data, no UI).
 
 import type { MindMapNode, MindMapConfig, TopLevelConnection } from '../types/mindmap.js';
-import { LEVEL_COLORS, LAYOUT_SPACING, getColorForLevel } from '../constants/design.js';
+import { LAYOUT_SPACING } from '../constants/layout.js';
+import { TOKENS, TOPICS } from '../theme/index.js';
+
+/** Light-theme fill of the topic used for a level (cycles through the design-system topics). */
+const levelColor = (level: number): string => TOKENS.light[`topic-${TOPICS[level % TOPICS.length]}`]!;
+
+type LevelColors = { level0: string; level1: string; level2: string; level3: string; [key: `level${number}`]: string };
+const levelColors = (count: number): LevelColors =>
+  Object.fromEntries(Array.from({ length: count }, (_, i) => [`level${i}`, levelColor(i)])) as LevelColors;
 
 export function createMindMapConfig(
   nodes: MindMapNode[],
@@ -22,12 +30,7 @@ export function createMindMapConfig(
     nodes,
     topLevelConnections,
     settings: {
-      defaultColors: {
-        level0: LEVEL_COLORS.level0,
-        level1: LEVEL_COLORS.level1,
-        level2: LEVEL_COLORS.level2,
-        level3: LEVEL_COLORS.level3,
-      },
+      defaultColors: levelColors(4),
       layout: {
         nodeSpacing: LAYOUT_SPACING.nodeSpacing,
         levelSpacing: LAYOUT_SPACING.levelSpacing,
@@ -70,7 +73,7 @@ function generateLevelNodes(
       level,
       x,
       y,
-      color: getColorForLevel(level),
+      color: levelColor(level),
       relationshipLabel: level > 0 ? 'child' : undefined,
       parent: parentId ?? undefined,
     };
@@ -109,17 +112,7 @@ export function generateSampleConfig(maxLevels = 9): MindMapConfig {
     nodes,
     topLevelConnections,
     settings: {
-      defaultColors: {
-        level0: LEVEL_COLORS.level0,
-        level1: LEVEL_COLORS.level1,
-        level2: LEVEL_COLORS.level2,
-        level3: LEVEL_COLORS.level3,
-        level4: LEVEL_COLORS.level4,
-        level5: LEVEL_COLORS.level5,
-        level6: LEVEL_COLORS.level6,
-        level7: LEVEL_COLORS.level7,
-        level8: LEVEL_COLORS.level8,
-      },
+      defaultColors: levelColors(9),
       layout: {
         nodeSpacing: LAYOUT_SPACING.nodeSpacing,
         levelSpacing: LAYOUT_SPACING.levelSpacing,

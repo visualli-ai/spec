@@ -7,6 +7,7 @@ import type { VisualliDocument } from '../types/document.js';
 import type { VisualliLayer } from '../types/layer.js';
 import type { FlatNode, NodeMap } from '../types/mindmap.js';
 import { countLayersBeneath } from './visualliParser.js';
+import { TOKENS, topicForColor, type TopicName } from '../theme/index.js';
 import { applyCircularLayout, calculateOptimalRadiusPercentage } from '../layout/circularLayout.js';
 import { applyLinearHorizontalLayout, applyLinearVerticalLayout } from '../layout/linearLayout.js';
 
@@ -57,26 +58,16 @@ export function resolveNodeOverlaps(nodes: FlatNode[], maxIterations = 10): void
   }
 }
 
-// ── Color Helpers ─────────────────────────────────────────────────────────────
-
-const COLOR_PALETTE = [
-  '#12C7D3', '#325E8C', '#8A70A6', '#F54A57', '#FF6C4D',
-  '#F28C16', '#FFD347', '#12C7D3', '#7F7F7F', '#8D8D8D', '#12C7D3',
-];
+// ── Colour → design-system topic ─────────────────────────────────────────────
 
 /**
- * Get a deterministic random color from palette based on node ID
+ * Document colours are free-form; the design system only has topics. The
+ * authored colour is kept on the node and the nearest topic is resolved here
+ * (missing colours fall back to a stable pick from the node id).
  */
-function getRandomColorForNode(nodeId: string): string {
-  // Simple hash function to convert string to number
-  let hash = 0;
-  for (let i = 0; i < nodeId.length; i++) {
-    hash = nodeId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  // Use absolute value and modulo to get palette index
-  const index = Math.abs(hash) % COLOR_PALETTE.length;
-  return COLOR_PALETTE[index];
+function resolveNodeColor(nodeId: string, authored: string | undefined): { color: string; topic: TopicName } {
+  const topic = topicForColor(authored, nodeId);
+  return { color: authored || TOKENS.light[`topic-${topic}`]!, topic };
 }
 
 // ── Container-formation Layout ────────────────────────────────────────────────
@@ -150,11 +141,12 @@ function makeFlatNode(
   label: string,
   summary: string,
   layer: VisualliLayer,
-  color: string,
+  authoredColor: string | undefined,
   branchCount: number,
   x = 0,
   y = 0,
 ): FlatNode {
+  const { color, topic } = resolveNodeColor(nodeId, authoredColor);
   return {
     id: nodeId,
     parentId: layer.parentNodeId ?? null,
@@ -164,6 +156,7 @@ function makeFlatNode(
     title: label,
     description: summary,
     color,
+    topic,
     width: calculateNodeWidth(label),
     height: 80,
     isExpanded: branchCount > 0,
@@ -188,7 +181,7 @@ function convertLayerWithContainers(
     flatNodes.push(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
-        node.data.color || getRandomColorForNode(node.id), branchCount,
+        node.data.color, branchCount,
       ),
     );
   }
@@ -262,7 +255,7 @@ export function convertLayerToFlatNodes(
     flatNodes.push(
       makeFlatNode(
         node.id, label, node.data.summary || '', layer,
-        node.data.color || getRandomColorForNode(node.id), branchCount,
+        node.data.color, branchCount,
         0, 0,
       ),
     );

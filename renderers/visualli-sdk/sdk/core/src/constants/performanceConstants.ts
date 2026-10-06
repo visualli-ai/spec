@@ -1,4 +1,9 @@
 // ─── Performance & Rendering Constants ───────────────────────────────────────
+//
+// Performance budgets and interaction thresholds. Visual values (colours,
+// stroke widths, node size, zoom range) come from the design system tokens.
+
+import { METRICS } from '../generated/designSystem.js';
 
 // ── FPS ───────────────────────────────────────────────────────────────────────
 
@@ -52,27 +57,19 @@ export const SPATIAL_INDEX_BUILD_BUDGET = 50;
 
 // ── Node Dimensions ───────────────────────────────────────────────────────────
 
-export const NODE_MIN_WIDTH    = 200;
+export const NODE_MIN_WIDTH    = METRICS.nodeWidth;
 export const NODE_HEIGHT       = 80;
 export const NODE_PADDING      = 40;
 export const CHAR_WIDTH        = 8;
 export const TITLE_MAX_LENGTH  = 150;
 
-// ── Visual Styling ────────────────────────────────────────────────────────────
 
-export const CORNER_RADIUS         = 8;
-export const BORDER_WIDTH_NORMAL   = 2;
-export const BORDER_WIDTH_SELECTED = 3;
-
-export const COLOR_SELECTED      = '#1B2D4F';
-export const COLOR_BORDER_LIGHT  = '#4A3728';
-export const COLOR_BORDER_DARK   = '#FAF6F1';
-export const COLOR_DEFAULT_NODE  = '#FAF6F1';
 
 // ── Zoom Constraints ──────────────────────────────────────────────────────────
 
+/** Lower than the design system's zoom-min so very large maps can still be fitted. */
 export const ZOOM_MIN              = 0.05;
-export const ZOOM_MAX              = 5.0;
+export const ZOOM_MAX              = METRICS.zoomMax;
 export const ZOOM_DEFAULT          = 1.0;
 export const ZOOM_STEP             = 0.1;
 export const ZOOM_WHEEL_SENSITIVITY = 0.001;

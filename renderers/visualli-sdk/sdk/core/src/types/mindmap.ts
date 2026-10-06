@@ -1,5 +1,7 @@
 // ─── Mindmap Core Types ────────────────────────────────────────────────────────
 
+import type { TopicName } from '../generated/designSystem.js';
+
 export interface MindMapNode {
   id: string;
   title: string;
@@ -35,7 +37,10 @@ export interface FlatNode {
   relationshipLabel?: string;
 
   // Visual
+  /** Colour as authored in the document (any CSS colour); the design system's topic is derived from it. */
   color: string;
+  /** Design-system topic this idea is drawn with (fill + ring colour per theme). */
+  topic?: TopicName;
   width: number;
   height: number;
 

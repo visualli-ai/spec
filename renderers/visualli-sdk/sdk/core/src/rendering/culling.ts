@@ -1,6 +1,7 @@
 import type { FlatNode, ViewportState } from '../types/index.js';
 import { RBushSpatialIndex } from '../spatial/spatialIndex.js';
 import { calculateViewportBounds } from '../viewport/viewportUtils.js';
+import { nodeBounds } from './nodeGeometry.js';
 
 export interface CullingOptions {
   nodes: FlatNode[];
@@ -15,6 +16,19 @@ export interface CullingOptions {
 }
 
 const DEFAULT_SPATIAL_INDEX_THRESHOLD = 200;
+
+/**
+ * True when anything drawn for the node touches the viewport. Nodes are drawn
+ * CENTRED on (x, y) with rings and stroke around them, so the test uses the
+ * node's real visual bounds (not a top-left rectangle).
+ */
+export function intersectsViewport(
+  n: FlatNode,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): boolean {
+  const b = nodeBounds(n);
+  return b.maxX >= bounds.minX && b.minX <= bounds.maxX && b.maxY >= bounds.minY && b.minY <= bounds.maxY;
+}
 
 /**
  * Returns the subset of nodes currently visible in the viewport.
@@ -45,12 +59,7 @@ export function getViewportVisibleNodes(options: CullingOptions): FlatNode[] {
   const bounds = calculateViewportBounds(viewport, canvasWidth, canvasHeight);
 
   if (filtered.length < spatialIndexThreshold) {
-    return filtered.filter(n =>
-      n.x + n.width  >= bounds.minX &&
-      n.x            <= bounds.maxX &&
-      n.y + n.height >= bounds.minY &&
-      n.y            <= bounds.maxY,
-    );
+    return filtered.filter(n => intersectsViewport(n, bounds));
   }
 
   if (spatialIndex) {
@@ -62,10 +71,5 @@ export function getViewportVisibleNodes(options: CullingOptions): FlatNode[] {
   }
 
   // Fallback to simple filter if no index provided but threshold exceeded
-  return filtered.filter(n =>
-    n.x + n.width  >= bounds.minX &&
-    n.x            <= bounds.maxX &&
-    n.y + n.height >= bounds.minY &&
-    n.y            <= bounds.maxY,
-  );
+  return filtered.filter(n => intersectsViewport(n, bounds));
 }

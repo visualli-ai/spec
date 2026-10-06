@@ -19,11 +19,14 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "design-system",
+    "fonts"
   ],
   "scripts": {
-    "build": "tsup",
-    "check-types": "tsc --noEmit"
+    "build": "node ../../../../scripts/gen-design-system.mjs && tsup",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": "^18.0.0",
