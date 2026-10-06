@@ -23,6 +23,8 @@ const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
 const CONTROLS = (params.get('controls') ?? undefined) as 'bottom-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
+// ?doc=noparent: a root with two differently coloured ideas, each with a child layer (the trail dot must match the clicked idea).
+const NO_PARENT = params.get('doc') === 'noparent';
 const COMFORT = (params.get('comfort') ?? '').split(',').filter(Boolean);
 
 // ── Synthetic document ───────────────────────────────────────────────────────
@@ -30,6 +32,19 @@ const COMFORT = (params.get('comfort') ?? '').split(',').filter(Boolean);
 const WORDS = ['Evaporation', 'Rain', 'Glacier', 'Aquifer', 'Delta', 'Monsoon', 'Tide', 'Runoff', 'Fog', 'Spring'];
 const COLORS = ['#a6f5d8', '#b7e7f3', '#fff699', '#a1c4fc', '#faada5', '#e0c8fe', '#ffcf9d'];
 const uid = (p: string, i: number) => `${p}-${String(i).padStart(8, '0')}-0000-4000-8000-000000000000`;
+
+function buildNoParentDoc(): string {
+  const l = (o: object) => JSON.stringify(o);
+  const a = uid('node', 1), b = uid('node', 2);
+  return [
+    l({ type: 'meta', version: '0.1.1', title: 'noparent', created: 'x', lastModified: 'x' }),
+    l({ type: 'layer', id: uid('layer', 0), level: 0, layout: 'linear-horizontal', connections: [], containers: [], nodes: [
+      { id: a, position: { x: 0, y: 0 }, data: { label: 'Alpha', summary: 'first', color: '#faada5' } },
+      { id: b, position: { x: 0, y: 0 }, data: { label: 'Beta', summary: 'second', color: '#a1c4fc' } }] }),
+    l({ type: 'layer', id: uid('layer', 1), level: 1, layout: 'radial', parentLayerId: uid('layer', 0), parentNodeId: a, connections: [], containers: [], nodes: [{ id: uid('node', 11), position: { x: 0, y: 0 }, data: { label: 'Alpha child', summary: '', color: '#fff699' } }] }),
+    l({ type: 'layer', id: uid('layer', 2), level: 1, layout: 'radial', parentLayerId: uid('layer', 0), parentNodeId: b, connections: [], containers: [], nodes: [{ id: uid('node', 12), position: { x: 0, y: 0 }, data: { label: 'Beta child', summary: '', color: '#a6f5d8' } }] }),
+  ].join('\n');
+}
 
 function buildDoc(n: number): string {
   const lines: string[] = [];
@@ -87,7 +102,7 @@ let resolveReady: () => void = () => {};
 const ready = new Promise<void>(r => { resolveReady = r; });
 
 const t0 = performance.now();
-const doc = parseVisualliFile(USE_EXAMPLE ? exampleString : buildDoc(N));
+const doc = parseVisualliFile(USE_EXAMPLE ? exampleString : NO_PARENT ? buildNoParentDoc() : buildDoc(N));
 const buildMs = performance.now() - t0;
 
 (window as any).__bench = {

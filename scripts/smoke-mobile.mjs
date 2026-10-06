@@ -22,12 +22,12 @@ let failures = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`); if (!ok) failures++; };
 const browser = await chromium.launch();
 
-async function open(viewport, { touch }) {
+async function open(viewport, { touch }, query = '') {
   const ctx = await browser.newContext({ viewport, hasTouch: touch, isMobile: touch, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=light`);
+  await page.goto(`http://localhost:${port}/bench.html?doc=${query ? query.replace('&doc=', '') : 'example'}&theme=light`);
   await page.evaluate(() => window.__bench.ready);
   await page.waitForSelector('canvas', { timeout: 8000 });
   await page.waitForTimeout(800);
@@ -143,6 +143,31 @@ try {
     const def = await rect(''), bottom = await rect('&controls=bottom-right');
     check('controls: default is top-right', def.top < 40 && def.right > 350, JSON.stringify(def));
     check('controls: controlsPosition="bottom-right" gives the design system placement', bottom.bottom > 700 && bottom.right > 350, JSON.stringify(bottom));
+  }
+  // ── depth trail dot matches the clicked idea ──
+  {
+    const { ctx, page } = await open({ width: 390, height: 844 }, { touch: true }, '&doc=noparent');
+    const fillOf = (sel) => page.evaluate((q) => { const el = document.querySelector(q); return el && getComputedStyle(el).fill; }, sel);
+    for (const [title, topicVar] of [['Beta', '--topic-harbor'], ['Alpha', '--topic-berry']]) {
+      const p = await pos(page, title);
+      await tap(page, p.x, p.y);
+      await page.waitForSelector('.vi-fact--sheet');
+      await page.waitForTimeout(500);
+      const p2 = await pos(page, title);
+      await layerChange(page);
+      await tap(page, p2.x, p2.y);
+      await awaitLayer(page);
+      const dot = await fillOf('.vi-trail li:last-child svg path');
+      const expected = await page.evaluate((v) => getComputedStyle(document.querySelector('.vi-map')).getPropertyValue(v).trim(), topicVar);
+      const toRgb = (hex) => { const n = parseInt(hex.slice(1), 16); return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`; };
+      check(`trail: dot after stepping into ${title} has ${title}'s colour`, dot === toRgb(expected), `${dot} vs ${toRgb(expected)}`);
+      check(`trail: entry is labelled ${title}`, (await page.textContent('.vi-trail li:last-child'))?.trim() === title);
+      // back out for the next round
+      await layerChange(page);
+      await page.click('.vi-trail li:first-child button');
+      await awaitLayer(page);
+    }
+    await ctx.close();
   }
   // ── resize reacts ──
   {

@@ -206,6 +206,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const [navStack, setNavStack]           = useState<NavStackEntry[]>([]);
   const [currentLayerId, setCurrentLayerId] = useState<string | null>(null);
   const parentViewports                   = useRef<AnimatorViewport[]>([]);
+  /** The idea being stepped into: the depth trail entry takes its colour and label from it, so they always match the idea that was clicked. */
+  const stepTargetRef                     = useRef<{ topic: TopicName; label: string } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false);
 
@@ -405,7 +407,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       const childLayer = doc?.layers.get(childLayerId);
       if (!childLayer || !doc) return;
       setCurrentLayerId(childLayerId);
-      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(doc, childLayer, childLayerId), topic: layerTopic(doc, childLayer, childLayerId) }]);
+      const target = stepTargetRef.current;
+      stepTargetRef.current = null;
+      setNavStack(prev => [...prev, {
+        layerId: childLayerId,
+        layer: childLayer,
+        label: target?.label || layerLabel(doc, childLayer, childLayerId),
+        topic: target?.topic ?? layerTopic(doc, childLayer, childLayerId),
+      }]);
       onLayerChange?.(childLayerId, childLayer);
     },
     onSwapBack: () => {
@@ -540,6 +549,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const isRootNow = navStack.length <= 1;
     parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: isRootNow ? 0.85 : fitVp.zoomLevel });
 
+    stepTargetRef.current = { topic: topicOf(node), label: node.title };
     setIsTransitioning(true);
     isTransitioningRef.current = true;
 
