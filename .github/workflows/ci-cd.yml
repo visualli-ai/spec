@@ -47,6 +47,15 @@ jobs:
             exit 1
           fi
 
+      # 2b. Design system: generated modules are current, nothing visual is hard-coded, tests pass
+      - name: Verify design-system generation and literals
+        run: |
+          node scripts/gen-design-system.mjs --check
+          node scripts/check-design-literals.mjs
+
+      - name: Unit tests
+        run: npx turbo run test
+
       # 3. Build Bindings & Packages (@visualli/bindings, @visualli/core, @visualli/react, etc.)
       - name: Build All
         run: |

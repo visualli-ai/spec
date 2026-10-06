@@ -155,7 +155,11 @@ copy(resolve(ds, 'geometry/blobShapes.ts'), resolve(core, 'src/generated/geometr
 // ── spec CSS for the DOM overlays ────────────────────────────────────────────
 // The page must keep its own <body> styles, so the spec's global `body{}` rule
 // is dropped; `@import` lines are dropped too (fonts are loaded by the SDK).
-const specCss = readFileSync(resolve(ds, 'css/spec.css'), 'utf8').replace(/^body\s*\{[^}]*\}\s*$/m, '').replace(/^@import[^\n]*\n/gm, '');
+// The spec's global :focus-visible rule is scoped to the map so embedding the SDK never restyles the host page's links/buttons.
+const specCss = readFileSync(resolve(ds, 'css/spec.css'), 'utf8')
+  .replace(/^body\s*\{[^}]*\}\s*$/m, '')
+  .replace(/^@import[^\n]*\n/gm, '')
+  .replace(/^:where\(button, a, input, textarea, \[tabindex\]\):focus-visible/m, '.vi-map :where(button, a, input, textarea, [tabindex]):focus-visible');
 const tokensCss = css.replace(/^@import[^\n]*\n/gm, '');
 // Bundled font files declared in fonts/fonts.css (@font-face with a local url()).
 const fontsCss = readFileSync(resolve(ds, 'fonts/fonts.css'), 'utf8');

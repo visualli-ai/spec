@@ -18,3 +18,4 @@ dist-loader/
 # Benchmark / screenshot artefacts (results JSON under bench/results is committed)
 bench/screenshots/
 renderers/visualli-sdk/apps/react/dist-bench/
+docs/assets/fonts/

@@ -11,7 +11,7 @@ React canvas rendering for Visualli — powered by Konva. A high-performance com
 - **Chromatic Immersion** — Optional background effects that adapt to the current layer's context
 - **Viewport Culling** — Spatial indexing ensures only visible elements are rendered
 - **Worker-based Parsing** — Parse large documents off the main thread to prevent UI blocking
-- **Flexible Theming** — Light, Dark, and System-aware (auto) theme support
+- **Design-system theming** — 8 themes (standard, focus, color-safe, high-contrast; light and dark), comfort settings (readable type, larger text, reduced motion), forced-colors aware
 - **State Management** — Fine-grained control via Zustand stores for viewport, nodes, and selection
 
 ## Installation
@@ -82,7 +82,11 @@ The primary component for rendering `.visualli` documents. Manages the full docu
 |------|------|---------|-------------|
 | `visualliFile` | `File \| string` | — | A `.visualli` file as a File object or URL path |
 | `visualliString` | `string` | — | Raw JSONL content as a string |
-| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | Color theme. `'auto'` follows system preference |
+| `theme` | `ThemeName \| 'auto' \| 'focus' \| 'colorsafe' \| 'contrast'` | `'light'` | One of the 8 design-system themes (`light`, `dark`, `focus-light`, `focus-dark`, `colorsafe-light`, `colorsafe-dark`, `contrast-light`, `contrast-dark`), a family, or `'auto'` (follows the reader). `'light'` / `'dark'` / `'auto'` still work |
+| `comfort` | `{ readableType?, largerText?, reducedMotion? }` | — | Reader comfort settings |
+| `respectForcedColors` | `boolean` | `true` | Use the high-contrast theme under forced-colors |
+| `fontBaseUrl` | `string` | jsDelivr copy | Where `Caveat-Variable.ttf` is served from |
+| `loadWebFonts` | `boolean` | `true` | Load Kalam + Atkinson Hyperlegible from Google Fonts |
 | `chromaticImmersion` | `boolean` | `false` | Enable background color effects based on layer context |
 | `useWorker` | `boolean` | `true` | Parse documents in a Web Worker (recommended for large files) |
 | `width` | `string \| number` | `'100%'` | Width as CSS value or pixel number |
@@ -102,7 +106,9 @@ The low-level canvas component used internally by `VisualliRenderer`. Use this i
 |------|------|-------------|
 | `preParsedVisualli` | `VisualliDocument` | Pre-parsed document from `@visualli/core` |
 | `visualliString` | `string` | Raw JSONL string (parsed on mount) |
-| `isDark` | `boolean` | Dark mode flag |
+| `theme` | `ThemeInput` | Same values as `VisualliRenderer` |
+| `isDark` | `boolean` | **Deprecated** — use `theme` (`true` → `'dark'`). Kept for one release |
+| `comfort` | `Comfort` | Readable type, larger text, reduced motion |
 | `chromaticImmersion` | `boolean` | Enable chromatic background |
 | `onNodeClick` | `(node: FlatNode) => void` | Callback fired on node click |
 | `onLayerChange` | `(id: string, layer: VisualliLayer) => void` | Callback fired on layer navigation |
@@ -117,7 +123,7 @@ const document = parseVisualliFile(jsonlString);
 
 <VisualliCanvas 
   preParsedVisualli={document}
-  isDark={true}
+  theme="dark"
   onNodeClick={(node) => console.log('Clicked:', node.data.label)}
 />
 ```
