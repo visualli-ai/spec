@@ -3,7 +3,6 @@
 // free-form colours go to the nearest topic.
 
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { TOPICS, TOKENS, topicForColor, topicFromName, parseVisualliFile, convertLayerToFlatNodes } from '../src/index';
 
@@ -45,9 +44,9 @@ describe('through the parser', () => {
   });
 });
 
-// Once the design system's color.ts reaches design-system/ (a design-system release + sync), compare results.
+// The design system's color.ts (vendored in design-system/): the SDK must resolve names and missing colours exactly like it.
 const dsColor = resolve(__dirname, '../../../../../design-system/geometry/color.ts');
-describe.skipIf(!existsSync(dsColor))('matches the design system (geometry/color.ts)', () => {
+describe('matches the design system (geometry/color.ts)', () => {
   it('names and missing colours resolve exactly like topicFor', async () => {
     const DS = await import(dsColor);
     expect([...TOPICS]).toEqual([...DS.TOPIC_ORDER]);

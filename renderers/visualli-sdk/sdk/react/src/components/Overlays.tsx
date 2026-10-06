@@ -5,8 +5,8 @@
 // .vi-iconbtn …). No colours or fonts are set here: topic colours reach the CSS
 // as the --topic-* custom properties of the active theme.
 
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { ZOOM_MAX, ZOOM_MIN, blobPath, shapeOfLevel, type FlatNode, type SemanticAnchor, type TopicName } from '@visualli/core';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SHEET, TERM, VIEW, ZOOM_MAX, ZOOM_MIN, blobPath, hoverOpensTerm, shapeOfLevel, type FlatNode, type SemanticAnchor, type TopicName } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 
 // ── Icons (stroke = currentColor) ─────────────────────────────────────────────
@@ -39,8 +39,8 @@ export const ZoomControls = memo(function ZoomControls({ onFit, touch = false }:
   const size = touch ? 'vi-iconbtn--md' : 'vi-iconbtn--sm';
   const zoom = useViewportStore((s) => s.zoomLevel);
   const setZoom = useViewportStore((s) => s.setZoom);
-  const zoomIn = useCallback(() => setZoom(Math.min(ZOOM_MAX, zoom * 1.2)), [zoom, setZoom]);
-  const zoomOut = useCallback(() => setZoom(Math.max(ZOOM_MIN, zoom / 1.2)), [zoom, setZoom]);
+  const zoomIn = useCallback(() => setZoom(Math.min(ZOOM_MAX, zoom * VIEW.zoomStep)), [zoom, setZoom]);
+  const zoomOut = useCallback(() => setZoom(Math.max(ZOOM_MIN, zoom / VIEW.zoomStep)), [zoom, setZoom]);
   return (
     <div className="vi-ctrls" role="group" aria-label="Zoom controls" data-help="zoom-controls">
       <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom out" disabled={zoom <= ZOOM_MIN} onClick={zoomOut}><MinusIcon /></button>
@@ -116,11 +116,71 @@ export const TermCard = ({ anchor, inSheet = false }: { anchor: SemanticAnchor; 
     <p className="vi-anchor-card__desc">{anchor.description}</p>
     {anchor.knowMoreUrl && (
       <span className="vi-anchor-card__acts">
-        <a className="vi-fact__link" href={anchor.knowMoreUrl} target="_blank" rel="noopener noreferrer">Know more <ExternalIcon /></a>
+        <a className="vi-fact__link" href={anchor.knowMoreUrl} target="_blank" rel="noopener noreferrer">{TERM.learnMoreLabel} <ExternalIcon /></a>
       </span>
     )}
   </span>
 );
+
+// ── Term (semantic anchor) in a peek ─────────────────────────────────────────
+
+/**
+ * An underlined term and its definition card, behaving as the design system's
+ * `SemanticAnchor` (rules from geometry/interaction.ts → TERM): a mouse opens
+ * it after TERM.hoverOpen and it closes TERM.hoverClose after the pointer leaves
+ * the term and its card; a click, Enter or Space pins it (pressing again closes);
+ * Escape closes it (without stepping out of the layer) and returns focus to the
+ * term; a press outside closes it; opening by click / keyboard moves focus into
+ * the card; the card stays TERM.viewportMargin inside the viewport.
+ */
+export function TermAnchor({ anchor }: { anchor: SemanticAnchor }) {
+  const [open, setOpen] = useState(false);
+  const [shift, setShift] = useState(0);
+  const pinned = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wrap = useRef<HTMLSpanElement>(null), btn = useRef<HTMLButtonElement>(null), card = useRef<HTMLSpanElement>(null);
+  const show = (pin: boolean) => { clearTimeout(timer.current); if (pin) pinned.current = true; setOpen(true); };
+  const hide = () => { clearTimeout(timer.current); pinned.current = false; setOpen(false); };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  useLayoutEffect(() => { // keep the card inside the viewport
+    if (!open || !card.current) { setShift(0); return; }
+    const r = card.current.getBoundingClientRect(), vw = document.documentElement.clientWidth, m = TERM.viewportMargin;
+    setShift(r.right > vw - m ? vw - m - r.right : r.left < m ? m - r.left : 0);
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); hide(); btn.current?.focus(); } };
+    const onPress = (e: PointerEvent) => { if (!wrap.current?.contains(e.target as Node)) hide(); };
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('pointerdown', onPress, true);
+    return () => { document.removeEventListener('keydown', onKey, true); document.removeEventListener('pointerdown', onPress, true); };
+  }, [open]);
+  return (
+    <span
+      ref={wrap}
+      className={`vi-anchor${open ? ' is-open' : ''}`}
+      data-semantic-tooltip="true"
+      onPointerEnter={(e) => { if (!hoverOpensTerm(e.pointerType)) return; clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(true), TERM.hoverOpen); }}
+      onPointerLeave={(e) => { if (!hoverOpensTerm(e.pointerType) || pinned.current) return; clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(false), TERM.hoverClose); }}
+      onBlur={(e) => { if (!wrap.current?.contains(e.relatedTarget as Node | null)) hide(); }}
+    >
+      <button
+        ref={btn}
+        type="button"
+        className="vi-term"
+        aria-expanded={open}
+        onClick={() => {
+          if (open && pinned.current) { hide(); return; }
+          show(true);
+          setTimeout(() => card.current?.querySelector<HTMLElement>('a, button')?.focus(), 0);
+        }}
+      >
+        {anchor.word}
+      </button>
+      {open && <span ref={card} className="vi-anchor__pop" style={shift ? { transform: `translateX(${shift}px)` } : undefined}><TermCard anchor={anchor} /></span>}
+    </span>
+  );
+}
 
 // ── Peek ─────────────────────────────────────────────────────────────────────
 
@@ -136,7 +196,6 @@ export interface PeekCardProps {
 }
 
 export const PeekCard = memo(function PeekCard({ node, topic, anchors, onStepInside, onClose, renderContent }: PeekCardProps) {
-  const [openWord, setOpenWord] = useState<string | null>(null);
   const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
   const style = { ['--vi-fact-fill' as string]: `var(--topic-${topic})`, ['--vi-fact-ring' as string]: `var(--topic-${topic}-ring)` } as React.CSSProperties;
   return (
@@ -148,10 +207,7 @@ export const PeekCard = memo(function PeekCard({ node, topic, anchors, onStepIns
       <div className="vi-fact__body">
         {renderContent ? renderContent(node.description ?? '') : parts.map((p, i) =>
           typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
-            <span key={i} className={`vi-anchor${openWord === `${i}` ? ' is-open' : ''}`} data-semantic-tooltip="true">
-              <button type="button" className="vi-term" aria-expanded={openWord === `${i}`} onClick={() => setOpenWord(openWord === `${i}` ? null : `${i}`)}>{p.word}</button>
-              {openWord === `${i}` && <span className="vi-anchor__pop"><TermCard anchor={p} /></span>}
-            </span>
+            <TermAnchor key={i} anchor={p} />
           ))}
       </div>
       {onStepInside && (
@@ -176,7 +232,7 @@ export interface PeekSheetProps extends Omit<PeekCardProps, 'onClose'> {
   height: number;
 }
 
-const SWIPE_PX = 24;
+// Swipe thresholds on the sheet's grip: the design system's SHEET (geometry/interaction.ts).
 
 /**
  * The peek on touch devices: the design system's bottom sheet (`.vi-fact--sheet`).
@@ -204,8 +260,8 @@ export const PeekSheet = memo(function PeekSheet({ node, topic, anchors, onStepI
           if (startY.current === null) return;
           const dy = e.clientY - startY.current;
           startY.current = null;
-          if (dy < -SWIPE_PX) { swiped.current = true; if (!expanded) onToggleExpanded(); }
-          else if (dy > SWIPE_PX) { swiped.current = true; if (expanded) onToggleExpanded(); else onClose(); }
+          if (dy < -SHEET.expandDrag) { swiped.current = true; if (!expanded) onToggleExpanded(); }
+          else if (dy > SHEET.dismissDrag) { swiped.current = true; if (expanded) onToggleExpanded(); else onClose(); }
         }}
       >
         <button type="button" className="vi-fact__handle" aria-label={expanded ? 'Collapse' : 'Expand'} aria-expanded={expanded} onClick={() => { if (!swiped.current) onToggleExpanded(); swiped.current = false; }} />

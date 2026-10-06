@@ -24,3 +24,7 @@ export type { Bezier } from './generated/geometry/motion.js';
 // ideas, connectors and other names), verbatim from the design system's geometry/container.ts.
 export { HULL, containerHull, labelCandidates, placeContainerLabel, connectorSamples } from './generated/geometry/container.js';
 export type { Hull, Box as LabelBox, LabelPlacement, LabelSide, Pt } from './generated/geometry/container.js';
+// How terms, the peek, the touch sheet, zoom and fit behave, and which topic an idea gets: the design system's
+// geometry/interaction.ts and geometry/color.ts, verbatim.
+export { TERM, PEEK, SHEET, VIEW, pointerModeFor, hoverOpensTerm } from './generated/geometry/interaction.js';
+export { TOPIC_ORDER, topicFor } from './generated/geometry/color.js';

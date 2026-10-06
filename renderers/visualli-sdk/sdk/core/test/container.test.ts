@@ -61,3 +61,11 @@ describe('name placement', () => {
     expect(connectorSamples(g.a, g.mid, g.b)).toEqual(DS.connectorSamples(g.a, g.mid, g.b));
   });
 });
+
+describe('every design-system rule module is carried verbatim', () => {
+  const { readdirSync } = require('node:fs') as typeof import('node:fs');
+  const files = readdirSync(`${repo}/design-system/geometry`).filter((f: string) => f.endsWith('.ts'));
+  it.each(files)('%s', (f) => {
+    expect(read(resolve(__dirname, '../src/generated/geometry', f))).toBe(read(`${repo}/design-system/geometry/${f}`));
+  });
+});

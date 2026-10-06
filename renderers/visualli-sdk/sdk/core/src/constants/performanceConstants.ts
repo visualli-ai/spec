@@ -3,6 +3,7 @@
 // Performance budgets and interaction thresholds. Visual values (colours,
 // stroke widths, node size, zoom range) come from the design system tokens.
 
+import { VIEW } from '../generated/geometry/interaction.js';
 import { METRICS } from '../generated/designSystem.js';
 
 // ── FPS ───────────────────────────────────────────────────────────────────────
@@ -68,8 +69,9 @@ export const TITLE_MAX_LENGTH  = 150;
 // ── Zoom Constraints ──────────────────────────────────────────────────────────
 
 /** Lower than the design system's zoom-min so very large maps can still be fitted. */
-export const ZOOM_MIN              = 0.05;
-export const ZOOM_MAX              = METRICS.zoomMax;
+// Zoom limits: the design system's VIEW (geometry/interaction.ts; equal to the zoom-min / zoom-max tokens).
+export const ZOOM_MIN              = VIEW.zoomMin;
+export const ZOOM_MAX              = VIEW.zoomMax;
 export const ZOOM_DEFAULT          = 1.0;
 export const ZOOM_STEP             = 0.1;
 export const ZOOM_WHEEL_SENSITIVITY = 0.001;

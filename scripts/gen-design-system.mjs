@@ -7,12 +7,12 @@
 //
 // Writes:
 //   sdk/core/src/generated/designSystem.ts   tokens (all 8 themes), metrics, fonts, type styles
-//   sdk/core/src/generated/geometry/*.ts     blob.ts + blobShapes.ts + motion.ts + container.ts, verbatim copies
+//   sdk/core/src/generated/geometry/*.ts     every design-system/geometry/*.ts, verbatim copies
 //   sdk/react/src/generated/specCss.ts       tokens.css + spec.css as strings (injected at runtime)
 //   sdk/{core,react}/design-system/          LICENSE + NOTICE.md (shipped with the packages)
 //   sdk/react/fonts/Caveat-Variable.ttf      bundled font file (shipped with the package)
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -163,10 +163,11 @@ export const CANVAS_STYLE = ${j(canvasStyle)} as const;
 `);
 
 // ── geometry (verbatim) ──────────────────────────────────────────────────────
-copy(resolve(ds, 'geometry/blob.ts'), resolve(core, 'src/generated/geometry/blob.ts'));
-copy(resolve(ds, 'geometry/blobShapes.ts'), resolve(core, 'src/generated/geometry/blobShapes.ts'));
-copy(resolve(ds, 'geometry/motion.ts'), resolve(core, 'src/generated/geometry/motion.ts'));
-copy(resolve(ds, 'geometry/container.ts'), resolve(core, 'src/generated/geometry/container.ts'));
+// Every rule module the design system ships (blob, shapes, motion, containers, interaction, colour, and any added
+// later) is copied verbatim — the SDK runs the design system's own code, never a re-derivation of it.
+for (const f of readdirSync(resolve(ds, 'geometry')).filter((f) => f.endsWith('.ts')).sort()) {
+  copy(resolve(ds, 'geometry', f), resolve(core, 'src/generated/geometry', f));
+}
 
 // ── spec CSS for the DOM overlays ────────────────────────────────────────────
 // The page must keep its own <body> styles, so the spec's global `body{}` rule

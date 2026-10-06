@@ -26,6 +26,9 @@ import {
   TEXT_LABEL_HIDE_BELOW_ZOOM,
   ZOOM_NAV_IN_THRESHOLD,
   ZOOM_NAV_OUT_THRESHOLD,
+  VIEW,
+  PEEK,
+  SHEET,
   ZOOM_MIN,
   ZOOM_MAX,
 } from '@visualli/core';
@@ -636,8 +639,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   };
   const pinnedIdRef = useRef<string | null>(null);
   pinnedIdRef.current = pinnedId;
-  /** Collapsed sheet height: the design system's 300px, but never more than half the map. */
-  const sheetHeight = Math.min(300, Math.round((viewport.canvasHeight || canvasSizeRef.current.height || 600) * 0.5));
+  /** Collapsed sheet height: the design system's SHEET — a share of the map, at most SHEET.maxHeight. */
+  const sheetHeight = Math.min(SHEET.maxHeight, Math.round((viewport.canvasHeight || canvasSizeRef.current.height || 600) * SHEET.heightRatio));
 
   /** Open the bottom sheet for an idea, scrolling the map so the idea stays visible above it. */
   const openSheet = (node: FlatNode) => {
@@ -882,7 +885,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
       clearTooltipTimerRef.current = setTimeout(() => {
         if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) setHoveredNode(null);
-      }, 150);
+      }, PEEK.hoverClose); // the design system's peek grace (geometry/interaction.ts)
     } else {
       if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; }
     }
@@ -932,8 +935,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Escape' && pinnedIdRef.current) { e.preventDefault(); setPinnedId(null); }
     else if (e.key === 'Escape' && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
-    else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * 1.2, ZOOM_MAX)); }
-    else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN)); }
+    else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * VIEW.zoomStep, ZOOM_MAX)); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / VIEW.zoomStep, ZOOM_MIN)); }
     else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
   }, [navStack.length, handleNavigateBack, setZoom, viewport.zoomLevel, fitToScreen]);
 
@@ -1099,7 +1102,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
               if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
               clearTooltipTimerRef.current = setTimeout(() => {
                 if (!keepTooltipOpenRef.current) setHoveredNode(null);
-              }, 100);
+              }, PEEK.hoverClose);
             }}
           >
             <PeekCard

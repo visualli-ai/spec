@@ -6,10 +6,12 @@
 
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// The design system's interaction rules (term hover delays), read from the vendored module.
+const { TERM } = await import(pathToFileURL(resolve(root, 'design-system/geometry/interaction.ts')).href);
 const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
 const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -83,6 +85,27 @@ try {
   check('Step inside navigates', (await page.locator('.vi-trail li').count()) === 3);
   await hover('Cloud Formation');
   await page.waitForSelector('.vi-peek .vi-term', { timeout: 3000 });
+  // Terms follow the design system's TERM rules (geometry/interaction.ts).
+  const cards = () => page.locator('.vi-anchor-card').count();
+  await page.hover('.vi-peek .vi-term');
+  await sleep(TERM.hoverOpen / 2);
+  check('a hovered term waits before opening', (await cards()) === 0);
+  await sleep(TERM.hoverOpen + 150);
+  check('hovering a term opens its definition card', (await cards()) === 1, `after ${TERM.hoverOpen}ms`);
+  const link = page.locator('.vi-anchor-card .vi-fact__link');
+  check('the term card says "Learn more", never "Know more"', !/Know more/.test(await page.textContent('.vi-anchor-card') ?? '') && ((await link.count()) === 0 || ((await link.textContent()) ?? '').includes(TERM.learnMoreLabel)));
+  await page.hover('.vi-peek .vi-fact__title');
+  await sleep(TERM.hoverClose + 150);
+  check('leaving the term closes its card', (await cards()) === 0, `after ${TERM.hoverClose}ms`);
+  await page.click('.vi-peek .vi-term');
+  await page.hover('.vi-peek .vi-fact__title');
+  await sleep(TERM.hoverClose + 150);
+  check('a clicked term stays open when the pointer leaves (pinned)', (await cards()) === 1);
+  await page.keyboard.press('Escape');
+  await sleep(100);
+  check('Escape closes the term card', (await cards()) === 0);
+  check('…without stepping out of the layer', (await page.locator('.vi-trail li').count()) === 3);
+  await page.hover('.vi-peek .vi-term');
   await page.click('.vi-peek .vi-term');
   check('clicking a term opens its definition card', /Water Vapor/i.test(await page.textContent('.vi-anchor-card') ?? ''));
   check('term card shows the definition', (await page.textContent('.vi-anchor-card__desc'))?.length > 20);
