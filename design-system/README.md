@@ -1,0 +1,24 @@
+# Visualli spec design system
+
+Everything a `.visualli` viewer needs to look and move **exactly** like Visualli: the spec tokens for all 8 themes, the CSS of the spec components, the node / ring / connector geometry, and the fonts.
+
+> Generated from the Visualli design system (v0.1.0). **Don't edit files here** — changes arrive as pull requests from the design system, so the spec and the Visualli apps can never drift apart.
+
+## Use it
+
+```html
+<link rel="stylesheet" href="design-system/index.css">
+<html data-theme="light"> <!-- light · dark · focus-light · focus-dark · colorsafe-light · colorsafe-dark · contrast-light · contrast-dark -->
+```
+
+Comfort attributes on `<html>`: `data-motion="reduced"`, `data-type="readable"`, `data-scale="lg"`.
+
+| Path | What |
+| --- | --- |
+| `index.css` | Loads fonts, tokens and component CSS in order |
+| `tokens/tokens.css` · `tokens.json` | 70 spec tokens for every theme, plus the canvas type styles (`.node-label`, `.edge-label`, …) |
+| `css/spec.css` | Map, nodes, connectors, peek, term cards, depth trail and canvas controls |
+| `geometry/` | `blob.ts` (`blobPath`, `drawBlob`, `shapeForLevel`, `RINGS`, `edgePath`, `arrowPath`), the six outlines, and `geometry.json` |
+| `fonts/` | Caveat (bundled) and the Google Fonts import for Kalam and Atkinson Hyperlegible |
+
+The rules these implement are the **SPEC** rules of the Visualli canvas language. Licenses: see `LICENSE` and `NOTICE.md`.

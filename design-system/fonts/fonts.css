@@ -1,0 +1,3 @@
+/* Fonts the spec uses. All under the SIL Open Font License 1.1 — see ../NOTICE.md. */
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Kalam:wght@400;700&display=swap");
+@font-face { font-family: "Caveat"; src: url("./Caveat-Variable.ttf"); font-weight: 400 700; font-display: swap; }

@@ -1,0 +1,4 @@
+/* Load once: fonts, tokens, then the spec components. */
+@import url("./fonts/fonts.css");
+@import url("./tokens/tokens.css");
+@import url("./css/spec.css");
