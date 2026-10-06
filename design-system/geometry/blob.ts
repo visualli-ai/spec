@@ -27,9 +27,12 @@ export function blobPath(shape: number, rx: number, ry: number, cx = 0, cy = 0):
   return d + 'Z';
 }
 
-/** Canvas 2D twin of blobPath — call fill()/stroke() after. */
-export function drawBlob(ctx: CanvasRenderingContext2D, shape: number, rx: number, ry: number, cx = 0, cy = 0) {
-  const pts = BLOB_SHAPES[shape % BLOB_SHAPES.length].map(([x, y]) => [cx + x * rx, cy + y * ry]);
+/** The path calls drawBlob makes: satisfied by a CanvasRenderingContext2D and by Konva's Context (sceneFunc / hitFunc). */
+export type PathContext = { beginPath(): void; moveTo(x: number, y: number): void; quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void; closePath(): void };
+
+/** Canvas twin of blobPath — call fill()/stroke() after (in Konva: ctx.fillStrokeShape(shape)). */
+export function drawBlob(ctx: PathContext, shape: number, rx: number, ry: number, cx = 0, cy = 0) {
+  const pts = BLOB_SHAPES[((shape % BLOB_SHAPES.length) + BLOB_SHAPES.length) % BLOB_SHAPES.length].map(([x, y]) => [cx + x * rx, cy + y * ry]);
   const mid = (a: number[], b: number[]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const s = mid(pts[pts.length - 1], pts[0]);
   ctx.beginPath();
