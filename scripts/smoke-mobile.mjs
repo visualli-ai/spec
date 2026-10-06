@@ -72,9 +72,13 @@ try {
     p = await pos(page, 'Condensation');
     await tap(page, p.x, p.y);
     await page.waitForSelector('.vi-fact--sheet .vi-fact__step');
+    await page.waitForTimeout(600);
+    // tapping the same idea again steps inside (the map may have scrolled to keep it above the sheet)
+    p = await pos(page, 'Condensation');
     await layerChange(page);
-    await page.tap('.vi-fact--sheet .vi-fact__step');
+    await tap(page, p.x, p.y);
     await awaitLayer(page);
+    check('phone: tapping the same idea again steps inside', (await page.locator('.vi-trail li').count()) === 3 && (await page.locator('.vi-fact--sheet').count()) === 0);
     p = await pos(page, 'Cloud Formation');
     await tap(page, p.x, p.y);
     await page.waitForSelector('.vi-fact--sheet', { timeout: 3000 });

@@ -818,8 +818,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         const node = nodes.get(nodeId);
         if (node) {
           const childLayer = doc ? getChildLayerForNode(doc, nodeId, currentLayerId ?? '') : null;
-          if (touchModeRef.current && (node.description || childLayer)) {
-            // Touch: a tap opens the sheet (Step inside lives there); nothing flashes or navigates by itself.
+          if (touchModeRef.current && childLayer && pinnedIdRef.current === nodeId) {
+            // Touch: tapping the idea whose sheet is open steps inside (same as the sheet's Step inside).
+            setPinnedId(null);
+            handleNavigate(nodeId);
+          } else if (touchModeRef.current && (node.description || childLayer)) {
+            // Touch: the first tap opens the sheet; nothing flashes or navigates by itself.
             openSheet(node);
           } else if (childLayer) {
             handleNavigate(nodeId);
@@ -967,7 +971,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // ── Activate an idea (click, or Enter/Space on its accessible button) ───────
   const activateNode = useCallback((node: FlatNode) => {
     const childLayer = doc ? getChildLayerForNode(doc, node.id, currentLayerId ?? '') : null;
-    if (touchModeRef.current && (node.description || childLayer)) openSheet(node);
+    if (touchModeRef.current && childLayer && pinnedIdRef.current === node.id) { setPinnedId(null); handleNavigate(node.id); }
+    else if (touchModeRef.current && (node.description || childLayer)) openSheet(node);
     else if (childLayer) handleNavigate(node.id);
     onNodeClick?.(node);
   }, [doc, currentLayerId, handleNavigate, onNodeClick]); // eslint-disable-line react-hooks/exhaustive-deps
