@@ -89,8 +89,8 @@ const numList = (v) => v.trim().split(/\s+/).map(Number);
 const edgeFont = pick(/\.vi-edge__label \{ font: (\d+) calc\((\d+)px/, '.vi-edge__label font');
 const groupFont = pick(/\.vi-map__group text \{ font: (\d+) (\d+)px/, '.vi-map__group text font');
 const readableEdge = pick(/\[data-type="readable"\] \.vi-edge__label \{ font-size: calc\((\d+)px[^}]*font-weight: (\d+)/, 'readable edge label');
-const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\((-?[\d.]+)deg\) scale\(([\d.]+)\)/, 'node hover rings transform');
-const lift = pick(/button\.vi-node:hover \{ transform: translateY\((-?[\d.]+)px\)/, 'node hover lift');
+const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\(var\(--vi-ring-turn, (-?[\d.]+)deg\)\) scale\(var\(--vi-ring-grow, ([\d.]+)\)\)/, 'node hover rings transform');
+const lift = pick(/button\.vi-node:hover \{ transform: translateY\(calc\(var\(--vi-lift, (-?[\d.]+)px\) \* -1\)\)/, 'node hover lift');
 const canvasStyle = {
   node: {
     labelLineHeight: +pick(/\.vi-node__label \{[^}]*line-height: ([\d.]+)/, '.vi-node__label line-height')[1],
@@ -98,7 +98,7 @@ const canvasStyle = {
     selectedStrokeWidth: +pick(/\.vi-node\.is-selected \.vi-node__body \{ stroke-width: ([\d.]+)/, 'selected node stroke')[1],
     hoverRingsRotate: +hover[1],
     hoverRingsScale: +hover[2],
-    hoverLift: +lift[1],
+    hoverLift: -Math.abs(+lift[1]), // CSS gives the lift magnitude; canvas y offset is negative (up)
     dimmedOpacityFocus: +pick(/\[data-theme\^="focus"\] \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'focus dimmed opacity')[1],
     dimmedOpacityHighlight: +pick(/\.vi-map\.has-highlight \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'highlight dimmed opacity')[1],
     shadowLight: pick(/--vi-node-shadow, ([^)]+\))\)/, 'light node shadow')[1],
