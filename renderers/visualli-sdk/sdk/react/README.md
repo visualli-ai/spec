@@ -83,6 +83,7 @@ The primary component for rendering `.visualli` documents. Manages the full docu
 | `visualliFile` | `File \| string` | — | A `.visualli` file as a File object or URL path |
 | `visualliString` | `string` | — | Raw JSONL content as a string |
 | `theme` | `ThemeName \| 'auto' \| 'focus' \| 'colorsafe' \| 'contrast'` | `'light'` | One of the 8 design-system themes (`light`, `dark`, `focus-light`, `focus-dark`, `colorsafe-light`, `colorsafe-dark`, `contrast-light`, `contrast-dark`), a family, or `'auto'` (follows the reader). `'light'` / `'dark'` / `'auto'` still work |
+| `reveal` | `'gradual' \| 'instant'` | `'gradual'` | How a layer arrives: ideas bloom in one by one then connectors draw (design-system motion), or everything fades in together |
 | `comfort` | `{ readableType?, largerText?, reducedMotion? }` | — | Reader comfort settings |
 | `respectForcedColors` | `boolean` | `true` | Use the high-contrast theme under forced-colors |
 | `fontBaseUrl` | `string` | jsDelivr copy | Where `Caveat-Variable.ttf` is served from |

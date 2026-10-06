@@ -25,6 +25,8 @@ export type { IViewportStore }    from './stores/useViewportStore';
 // Hooks
 export { useKonvaRenderer }         from './hooks/useKonvaRenderer';
 export { useKonvaLayerTransition }  from './hooks/useKonvaLayerTransition';
+export { useLayerChoreography }     from './hooks/useLayerChoreography';
+export type { LayerChoreography, LayerChoreographyOptions } from './hooks/useLayerChoreography';
 export { useViewportNodes }         from './hooks/useViewportNodes';
 export type { UseKonvaRendererOptions, UseKonvaRendererReturn } from './hooks/useKonvaRenderer';
 export type { LayerTransitionHandlers } from './hooks/useKonvaLayerTransition';

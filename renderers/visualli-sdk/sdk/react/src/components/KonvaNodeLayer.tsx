@@ -13,10 +13,14 @@ import { useNodeStore } from '../stores/useNodeStore';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { useFontsEpoch } from '../design/runtime';
 import { IDLE, drawIdea, type IdeaState } from '../design/drawing';
+import { HoverTweens, type RevealClock, type Arrival } from '../design/choreography';
+import { useFrames } from './useFrames';
 
 /** Above this many visible ideas the idea drop shadow is skipped (it is the costliest canvas effect). */
 const SHADOW_MAX_VISIBLE = 150;
 const SPATIAL_INDEX_THRESHOLD = 200;
+/** Hover lifts are tweened for layers up to this many ideas; denser layers snap (every tween frame repaints the whole layer, and in a dense layer the pointer changes idea constantly). */
+const HOVER_TWEEN_MAX_NODES = 150;
 
 export interface KonvaNodeLayerProps {
   nodes?: FlatNode[];
@@ -28,6 +32,8 @@ export interface KonvaNodeLayerProps {
   /** Idea with keyboard focus (accessible layer). */
   focusedNodeId?: string | null;
   design?: Design;
+  /** The layer's arrival timeline (bloom). Omit for no arrival animation. */
+  clock?: RevealClock;
 }
 
 /** World-space rectangle currently visible in the stage. */
@@ -44,6 +50,7 @@ export default function KonvaNodeLayer({
   selectedNodeId = null,
   focusedNodeId = null,
   design = DEFAULT_DESIGN,
+  clock,
 }: KonvaNodeLayerProps) {
   const layerRef = useRef<Konva.Layer | null>(null);
   const fonts = useFontsEpoch();
@@ -62,6 +69,18 @@ export default function KonvaNodeLayer({
   const highlighted = hoveredNodeId ?? selectedNodeId;
   const dimOthers = design.theme.startsWith('focus') && highlighted !== null;
 
+  // Hover / press / select: the design system's lift and ring turn, tweened rather than snapped.
+  const tweens = useRef(new HoverTweens()).current;
+  const frames = useFrames(layerRef, () => clock?.active() || tweens.active());
+  useLayoutEffect(() => {
+    const raised = new Set<string>();
+    if (hoveredNodeId) raised.add(hoveredNodeId);
+    if (pressedNodeId) raised.add(pressedNodeId);
+    if (selectedNodeId) raised.add(selectedNodeId);
+    if (tweens.set(raised, design.comfort.reducedMotion || nodes.length > HOVER_TWEEN_MAX_NODES)) frames.run();
+  }, [hoveredNodeId, pressedNodeId, selectedNodeId, design.comfort.reducedMotion, nodes.length > HOVER_TWEEN_MAX_NODES, tweens, frames]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => clock?.subscribe(() => frames.run()), [clock, frames]);
+
   useLayoutEffect(() => { layerRef.current?.batchDraw(); }, [nodes, index, design, fonts, hoveredNodeId, pressedNodeId, selectedNodeId, focusedNodeId, isDragging]);
 
   const sceneFunc = (ctx: { _context: CanvasRenderingContext2D }, shape: Konva.Shape) => {
@@ -78,6 +97,9 @@ export default function KonvaNodeLayer({
     const m = c.getTransform();
     const opt = { shadows: !isDragging && visible.length <= SHADOW_MAX_VISIBLE, labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b), base: m };
     const st: IdeaState = { ...IDLE };
+    const now = performance.now();
+    const arrival: Arrival = { alpha: 1, scale: 1, dx: 0, dy: 0 };
+    const arriving = clock?.active(now) ?? false;
     for (let i = 0; i < visible.length; i++) {
       const n = visible[i]!;
       st.hovered = n.id === hoveredNodeId;
@@ -85,6 +107,8 @@ export default function KonvaNodeLayer({
       st.selected = n.id === selectedNodeId;
       st.focused = n.id === focusedNodeId;
       st.dimmed = dimOthers && n.id !== highlighted;
+      if (tweens.has(n.id)) { const p = tweens.progress(n.id, now); st.lift = p.lift; st.ring = p.ring; } else { st.lift = undefined; st.ring = undefined; }
+      st.arrival = arriving && clock!.node(n.id, n.x, n.y, now, arrival) ? arrival : null;
       drawIdea(c, n, design, zoom, st, opt);
     }
     c.setTransform(m);

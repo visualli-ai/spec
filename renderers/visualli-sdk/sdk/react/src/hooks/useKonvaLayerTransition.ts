@@ -1,3 +1,4 @@
+// @deprecated — VisualliCanvas now uses useLayerChoreography (the design system's motion.ts). Kept exported for one release.
 // ─── useKonvaLayerTransition ──────────────────────────────────────────────────
 //
 // Manages layer navigation animations (zoom into child layer, zoom back to

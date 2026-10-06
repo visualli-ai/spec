@@ -20,7 +20,7 @@ import {
   getNodesForLayer,
   getSemanticAnchors,
   topicForColor,
-  topicStyle,
+  motionVars,
   nodeRadii,
   RBushSpatialIndex,
   TEXT_LABEL_HIDE_BELOW_ZOOM,
@@ -35,7 +35,8 @@ import { useViewportStore }    from './stores/useViewportStore';
 import { useSelectionStore }   from './stores/stores';
 
 import { useKonvaRenderer }          from './hooks/useKonvaRenderer';
-import { useKonvaLayerTransition }   from './hooks/useKonvaLayerTransition';
+import { useLayerChoreography }      from './hooks/useLayerChoreography';
+import { RevealClock }              from './design/choreography';
 
 import KonvaStage           from './components/KonvaStage';
 import KonvaNodeLayer       from './components/KonvaNodeLayer';
@@ -119,6 +120,11 @@ export interface VisualliCanvasProps {
   isDark?: boolean;
   /** Comfort settings: readable type, larger text, reduced motion. */
   comfort?: Comfort;
+  /**
+   * How a layer arrives. 'gradual' (default): ideas bloom in one by one, then connectors draw
+   * (design-system motion). 'instant': everything fades in together, as with reduced motion.
+   */
+  reveal?: 'gradual' | 'instant';
   /** Switch to the high-contrast theme under forced-colors. Default true. */
   respectForcedColors?: boolean;
   /**
@@ -253,18 +259,28 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     clearSel();
   }, [flatNodes, setNodes, clearSel]);
 
+  // ── Choreography: a layer's arrival (ideas bloom, connectors draw) ────────
+  const clock = useMemo(() => new RevealClock(), []);
+  const instantReveal = design.comfort.reducedMotion || props.reveal === 'instant';
+  useEffect(() => {
+    if (!fontsReady || flatNodes.length === 0) return;
+    clock.start(flatNodes, connections.length, instantReveal);
+    // Lift the step-inside veil two frames from now, once the new layer's first frame has been painted.
+    const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(arrive); });
+    let r2 = 0;
+    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+  }, [flatNodes, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => clock.subscribe((running) => {
+    const el = containerRef.current;
+    if (el) el.dataset.viReveal = running ? 'running' : 'idle';
+  }), [clock]);
+  useEffect(() => () => clock.stop(), [clock]);
+
   // ── Canvas refs ───────────────────────────────────────────────────────────
   const containerRef     = useRef<HTMLDivElement | null>(null);
   const stageRef         = useRef<Konva.Stage | null>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
-  // ── GPU CSS-transform transition refs (matches visualli.ai) ───────────────
-  // During animations we express viewport deltas as CSS transforms on Konva's
-  // container div — zero canvas redraws, handled entirely by the GPU compositor.
-  const baselineTransformRef  = useRef<{ x: number; y: number; scaleX: number; scaleY: number } | null>(null);
-  const konvaContentDivRef    = useRef<HTMLDivElement | null>(null);
-  const lastAnimViewportRef   = useRef<{ centerX: number; centerY: number; zoomLevel: number } | null>(null);
-  const zoomOutTargetRef      = useRef<{ centerX: number; centerY: number; zoomLevel: number } | null>(null);
   // canvasSizeRef is kept in sync with the measured container size (not window).
   // Initialise to 0 — it will be updated synchronously before the first frame.
   const canvasSizeRef         = useRef({ width: 0, height: 0 });
@@ -400,9 +416,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // Stores the target nav-back index so onSwapBack can read it
   const navBackTargetRef = useRef<number>(-1);
 
-  const { zoomIntoLayer, zoomOutToParent, isTransitioning: isAnimating } = useKonvaLayerTransition({
+  const { stepInside: diveInto, backOut, arrive, isTransitioning: isAnimating } = useLayerChoreography({
     stageRef,
     canvasWrapperRef,
+    reducedMotion: design.comfort.reducedMotion || props.reveal === 'instant',
     onSwapLayer: (childLayerId) => {
       const childLayer = doc?.layers.get(childLayerId);
       if (!childLayer || !doc) return;
@@ -432,87 +449,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       setIsTransitioning(false);
       isTransitioningRef.current = false;
       // After every layer switch, snap to the fit view so zoom is always clean.
-      // rAF ensures React has committed new node data before we compute the fit.
       requestAnimationFrame(() => { fitToScreenRef.current(); });
-    },
-    // GPU CSS-transform callbacks (matching visualli.ai exactly):
-    onViewportFrame: (vp) => {
-      lastAnimViewportRef.current = vp;
-      const baseline = baselineTransformRef.current;
-      const contentDiv = konvaContentDivRef.current;
-      const { width, height } = canvasSizeRef.current;
-      if (baseline && contentDiv) {
-        const targetX = width / 2 - vp.centerX * vp.zoomLevel;
-        const targetY = height / 2 - vp.centerY * vp.zoomLevel;
-        const ratio = vp.zoomLevel / baseline.scaleX;
-        const tx = targetX - baseline.x * ratio;
-        const ty = targetY - baseline.y * ratio;
-        contentDiv.style.transform = `translate(${tx}px, ${ty}px) scale(${ratio})`;
-      } else {
-        const stage = stageRef.current;
-        if (stage) {
-          stage.x(width / 2 - vp.centerX * vp.zoomLevel);
-          stage.y(height / 2 - vp.centerY * vp.zoomLevel);
-          stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-          stage.batchDraw();
-        }
-      }
-    },
-    onViewportFinal: (vp) => {
-      if (konvaContentDivRef.current) konvaContentDivRef.current.style.transform = '';
-      const stage = stageRef.current;
-      if (stage) {
-        const { width, height } = canvasSizeRef.current;
-        stage.x(width / 2 - vp.centerX * vp.zoomLevel);
-        stage.y(height / 2 - vp.centerY * vp.zoomLevel);
-        stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-        stage.getLayers().forEach(l => l.drawScene());
-      }
-      setCenter(vp.centerX, vp.centerY);
-      setZoom(vp.zoomLevel);
-    },
-    onPhaseChange: (phase) => {
-      const stage = stageRef.current;
-      const contentDiv = konvaContentDivRef.current;
-      if (stage && contentDiv && (phase === 'swap' || phase === 'zoom-back')) {
-        contentDiv.style.transform = '';
-        const vp = phase === 'zoom-back' ? zoomOutTargetRef.current : lastAnimViewportRef.current;
-        if (vp) {
-          const { width, height } = canvasSizeRef.current;
-          const nx = width / 2 - vp.centerX * vp.zoomLevel;
-          const ny = height / 2 - vp.centerY * vp.zoomLevel;
-          stage.x(nx); stage.y(ny);
-          stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-          stage.getLayers().forEach(l => l.drawScene());
-          baselineTransformRef.current = { x: nx, y: ny, scaleX: vp.zoomLevel, scaleY: vp.zoomLevel };
-        }
-      }
-    },
-    onTransitionLifecycle: (phase) => {
-      const stage = stageRef.current;
-      if (phase === 'start') {
-        if (canvasWrapperRef.current) canvasWrapperRef.current.style.willChange = 'opacity, transform';
-        if (stage) {
-          baselineTransformRef.current = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() };
-          const container = stage.container();
-          const cd = container?.querySelector('.konvajs-content') as HTMLDivElement | null;
-          if (cd) {
-            konvaContentDivRef.current = cd;
-            cd.style.transformOrigin = '0 0';
-            cd.style.willChange = 'transform';
-          }
-          stage.getLayers().forEach(l => { l.listening(false); });
-        }
-      } else {
-        if (canvasWrapperRef.current) canvasWrapperRef.current.style.willChange = 'auto';
-        if (konvaContentDivRef.current) { konvaContentDivRef.current.style.willChange = 'auto'; konvaContentDivRef.current = null; }
-        baselineTransformRef.current = null;
-        zoomOutTargetRef.current = null;
-        if (stage) {
-          stage.getLayers().forEach(l => { l.listening(true); });
-          stage.batchDraw();
-        }
-      }
     },
   });
 
@@ -553,12 +490,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setIsTransitioning(true);
     isTransitioningRef.current = true;
 
-    zoomIntoLayer(
-      doc, node, childLayerId, childNodes,
-      topicStyle(design.theme, topicOf(node)).fill,
-      design.tokens['canvas']!,
-    );
-  }, [doc, currentLayerId, nodes, design, isAnimating, zoomIntoLayer]);
+    diveInto(node, childLayerId, childNodes);
+  }, [doc, currentLayerId, nodes, design, isAnimating, diveInto]);
 
   const handleNavigateBack = useCallback((targetIndex: number) => {
     if (targetIndex >= navStack.length - 1) return;
@@ -568,8 +501,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     navBackTargetRef.current = targetIndex;
     setIsTransitioning(true);
     isTransitioningRef.current = true;
-    zoomOutToParent(savedVp, design.tokens['canvas']!, design.tokens['canvas']!);
-  }, [navStack.length, design, isAnimating, zoomOutToParent]);
+    backOut(savedVp);
+  }, [navStack.length, isAnimating, backOut]);
 
   // ── Auto-zoom navigation (Google Maps style) ──────────────────────────────
   const baseZoomRef           = useRef(1.0);
@@ -1026,13 +959,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       ref={containerRef}
       className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''} ${className}`}
       {...design.attrs}
+      data-reveal={instantReveal ? 'instant' : undefined}
       role="group"
       aria-label={`${doc.meta?.title ?? 'Map'}${currentLayerTitle ? `, ${currentLayerTitle}` : ''}`}
       onKeyDown={handleKeyDown}
       // Focusable by pointer so Esc / + / - / 0 work after clicking the map (Tab order is the mirrored ideas).
       tabIndex={-1}
       onPointerDownCapture={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) containerRef.current?.focus({ preventScroll: true }); }}
-      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...style }}
+      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
         // Only close the peek on mouse leave if not keeping it open
@@ -1059,9 +993,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
             onTouchEnd={handleStageTouchEnd}
           >
             <KonvaContainerLayer nodes={flatNodes} containers={containers} design={design} />
-            <KonvaEdgeLayer nodes={flatNodes} connections={connections} design={design} isDragging={isDraggingState} />
+            <KonvaEdgeLayer nodes={flatNodes} connections={connections} design={design} isDragging={isDraggingState} clock={clock} />
             <KonvaNodeLayer
               design={design}
+              clock={clock}
               isTransitioning={isTransitioning}
               isDragging={isDraggingState}
               hoveredNodeId={pointerNodeId}

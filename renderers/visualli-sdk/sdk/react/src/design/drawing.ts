@@ -29,6 +29,7 @@ import {
 } from '@visualli/core';
 import type { Design } from './design';
 import { fontsEpoch } from './runtime';
+import type { Arrival, EdgeArrival } from './choreography';
 
 const DEG = Math.PI / 180;
 
@@ -112,6 +113,11 @@ export interface IdeaState {
   /** Keyboard focus (the accessible layer is focused on this idea). */
   focused: boolean;
   dimmed: boolean;
+  /** Hover/select progress (0 at rest, 1 raised) from the choreography; defaults to the boolean state when omitted. */
+  lift?: number;
+  ring?: number;
+  /** Arrival look mid-reveal (bloom); null/omitted once arrived. */
+  arrival?: Arrival | null;
 }
 export const IDLE: IdeaState = { hovered: false, pressed: false, selected: false, focused: false, dimmed: false };
 
@@ -153,10 +159,11 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
 
   // Specks: one filled box, no transform changes.
   if (screenW < LOD_TINY_PX && !st.selected && !st.focused && !st.hovered) {
-    if (st.dimmed) c.globalAlpha = CANVAS_STYLE.node.dimmedOpacityFocus;
+    const a = (st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (st.arrival ? st.arrival.alpha : 1);
+    if (a !== 1) c.globalAlpha = a;
     c.fillStyle = fill;
     c.fillRect(node.x - rx, node.y - ry, rx * 2, ry * 2);
-    if (st.dimmed) c.globalAlpha = 1;
+    if (a !== 1) c.globalAlpha = 1;
     return;
   }
 
@@ -164,20 +171,25 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   const shape = shapeOfLevel(node.level);
   const rings = detailed ? ringsFor(node.branchCount) : NO_RINGS;
   const raised = st.hovered || st.pressed || st.selected;
-  const y = node.y + (raised ? CANVAS_STYLE.node.hoverLift : 0);
+  const lift = st.lift ?? (raised ? 1 : 0);
+  const ringT = st.ring ?? (raised ? 1 : 0);
+  const arr = st.arrival;
+  const y = node.y + lift * CANVAS_STYLE.node.hoverLift + (arr ? arr.dy : 0);
+  const x = node.x + (arr ? arr.dx : 0);
   let k = opt.k;
   if (k === undefined) { const m = c.getTransform(); k = Math.hypot(m.a, m.b); } // device px per world unit
 
-  if (base) c.setTransform(base.a, base.b, base.c, base.d, base.e + base.a * node.x + base.c * y, base.f + base.b * node.x + base.d * y);
-  else { c.save(); c.translate(node.x, y); }
+  if (base) c.setTransform(base.a, base.b, base.c, base.d, base.e + base.a * x + base.c * y, base.f + base.b * x + base.d * y);
+  else { c.save(); c.translate(x, y); }
+  if (arr) c.scale(arr.scale, arr.scale);
   c.lineJoin = 'round';
-  const baseAlpha = st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1;
+  const baseAlpha = (st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (arr ? arr.alpha : 1);
   c.globalAlpha = baseAlpha;
 
   // Rings, outermost first so the inner ones sit on top.
   if (rings.length) {
-    const ringSpin = raised ? CANVAS_STYLE.node.hoverRingsRotate : 0;
-    const ringGrow = raised ? CANVAS_STYLE.node.hoverRingsScale : 1;
+    const ringSpin = ringT * CANVAS_STYLE.node.hoverRingsRotate;
+    const ringGrow = 1 + ringT * (CANVAS_STYLE.node.hoverRingsScale - 1);
     c.fillStyle = fill;
     c.strokeStyle = ring;
     let dashed = false;
@@ -237,25 +249,44 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
 export interface PreparedConnector extends ConnectorGeometry {
   path: Path2D;
   arrowPath: Path2D;
+  /** Length of the curve in world units (for drawing it from source to target). */
+  len: number;
+}
+
+/** Length of the connector's cubic ("M x y C x y x y x y"), by sampling. */
+function cubicLength(d: string): number {
+  const v = d.match(/-?\d+(?:\.\d+)?/g)?.map(Number);
+  if (!v || v.length < 8) return 0;
+  const [x0, y0, x1, y1, x2, y2, x3, y3] = v as [number, number, number, number, number, number, number, number];
+  let len = 0, px = x0, py = y0;
+  for (let i = 1; i <= 16; i++) {
+    const t = i / 16, u = 1 - t;
+    const x = u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3;
+    const y = u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3;
+    len += Math.hypot(x - px, y - py); px = x; py = y;
+  }
+  return len;
 }
 
 export function prepareConnector(g: ConnectorGeometry): PreparedConnector {
-  return { ...g, path: new Path2D(g.d), arrowPath: new Path2D(g.arrow) };
+  return { ...g, path: new Path2D(g.d), arrowPath: new Path2D(g.arrow), len: cubicLength(g.d) };
 }
 
 /** Connectors shorter than this on screen, and labels smaller than LABEL_MIN_SCREEN_PX, are invisible: skipped. */
 const CONNECTOR_MIN_SCREEN_PX = 3;
 const LABEL_MIN_SCREEN_PX = 6;
 
-export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector, d: Design, zoom: number, dashed: boolean, label: string | undefined): void {
+export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector, d: Design, zoom: number, dashed: boolean, label: string | undefined, arrival?: EdgeArrival | null): void {
   if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) * zoom < CONNECTOR_MIN_SCREEN_PX) return;
   c.save();
+  if (arrival) c.globalAlpha = arrival.alpha;
   c.strokeStyle = d.tokens['edge']!;
   c.lineWidth = d.metrics.edgeWidth;
   c.lineCap = 'round';
   c.lineJoin = 'round';
   if (dashed) c.setLineDash([...CANVAS_STYLE.edge.dash]);
-  c.stroke(g.path);
+  else if (arrival && arrival.draw < 1) c.setLineDash([g.len * arrival.draw, g.len * 2]); // draws from source to target
+  if (!(arrival && arrival.draw <= 0.001)) c.stroke(g.path);
   c.setLineDash([]);
   c.stroke(g.arrowPath);
 

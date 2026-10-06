@@ -1,3 +1,4 @@
+// @deprecated — VisualliCanvas now follows the design system's choreography (see hooks/useLayerChoreography). Kept exported for one release.
 // ─── Konva Layer Transition Animator ─────────────────────────────────────────
 //
 // rAF-driven animation engine for layer navigation:
