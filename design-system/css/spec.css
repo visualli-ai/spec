@@ -1,9 +1,9 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.1.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.1.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; color-scheme: light; }
 [data-theme$="dark"] { color-scheme: dark; }
 [data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
 [data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; letter-spacing: 0.01em; }
-[data-type="readable"] .vi-node__label, [data-type="readable"] .vi-edge__label { font-family: var(--font-ui) !important; font-weight: 700; letter-spacing: 0.02em; font-style: normal; }
+[data-type="readable"] .vi-node__label, [data-type="readable"] .vi-edge__label, [data-type="readable"] .vi-map__group-label { font-family: var(--font-ui) !important; font-weight: 700; letter-spacing: 0.02em; font-style: normal; }
 body { font-family: var(--font-ui); color: var(--ink); background: var(--canvas); font-size: var(--vi-fs-body); line-height: var(--vi-lh-body); -webkit-font-smoothing: antialiased; }
 .vi-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .vi-icon { flex: none; display: block; }
@@ -74,7 +74,8 @@ button.vi-node { cursor: pointer; }
 .vi-map__world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .vi-map__edges { position: absolute; overflow: visible; pointer-events: none; }
 .vi-map__group rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 10 6; }
-.vi-map__group text { font: 700 22px/1 var(--font-note); fill: var(--ink-muted); }
+.vi-map__group-label { position: absolute; transform: translate(-50%, -50%); z-index: 2; max-width: 420px; box-sizing: border-box; padding: 6px 22px 8px; background: var(--topic-stone); border: 1.5px solid var(--topic-stone-ring); border-radius: var(--radius-pill); font: 700 22px/1.1 var(--font-note); color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; font-size: calc(26px * var(--vi-label-scale) * var(--vi-ninv, 1)); }
+[data-theme^="contrast"] .vi-map__group-label { border: 2px solid var(--line-strong); }
 .vi-map__slot { position: absolute; transform: translate(-50%, -50%); }
 .vi-map.is-reveal .vi-map__slot { animation: vi-bloom var(--duration-reveal) var(--ease-bloom) backwards; }
 .vi-map.is-reveal .vi-edge { animation: vi-fade var(--duration-base) var(--ease-standard) backwards; }
@@ -145,7 +146,7 @@ button.vi-node { cursor: pointer; }
 .vi-edge.is-selected .vi-edge__line, .vi-edge.is-selected .vi-edge__arrow { stroke: var(--focus); stroke-width: 3.5; }
 .vi-map__group-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
 .vi-map__group.is-selected rect:not(.vi-map__group-hit) { stroke: var(--focus); stroke-width: 2.5; stroke-dasharray: none; }
-.vi-map__group.is-selected text { fill: var(--focus); }
+.vi-map__group-label.is-selected { border-color: var(--focus); color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 @keyframes vi-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes vi-fade { from { opacity: 0; } }
 @keyframes vi-bloom { from { opacity: 0; transform: translate(calc(-50% + var(--vi-dx)), calc(-50% + var(--vi-dy))) scale(var(--vi-bloom-from, .55)); } }
