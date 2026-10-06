@@ -21,6 +21,7 @@ const params = new URLSearchParams(location.search);
 const N = Number(params.get('n') ?? 500);
 const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
+const CONTROLS = (params.get('controls') ?? undefined) as 'top-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
 const COMFORT = (params.get('comfort') ?? '').split(',').filter(Boolean);
 
@@ -117,6 +118,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <VisualliCanvas
     preParsedVisualli={doc}
     fontBaseUrl="/fonts"
+    controlsPosition={CONTROLS}
     // `theme` is the new prop; older SDK builds only know `isDark`.
     {...({ theme: THEME, comfort: COMFORT, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
     style={{ width: '100vw', height: '100vh' }}

@@ -76,6 +76,9 @@ export interface VisualliRendererProps {
    */
   layout?: 'auto' | 'touch' | 'pointer';
 
+  /** Where the zoom / fit controls sit: the design system's 'bottom-right' (default) or 'top-right'. */
+  controlsPosition?: 'bottom-right' | 'top-right';
+
   /**
    * Enable chromatic immersion background effect.
    * When true:
@@ -334,6 +337,7 @@ export default function VisualliRenderer({
   comfort,
   respectForcedColors,
   layout,
+  controlsPosition,
   width = '100%',
   height = '100%',
   useWorker = true,
@@ -391,6 +395,7 @@ export default function VisualliRenderer({
         comfort={comfort}
         respectForcedColors={respectForcedColors}
         layout={layout}
+        controlsPosition={controlsPosition}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}

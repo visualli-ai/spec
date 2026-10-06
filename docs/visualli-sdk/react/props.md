@@ -21,6 +21,7 @@ All props accepted by `<VisualliRenderer />`.
 | `respectForcedColors` | `boolean` | `true` | Switch to the matching high-contrast theme when the browser forces colors (Windows high contrast and similar). |
 | `fontBaseUrl` | `string` | jsDelivr copy of the package | Directory URL that serves `Caveat-Variable.ttf` (shipped in the package's `fonts/` folder). Set it when you self-host. |
 | `loadWebFonts` | `boolean` | `true` | Load Kalam and Atkinson Hyperlegible from Google Fonts. Set `false` if your page already loads them. |
+| `controlsPosition` | `'bottom-right' \| 'top-right'` | `'bottom-right'` | Where the zoom / fit controls sit. `bottom-right` is the design system's placement (`.vi-map__ctrls`); `top-right` was the placement before 0.2. |
 | `layout` | `'auto' \| 'touch' \| 'pointer'` | `'auto'` | Interaction layout. `auto` follows the reader's input and the map's size: touch devices get the design system's bottom-sheet peek and larger controls, pointer devices the floating peek on hover. Narrow maps (< 560px) collapse the depth trail. Force one with `touch` or `pointer`. |
 | `chromaticImmersion` | `boolean` | `false` | When enabled, child layers are tinted with their parent idea's topic color (at the design system's `immersion-alpha`), creating visual hierarchy. |
 | `width` | `string \| number` | `'100%'` | Canvas width. CSS strings (`'100%'`, `'800px'`) or numbers (pixels). |

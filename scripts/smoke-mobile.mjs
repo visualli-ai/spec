@@ -131,6 +131,15 @@ try {
     check('desktop: hover shows the floating peek, not a sheet', (await page.locator('.vi-map__fact .vi-peek').count()) === 1 && (await page.locator('.vi-fact--sheet').count()) === 0);
     await ctx.close();
   }
+  // ── controls position ──
+  {
+    const rect = async (q) => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      const page = await ctx.newPage(); await page.goto(`http://localhost:${port}/bench.html?doc=example${q}`); await page.waitForSelector('.vi-ctrls'); await page.waitForTimeout(500);
+      const r = await page.evaluate(() => { const c = document.querySelector('.vi-ctrls').getBoundingClientRect(); return { top: c.top, bottom: c.bottom, right: c.right }; }); await ctx.close(); return r; };
+    const def = await rect(''), top = await rect('&controls=top-right');
+    check('controls: default is the design system placement (bottom-right)', def.bottom > 700 && def.right > 350, JSON.stringify(def));
+    check('controls: controlsPosition="top-right" moves them to the top-right', top.top < 40 && top.right > 350, JSON.stringify(top));
+  }
   // ── resize reacts ──
   {
     const { ctx, page } = await open({ width: 1280, height: 800 }, { touch: false });

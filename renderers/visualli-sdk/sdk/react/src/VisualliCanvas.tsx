@@ -127,6 +127,11 @@ export interface VisualliCanvasProps {
    * Force one with 'touch' or 'pointer'.
    */
   layout?: 'auto' | 'touch' | 'pointer';
+  /**
+   * Where the zoom / fit controls sit. 'bottom-right' is the design system's placement
+   * (`.vi-map__ctrls`); 'top-right' moves them to the top-right corner. Default 'bottom-right'.
+   */
+  controlsPosition?: 'bottom-right' | 'top-right';
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
   fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
   /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
@@ -1094,7 +1099,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
       {/* Canvas controls (bottom-right) */}
-      <div className="vi-map__ctrls" style={pinnedNode && touchMode ? { bottom: `calc(var(--space-4) + ${sheetHeight}px)` } : undefined}>
+      <div
+        className="vi-map__ctrls"
+        style={props.controlsPosition === 'top-right'
+          ? { top: 'var(--space-4)', bottom: 'auto' }
+          : pinnedNode && touchMode ? { bottom: `calc(var(--space-4) + ${sheetHeight}px)` } : undefined}
+      >
         <ZoomControls onFit={fitToScreen} touch={touchMode} />
       </div>
 
