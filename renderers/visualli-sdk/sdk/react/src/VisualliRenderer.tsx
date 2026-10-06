@@ -70,6 +70,13 @@ export interface VisualliRendererProps {
   respectForcedColors?: boolean;
 
   /**
+   * Interaction layout: 'auto' follows the reader's input (touch -> bottom-sheet peek and larger
+   * controls, pointer -> floating peek on hover); force one with 'touch' or 'pointer'.
+   * @default 'auto'
+   */
+  layout?: 'auto' | 'touch' | 'pointer';
+
+  /**
    * Enable chromatic immersion background effect.
    * When true:
    *  - Root layer (level 0) shows the plain canvas
@@ -326,6 +333,7 @@ export default function VisualliRenderer({
   theme = 'light',
   comfort,
   respectForcedColors,
+  layout,
   width = '100%',
   height = '100%',
   useWorker = true,
@@ -382,6 +390,7 @@ export default function VisualliRenderer({
         theme={theme}
         comfort={comfort}
         respectForcedColors={respectForcedColors}
+        layout={layout}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}

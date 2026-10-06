@@ -5,7 +5,7 @@
 // .vi-iconbtn …). No colours or fonts are set here: topic colours reach the CSS
 // as the --topic-* custom properties of the active theme.
 
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { ZOOM_MAX, ZOOM_MIN, blobPath, shapeOfLevel, type FlatNode, type SemanticAnchor, type TopicName } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 
@@ -19,6 +19,7 @@ const Icon = ({ children, size = 20 }: { children: React.ReactNode; size?: numbe
 const MinusIcon = () => <Icon><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
 const PlusIcon = () => <Icon><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
 const FitIcon = () => <Icon><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" /></Icon>;
+const ChevronLeftIcon = () => <Icon size={14}><polyline points="15 6 9 12 15 18" /></Icon>;
 const ChevronIcon = () => <Icon size={14}><polyline points="9 6 15 12 9 18" /></Icon>;
 const ExternalIcon = () => <Icon size={14}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></Icon>;
 const CloseIcon = () => <Icon size={18}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></Icon>;
@@ -28,23 +29,26 @@ const CloseIcon = () => <Icon size={18}><line x1="6" y1="6" x2="18" y2="18" /><l
 export interface ZoomControlsProps {
   /** Re-fit the current layer into view. */
   onFit?: () => void;
+  /** Touch layout: larger targets (the design system's `md` icon buttons). */
+  touch?: boolean;
   /** @deprecated theme comes from the surrounding data-theme; kept so existing callers compile. */
   isDark?: boolean;
 }
 
-export const ZoomControls = memo(function ZoomControls({ onFit }: ZoomControlsProps) {
+export const ZoomControls = memo(function ZoomControls({ onFit, touch = false }: ZoomControlsProps) {
+  const size = touch ? 'vi-iconbtn--md' : 'vi-iconbtn--sm';
   const zoom = useViewportStore((s) => s.zoomLevel);
   const setZoom = useViewportStore((s) => s.setZoom);
   const zoomIn = useCallback(() => setZoom(Math.min(ZOOM_MAX, zoom * 1.2)), [zoom, setZoom]);
   const zoomOut = useCallback(() => setZoom(Math.max(ZOOM_MIN, zoom / 1.2)), [zoom, setZoom]);
   return (
     <div className="vi-ctrls" role="group" aria-label="Zoom controls" data-help="zoom-controls">
-      <button type="button" className="vi-iconbtn vi-iconbtn--sm" aria-label="Zoom out" disabled={zoom <= ZOOM_MIN} onClick={zoomOut}><MinusIcon /></button>
+      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom out" disabled={zoom <= ZOOM_MIN} onClick={zoomOut}><MinusIcon /></button>
       <span className="vi-ctrls__pct" aria-live="polite">{Math.round(zoom * 100)}%</span>
-      <button type="button" className="vi-iconbtn vi-iconbtn--sm" aria-label="Zoom in" disabled={zoom >= ZOOM_MAX} onClick={zoomIn}><PlusIcon /></button>
+      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom in" disabled={zoom >= ZOOM_MAX} onClick={zoomIn}><PlusIcon /></button>
       {onFit && (<>
         <span className="vi-ctrls__div" aria-hidden="true" />
-        <button type="button" className="vi-iconbtn vi-iconbtn--sm" aria-label="Fit to screen" onClick={onFit}><FitIcon /></button>
+        <button type="button" className={`vi-iconbtn ${size}`} aria-label="Fit to screen" onClick={onFit}><FitIcon /></button>
       </>)}
     </div>
   );
@@ -105,8 +109,8 @@ export function splitTerms(text: string, anchors: ReadonlyArray<SemanticAnchor>)
   return out;
 }
 
-export const TermCard = ({ anchor }: { anchor: SemanticAnchor }) => (
-  <span className="vi-anchor-card" role="note">
+export const TermCard = ({ anchor, inSheet = false }: { anchor: SemanticAnchor; inSheet?: boolean }) => (
+  <span className={`vi-anchor-card${inSheet ? ' is-in-sheet' : ''}`} role="note">
     <span className="vi-anchor-card__eyebrow">Term</span>
     <span className="vi-anchor-card__word" style={{ display: 'block' }}>{anchor.word}</span>
     <p className="vi-anchor-card__desc">{anchor.description}</p>
@@ -157,6 +161,83 @@ export const PeekCard = memo(function PeekCard({ node, topic, anchors, onStepIns
             <button type="button" className="vi-fact__step" onClick={onStepInside}>Step inside <ChevronIcon /></button>
           </div>
         </div>
+      )}
+    </div>
+  );
+});
+
+// ── Peek as a bottom sheet (touch) ────────────────────────────────────────────
+
+export interface PeekSheetProps extends Omit<PeekCardProps, 'onClose'> {
+  onClose: () => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  /** Collapsed height in px (`--vi-sheet-h`). */
+  height: number;
+}
+
+const SWIPE_PX = 24;
+
+/**
+ * The peek on touch devices: the design system's bottom sheet (`.vi-fact--sheet`).
+ * Stays open until dismissed (close button, swipe down, tap on empty canvas, Esc).
+ * A tapped term opens its definition inside the sheet, with a Back button.
+ */
+export const PeekSheet = memo(function PeekSheet({ node, topic, anchors, onStepInside, onClose, renderContent, expanded, onToggleExpanded, height }: PeekSheetProps) {
+  const [term, setTerm] = useState<SemanticAnchor | null>(null);
+  const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
+  const startY = useRef<number | null>(null);
+  const swiped = useRef(false);
+  const style = {
+    ['--vi-fact-fill' as string]: `var(--topic-${topic})`,
+    ['--vi-fact-ring' as string]: `var(--topic-${topic}-ring)`,
+    ['--vi-sheet-h' as string]: `${height}px`,
+    zIndex: 'var(--z-card)',
+  } as React.CSSProperties;
+
+  return (
+    <div className={`vi-fact vi-fact--sheet vi-peek${expanded ? ' is-expanded' : ''}`} style={style} role="dialog" aria-label={node.title} data-node-tooltip="true">
+      <div
+        className="vi-fact__grip"
+        onPointerDown={(e) => { startY.current = e.clientY; swiped.current = false; }}
+        onPointerUp={(e) => {
+          if (startY.current === null) return;
+          const dy = e.clientY - startY.current;
+          startY.current = null;
+          if (dy < -SWIPE_PX) { swiped.current = true; if (!expanded) onToggleExpanded(); }
+          else if (dy > SWIPE_PX) { swiped.current = true; if (expanded) onToggleExpanded(); else onClose(); }
+        }}
+      >
+        <button type="button" className="vi-fact__handle" aria-label={expanded ? 'Collapse' : 'Expand'} aria-expanded={expanded} onClick={() => { if (!swiped.current) onToggleExpanded(); swiped.current = false; }} />
+      </div>
+      {term ? (
+        <>
+          <button type="button" className="vi-fact__back" onClick={() => setTerm(null)}><ChevronLeftIcon /> Back</button>
+          <TermCard anchor={term} inSheet />
+        </>
+      ) : (
+        <>
+          <div className="vi-fact__head">
+            <div className="vi-fact__title">{node.title}</div>
+            <button type="button" className="vi-iconbtn vi-iconbtn--md vi-fact__close" aria-label="Close" onClick={onClose}><CloseIcon /></button>
+          </div>
+          <div className="vi-fact__body">
+            {renderContent ? renderContent(node.description ?? '') : parts.map((p, i) =>
+              typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
+                <span key={i} className="vi-anchor" data-semantic-tooltip="true">
+                  <button type="button" className="vi-term" onClick={() => setTerm(p)}>{p.word}</button>
+                </span>
+              ))}
+          </div>
+          {onStepInside && (
+            <div className="vi-fact__foot">
+              <span />
+              <div className="vi-fact__acts">
+                <button type="button" className="vi-fact__step" onClick={onStepInside}>Step inside <ChevronIcon /></button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

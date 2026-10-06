@@ -16,6 +16,13 @@
 - `design-system/LICENSE` and `NOTICE.md` ship inside both packages; `@visualli/react` also ships `fonts/Caveat-Variable.ttf`.
 - `npm run bench` / `scripts/bench.mjs`, `scripts/screenshots.mjs`, `scripts/smoke.mjs`; CI checks that generated files are current and that no colour, font or blob literal exists outside `src/generated/`.
 
+### Fixed
+- Touch: tapping an idea no longer shows the peek for a moment and closes it. Touch events were treated as non-primary presses (they carry no `button`), so a tap only reached the idea through the browser's compatibility mouse events, which also cleared the peek. Touch is now handled directly, compatibility mouse events after a tap are ignored, and the peek is pinned until dismissed.
+
+### Added (responsive)
+- Touch layout (`layout="auto" | "touch" | "pointer"`): the peek is the design system's bottom sheet (`.vi-fact--sheet`) with grip (tap or swipe to expand / collapse / close), close button, Step inside and an in-sheet term definition with Back. It stays open until dismissed (close, swipe down, tap on empty canvas, Esc, layer change) and the map scrolls so the tapped idea stays above it.
+- Container-width classes on the map root: `is-touch`, `is-compact` (< 560px), `is-medium` (< 900px). Compact collapses the depth trail to first / previous / current and caps label width; touch uses larger controls and lifts them above the sheet. Pointer devices keep the floating peek on hover. The layout follows input and size live (resize, rotate, switching between touch and mouse).
+
 ### Changed
 - Colours, fonts, radii, motion and geometry are generated from `design-system/` at build time (`scripts/gen-design-system.mjs`); a token-only design-system change re-renders after `npm run build` with no code edits.
 - Culling uses the idea's centred visual bounds (ideas were culled as if `x, y` were a top-left corner); the node layer culls from the live stage transform, so panning never shows blank areas.

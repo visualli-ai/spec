@@ -16,6 +16,20 @@ import {
 } from '../generated/specCss';
 
 const STYLE_ID = 'visualli-design-system';
+
+/**
+ * Responsive rules the SDK adds on top of the spec CSS. The design system defines the
+ * touch variant (`.is-touch`, bottom sheet); phone / tablet / desktop widths are
+ * handled with the container-width classes the canvas sets (`is-compact` < 560px,
+ * `is-medium` < 900px). Only design-system custom properties are used.
+ */
+const LAYOUT_CSS = `
+.vi-map__ctrls { transition: bottom var(--duration-quick) var(--ease-standard); }
+.vi-map.is-compact .vi-trail li:not(:first-child):not(.is-current):not(:nth-last-child(2)) { display: none; }
+.vi-map.is-compact .vi-trail button span { max-width: 40vw; max-width: 40cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vi-map.is-compact .vi-fact:not(.vi-fact--sheet) { width: min(300px, calc(100cqw - 2 * var(--space-4))); }
+.vi-map.is-touch .vi-trail button { min-height: 32px; }
+`;
 const FONTS_ID = 'visualli-design-system-fonts';
 const CAVEAT_ID = 'visualli-design-system-caveat';
 // Injected by tsup (`define`) from package.json so it can never drift from the published version.
@@ -48,7 +62,7 @@ export function ensureDesignSystemStyles(assets: DesignSystemAssets = {}): Promi
     style.id = STYLE_ID;
     style.setAttribute('data-design-system', SPEC_DESIGN_SYSTEM_VERSION);
     // Component CSS goes first so token rules (same specificity) win ties, exactly like index.css load order.
-    style.textContent = `${SPEC_TOKENS_CSS}\n${SPEC_COMPONENT_CSS}`;
+    style.textContent = `${SPEC_TOKENS_CSS}\n${SPEC_COMPONENT_CSS}\n${LAYOUT_CSS}`;
     document.head.appendChild(style);
   }
 

@@ -42,7 +42,7 @@ import KonvaNodeLayer       from './components/KonvaNodeLayer';
 import KonvaEdgeLayer       from './components/KonvaEdgeLayer';
 import KonvaContainerLayer  from './components/KonvaContainerLayer';
 import NavigationStack, { type NavStackEntry } from './components/NavigationStack';
-import { ZoomControls, PeekCard } from './components/Overlays';
+import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
 import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
@@ -121,6 +121,12 @@ export interface VisualliCanvasProps {
   comfort?: Comfort;
   /** Switch to the high-contrast theme under forced-colors. Default true. */
   respectForcedColors?: boolean;
+  /**
+   * Interaction layout. 'auto' (default) follows the reader's input: touch devices get the design
+   * system's bottom-sheet peek and larger controls, pointer devices the floating peek on hover.
+   * Force one with 'touch' or 'pointer'.
+   */
+  layout?: 'auto' | 'touch' | 'pointer';
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
   fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
   /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
@@ -662,9 +668,51 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const anchors = useMemo(() => (doc ? getSemanticAnchors(doc) : []), [doc]);
 
+  // ── Touch mode + pinned peek (bottom sheet) ───────────────────────────────
+  // Touch browsers also fire compatibility mouse events after a tap; those are ignored so
+  // they can neither reopen nor close the sheet.
+  const [autoTouch, setAutoTouch] = useState<boolean>(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(hover: none)').matches);
+  const touchMode = props.layout === 'touch' ? true : props.layout === 'pointer' ? false : autoTouch;
+  const touchModeRef = useRef(touchMode);
+  touchModeRef.current = touchMode;
+  const lastTouchAtRef = useRef(0);
+  const emptyTapRef = useRef<{ x: number; y: number } | null>(null);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const isEmulatedMouse = (evt: Event) => evt.type.startsWith('mouse') && performance.now() - lastTouchAtRef.current < 700;
+  /** Client coordinates of a mouse or touch event. */
+  const clientOf = (evt: MouseEvent | TouchEvent) => {
+    const t = ('touches' in evt && (evt.touches[0] ?? evt.changedTouches[0])) || (evt as MouseEvent);
+    return { x: t.clientX, y: t.clientY };
+  };
+  const pinnedIdRef = useRef<string | null>(null);
+  pinnedIdRef.current = pinnedId;
+  /** Collapsed sheet height: the design system's 300px, but never more than half the map. */
+  const sheetHeight = Math.min(300, Math.round((viewport.canvasHeight || canvasSizeRef.current.height || 600) * 0.5));
+
+  /** Open the bottom sheet for an idea, scrolling the map so the idea stays visible above it. */
+  const openSheet = (node: FlatNode) => {
+    setPinnedId(node.id);
+    setSheetExpanded(false);
+    setHoveredNode(null);
+    const vp = useViewportStore.getState();
+    const ch = canvasSizeRef.current.height || vp.canvasHeight;
+    const sh = Math.min(300, Math.round(ch * 0.5));
+    const screenY = (node.y - vp.centerY) * vp.zoomLevel + ch / 2;
+    const reach = nodeRadii(node.width).ry * vp.zoomLevel;
+    if (screenY + reach > ch - sh - 12 || screenY - reach < 0) vp.setCenter(vp.centerX, node.y + sh / (2 * vp.zoomLevel));
+  };
+  // Close the sheet when the layer changes.
+  useEffect(() => { setPinnedId(null); }, [currentLayerId]);
+
   // ── Stage event handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (e.evt.button !== 0) { rendererHandleMouseDown(e); return; }
+    if (isEmulatedMouse(e.evt)) return;
+    const isTouch = e.evt.type.startsWith('touch');
+    if (isTouch) lastTouchAtRef.current = performance.now();
+    if (props.layout === undefined || props.layout === 'auto') setAutoTouch(isTouch);
+    // Touch events carry no `button`: a touch is always a primary press.
+    if (!isTouch && e.evt.button !== 0) { rendererHandleMouseDown(e); return; }
     const stage = e.target.getStage();
     if (!stage) { rendererHandleMouseDown(e); return; }
     const pointer = stage.getPointerPosition();
@@ -677,7 +725,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         select(nodeId);
         stageActiveNodeIdRef.current = nodeId;
         stageDragNodeOffsetRef.current = { x: worldX - node.x, y: worldY - node.y };
-        stageMouseDownPosRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+        stageMouseDownPosRef.current = clientOf(e.evt);
         stageDragCommittedRef.current = false;
         setPressedNodeId(nodeId);
         setHoveredNode(null);
@@ -685,11 +733,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       }
     }
     setHoveredNode(null);
+    emptyTapRef.current = clientOf(e.evt);
     isCanvasPanningRef.current = true;
     rendererHandleMouseDown(e);
   }, [hitTestNode, toWorldCoords, nodes, select, rendererHandleMouseDown]);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isEmulatedMouse(e.evt)) return;
     const stage = e.target.getStage();
     if (!stage) { rendererHandleMouseMove(e); return; }
     const pointer = stage.getPointerPosition();
@@ -697,7 +747,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const { worldX, worldY } = toWorldCoords(stage, pointer);
 
     if (stageActiveNodeIdRef.current && stageMouseDownPosRef.current) {
-      const moved = Math.hypot(e.evt.clientX - stageMouseDownPosRef.current.x, e.evt.clientY - stageMouseDownPosRef.current.y);
+      const cur = clientOf(e.evt);
+      const moved = Math.hypot(cur.x - stageMouseDownPosRef.current.x, cur.y - stageMouseDownPosRef.current.y);
       if (!stageDragCommittedRef.current && moved >= 5) {
         stageDragCommittedRef.current = true;
         isDraggingRef.current = true;
@@ -742,6 +793,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   }, [toWorldCoords, hitTestNode, handleDragStart, handleDragMove, rendererHandleMouseMove]);
 
   const handleStageMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isEmulatedMouse(e.evt)) return;
     setPressedNodeId(null);
     if (stageActiveNodeIdRef.current) {
       const nodeId = stageActiveNodeIdRef.current;
@@ -761,7 +813,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         const node = nodes.get(nodeId);
         if (node) {
           const childLayer = doc ? getChildLayerForNode(doc, nodeId, currentLayerId ?? '') : null;
-          if (childLayer) {
+          if (touchModeRef.current && (node.description || childLayer)) {
+            // Touch: a tap opens the sheet (Step inside lives there); nothing flashes or navigates by itself.
+            openSheet(node);
+          } else if (childLayer) {
             handleNavigate(nodeId);
           }
           onNodeClick?.(node);
@@ -774,9 +829,16 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       stageDragCommittedRef.current = false;
       return;
     }
+    // A tap (not a pan) on empty canvas dismisses the sheet.
+    const tap = emptyTapRef.current;
+    emptyTapRef.current = null;
+    if (tap && pinnedIdRef.current) {
+      const end = clientOf(e.evt);
+      if (!Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < 6) setPinnedId(null);
+    }
     isCanvasPanningRef.current = false;
     rendererHandleMouseUp(e);
-  }, [toWorldCoords, handleDragEnd, nodes, handleNavigate, onNodeClick, rendererHandleMouseUp]);
+  }, [toWorldCoords, handleDragEnd, nodes, handleNavigate, onNodeClick, rendererHandleMouseUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStageContextMenu = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     e.evt.preventDefault();
@@ -822,6 +884,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // Canvas mouse move for description tooltip
   const lastHoverCheckRef = useRef(0);
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (touchModeRef.current || isEmulatedMouse(e.nativeEvent)) return; // no hover peek on touch
     if (!containerRef.current || isDraggingRef.current || isCanvasPanningRef.current) {
       setHoveredNode(null);
       return;
@@ -899,9 +962,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // ── Activate an idea (click, or Enter/Space on its accessible button) ───────
   const activateNode = useCallback((node: FlatNode) => {
     const childLayer = doc ? getChildLayerForNode(doc, node.id, currentLayerId ?? '') : null;
-    if (childLayer) handleNavigate(node.id);
+    if (touchModeRef.current && (node.description || childLayer)) openSheet(node);
+    else if (childLayer) handleNavigate(node.id);
     onNodeClick?.(node);
-  }, [doc, currentLayerId, handleNavigate, onNodeClick]);
+  }, [doc, currentLayerId, handleNavigate, onNodeClick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepInside = useCallback((nodeId: string) => { setHoveredNode(null); handleNavigate(nodeId); }, [handleNavigate]);
 
@@ -912,7 +976,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // Keyboard: Esc steps back out, + / - zoom, 0 fits.
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (e.key === 'Escape' && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
+    if (e.key === 'Escape' && pinnedIdRef.current) { e.preventDefault(); setPinnedId(null); }
+    else if (e.key === 'Escape' && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
     else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * 1.2, ZOOM_MAX)); }
     else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN)); }
     else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
@@ -930,12 +995,16 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const hasBackOption = navStack.length > 1;
   const currentLayerTitle = navStack[navStack.length - 1]?.label ?? '';
   const peekNode = hoveredNode ? nodes.get(hoveredNode.nodeId) : undefined;
+  const pinnedNode = pinnedId ? nodes.get(pinnedId) : undefined;
+  const pinnedHasChild = !!(pinnedNode && getChildLayerForNode(doc, pinnedNode.id, currentLayerId ?? ''));
+  const compact = (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 560;
+  const medium = !compact && (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 900;
   const peekHasChild = !!(peekNode && doc && getChildLayerForNode(doc, peekNode.id, currentLayerId ?? ''));
 
   return (
     <div
       ref={containerRef}
-      className={`vi-map ${className}`}
+      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''} ${className}`}
       {...design.attrs}
       role="group"
       aria-label={`${doc.meta?.title ?? 'Map'}${currentLayerTitle ? `, ${currentLayerTitle}` : ''}`}
@@ -1025,15 +1094,30 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
       {/* Canvas controls (bottom-right) */}
-      <div className="vi-map__ctrls">
-        <ZoomControls onFit={fitToScreen} />
+      <div className="vi-map__ctrls" style={pinnedNode && touchMode ? { bottom: `calc(var(--space-4) + ${sheetHeight}px)` } : undefined}>
+        <ZoomControls onFit={fitToScreen} touch={touchMode} />
       </div>
 
       {/* Custom overlay from the consuming app */}
       {renderOverlay?.({ isDark, theme: design.theme, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
 
-      {/* Peek: the idea's summary, terms and "Step inside" — rendered with the design system's card */}
-      {hoveredNode && hoveredNodePosition && peekNode && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
+      {/* Touch: the peek is the design system's bottom sheet, pinned until dismissed */}
+      {touchMode && pinnedNode && (
+        <PeekSheet
+          node={pinnedNode}
+          topic={topicOf(pinnedNode)}
+          anchors={anchors}
+          height={sheetHeight}
+          expanded={sheetExpanded}
+          onToggleExpanded={() => setSheetExpanded((v) => !v)}
+          onClose={() => setPinnedId(null)}
+          onStepInside={pinnedHasChild ? () => { setPinnedId(null); handleNavigate(pinnedNode.id); } : undefined}
+          renderContent={renderNodeContent ? (summary) => renderNodeContent({ summary, nodeId: pinnedNode.id, nodeColor: pinnedNode.color, zoom: viewport.zoomLevel }) : undefined}
+        />
+      )}
+
+      {/* Pointer: the peek floats over the hovered idea — the design system's card */}
+      {!touchMode && hoveredNode && hoveredNodePosition && peekNode && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
         const VP_PAD = 8;
         const HALF_W = 160;
         const APPROX_H = 90;

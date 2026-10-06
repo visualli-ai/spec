@@ -87,6 +87,7 @@ The primary component for rendering `.visualli` documents. Manages the full docu
 | `respectForcedColors` | `boolean` | `true` | Use the high-contrast theme under forced-colors |
 | `fontBaseUrl` | `string` | jsDelivr copy | Where `Caveat-Variable.ttf` is served from |
 | `loadWebFonts` | `boolean` | `true` | Load Kalam + Atkinson Hyperlegible from Google Fonts |
+| `layout` | `'auto' \| 'touch' \| 'pointer'` | `'auto'` | Touch -> bottom-sheet peek + larger controls; pointer -> floating peek on hover |
 | `chromaticImmersion` | `boolean` | `false` | Enable background color effects based on layer context |
 | `useWorker` | `boolean` | `true` | Parse documents in a Web Worker (recommended for large files) |
 | `width` | `string \| number` | `'100%'` | Width as CSS value or pixel number |
