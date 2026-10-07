@@ -18,11 +18,16 @@ import {
 export interface IViewportStore extends ViewportState {
   canvasWidth:  number;
   canvasHeight: number;
+  /** The layer's fit to view (scale and centre): zoom is shown and limited (VIEW) relative to it, as in the design system. */
+  fitScale:     number;
+  fitCenterX:   number;
+  fitCenterY:   number;
 
   pan:              (deltaX: number, deltaY: number) => void;
   zoom:             (delta: number, pivotX?: number, pivotY?: number) => void;
   setCenter:        (x: number, y: number) => void;
   setZoom:          (level: number) => void;
+  setFit:           (scale: number, centerX: number, centerY: number) => void;
   updateCanvasSize: (width: number, height: number) => void;
 
   getVisibleBounds: () => ViewportState['visibleBounds'];
@@ -52,6 +57,9 @@ export const useViewportStore = create<IViewportStore>((set, get) => {
     ...init,
     canvasWidth:  DEFAULT_CANVAS_WIDTH,
     canvasHeight: DEFAULT_CANVAS_HEIGHT,
+    fitScale:     1,
+    fitCenterX:   0,
+    fitCenterY:   0,
 
     pan: (dx, dy) => set((s) => {
       const updated = recalculateViewportBounds(panViewport(dx, dy, getVP(s)), s.canvasWidth, s.canvasHeight);
@@ -60,7 +68,7 @@ export const useViewportStore = create<IViewportStore>((set, get) => {
 
     zoom: (delta, pivotX, pivotY) => set((s) => {
       const updated = recalculateViewportBounds(
-        zoomViewport(delta, getVP(s), pivotX, pivotY, s.canvasWidth, s.canvasHeight),
+        zoomViewport(delta, getVP(s), pivotX, pivotY, s.canvasWidth, s.canvasHeight, s.fitScale),
         s.canvasWidth, s.canvasHeight,
       );
       return { centerX: updated.centerX, centerY: updated.centerY, zoomLevel: updated.zoomLevel, visibleBounds: updated.visibleBounds };
@@ -72,10 +80,12 @@ export const useViewportStore = create<IViewportStore>((set, get) => {
     }),
 
     setZoom: (level) => set((s) => {
-      const clamped = clampZoom(level);
+      const clamped = clampZoom(level, s.fitScale);
       const updated = recalculateViewportBounds({ ...getVP(s), zoomLevel: clamped }, s.canvasWidth, s.canvasHeight);
       return { zoomLevel: updated.zoomLevel, visibleBounds: updated.visibleBounds };
     }),
+
+    setFit: (scale, centerX, centerY) => set({ fitScale: scale > 0 ? scale : 1, fitCenterX: centerX, fitCenterY: centerY }),
 
     updateCanvasSize: (w, h) => set((s) => {
       const updated = recalculateViewportBounds(getVP(s), w, h);

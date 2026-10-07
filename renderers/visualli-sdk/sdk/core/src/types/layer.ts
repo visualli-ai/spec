@@ -3,7 +3,7 @@
 // These types extend the auto-generated schema types from bindings.
 // They provide stricter runtime guarantees (required arrays) and SDK-specific fields.
 
-import type { Layer, Node, Connection, Container } from './schema.js';
+import type { Node, Connection, Container } from './schema.js';
 
 /** Alias to schema Node type for SDK consistency */
 export type LayerNode = Node;

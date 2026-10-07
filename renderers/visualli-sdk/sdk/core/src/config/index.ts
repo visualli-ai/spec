@@ -1,7 +1,6 @@
 // ─── Config Barrel Export ────────────────────────────────────────────────────
 //
-// Automatically exports all configuration modules.
-// Add new config files here to make them available via `@visualli/core/config`.
+// Design-system geometry and idea sizing (all derived from generated/).
 
-export * from './blobShapes.js';
-export * from './textScaling.js';
+export * from '../rendering/nodeGeometry.js';
+export * from '../rendering/ideaSize.js';

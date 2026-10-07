@@ -1,6 +1,6 @@
 {
   "name": "@visualli/core",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "repository": {
     "type": "git",
@@ -55,16 +55,23 @@
       "types": "./dist/config/index.d.ts",
       "import": "./dist/config/index.js",
       "require": "./dist/config/index.cjs"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js",
+      "require": "./dist/theme/index.cjs"
     }
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "licenses"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../../../scripts/gen-design-system.mjs && tsup",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --max-warnings 0",
+    "test": "vitest run"
   },
   "dependencies": {
     "@visualli/bindings": "*",
@@ -73,6 +80,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/rbush": "^3.0.3",
+    "@visualli/eslint-config": "*",
     "typescript": "^5.5.4"
   },
   "engines": {

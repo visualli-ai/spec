@@ -4,11 +4,14 @@
 //  • Binds canvas position/scale from the viewport store
 //  • Accepts optional event handlers (wheel, mouse, touch, context-menu)
 //  • Calls stage.destroy() on unmount (memory hygiene)
+//  • Renders at devicePixelRatio and follows it when it changes (browser zoom,
+//    moving the window to another display)
 
 import React, { useRef, useEffect, forwardRef } from 'react';
 import { KStage as Stage } from '../konvaCompat';
-import type Konva from 'konva';
+import Konva from 'konva';
 import { useViewportStore } from '../stores/useViewportStore';
+import { currentPixelRatio, watchPixelRatio } from '../design/runtime';
 
 export interface KonvaStageProps {
   children: React.ReactNode;
@@ -44,8 +47,20 @@ const KonvaStage = forwardRef<Konva.Stage, KonvaStageProps>(function KonvaStage(
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return () => { internalRef.current?.destroy(); };
+    const stage = internalRef.current; // the stage this mount created
+    return () => { stage?.destroy(); };
   }, []);
+
+  // Konva reads the global pixelRatio when a layer creates its canvases, so set it
+  // before the first draw and re-size every canvas when the ratio changes later.
+  Konva.pixelRatio = currentPixelRatio();
+  useEffect(() => watchPixelRatio((ratio) => {
+    Konva.pixelRatio = ratio;
+    const stage = internalRef.current;
+    if (!stage) return;
+    stage.getLayers().forEach((l) => { l.getCanvas().setPixelRatio(ratio); l.getHitCanvas().setPixelRatio(ratio); });
+    stage.batchDraw();
+  }), []);
 
   const w = canvasWidth  || 800;
   const h = canvasHeight || 600;
@@ -70,7 +85,6 @@ const KonvaStage = forwardRef<Konva.Stage, KonvaStageProps>(function KonvaStage(
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       draggable={false}
-      pixelRatio={1}
     >
       {children}
     </Stage>

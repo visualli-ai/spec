@@ -7,14 +7,25 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen:design-system": "node scripts/gen-design-system.mjs",
+    "check:design": "node scripts/gen-design-system.mjs --check && node scripts/check-design-literals.mjs",
+    "test": "turbo run test",
+    "bench": "node scripts/bench.mjs",
+    "bench:compare": "node scripts/bench-compare.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:mobile": "node scripts/smoke-mobile.mjs",
+    "smoke:motion": "node scripts/smoke-motion.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
+    "playwright": "^1.63.0",
     "prettier": "^3.7.4",
     "tsup": "^8.5.1",
     "turbo": "^2.10.3",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": ">=18"
@@ -31,5 +42,5 @@
     "renderers/visualli-sdk/sdk/*",
     "renderers/visualli-sdk/tooling/*"
   ],
-  "version": "0.1.7"
+  "version": "0.2.0"
 }

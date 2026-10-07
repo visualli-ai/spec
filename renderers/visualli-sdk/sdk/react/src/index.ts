@@ -24,32 +24,26 @@ export type { IViewportStore }    from './stores/useViewportStore';
 
 // Hooks
 export { useKonvaRenderer }         from './hooks/useKonvaRenderer';
-export { useKonvaLayerTransition }  from './hooks/useKonvaLayerTransition';
+export { useLayerChoreography }     from './hooks/useLayerChoreography';
+export type { LayerChoreography, LayerChoreographyOptions } from './hooks/useLayerChoreography';
 export { useViewportNodes }         from './hooks/useViewportNodes';
 export type { UseKonvaRendererOptions, UseKonvaRendererReturn } from './hooks/useKonvaRenderer';
-export type { LayerTransitionHandlers } from './hooks/useKonvaLayerTransition';
 
-// Animations
-export { KonvaLayerTransitionAnimator, konvaLayerTransitionAnimator } from './animations/konvaLayerTransition';
-export type { AnimatorViewport, TransitionCallbacks } from './animations/konvaLayerTransition';
+export type { AnimatorViewport } from './hooks/useLayerChoreography';
 
-// Config helpers
+// Design system: themes, comfort, tokens, geometry (generated from design-system/ in @visualli/core)
 export {
-  ALL_BLOB_SHAPES,
-  ACTIVE_BLOB_TYPES,
-  BLOB_LAYER_CONFIG,
-  NODE_LAYER_CONFIG,
-  getBlobTypeForLayer,
-  BLOB_TEXT_OFFSETS,
-  drawBlobPath,
-  buildBlobPathData,
-  NODE_TEXT_BASE_FONT_PX,
-  DESCRIPTION_TEXT_BASE_FONT_PX,
-  computeNodeTextWorldScale,
-  computeNodeTextScreenScale,
-  computeOverlayScale,
-  computeEdgeLabelScale,
-} from './config';
+  THEME_NAMES, TOPICS, DESIGN_SYSTEM_VERSION, TOKENS, METRICS,
+  resolveTheme, resolveComfort, ideaColor, ideaStyle, topicStyle, getTokens,
+  BLOB_SHAPES, RINGS, blobPath, blobRadius, edgePath, arrowPath, shapeForLevel,
+  IDEA, LABEL_GROWTH, ideaSize, labelGrowth,
+} from '@visualli/core';
+export type { ThemeName, ThemeInput, TopicName, Comfort } from '@visualli/core';
+export { useDesign, useReaderEnv } from './design/useDesign';
+export { makeDesign, resolveDesign, DEFAULT_DESIGN } from './design/design';
+export type { Design, DesignProps } from './design/design';
+export { ensureDesignSystemStyles, loadCanvasFonts } from './design/runtime';
+export type { DesignSystemAssets } from './design/runtime';
 
 // Utils
 export {
@@ -70,12 +64,18 @@ export { default as KonvaNodeLayer }      from './components/KonvaNodeLayer';
 export { default as KonvaEdgeLayer }      from './components/KonvaEdgeLayer';
 export { default as KonvaContainer }      from './components/KonvaContainer';
 export { default as KonvaContainerLayer } from './components/KonvaContainerLayer';
+export { default as KonvaContainerLabelLayer } from './components/KonvaContainerLabelLayer';
 export { default as NavigationStack }     from './components/NavigationStack';
 export { default as ZoomControls }        from './components/ZoomControls';
-export { default as SketchyBoxKonva }     from './components/SketchyBoxKonva';
+export { PeekCard, TermCard, DepthTrail, splitTerms, paintVars } from './components/Overlays';
+export { A11yLayer } from './components/A11yLayer';
 export type { NavStackEntry }             from './components/NavigationStack';
+export type { PeekCardProps, TrailEntry, DepthTrailProps, IdeaPaint } from './components/Overlays';
+export { ideaMeasure } from './design/measure';
 export type { KonvaNodeProps }            from './components/KonvaNode';
 export type { KonvaEdgeProps }            from './components/KonvaEdge';
 export type { KonvaStageProps }           from './components/KonvaStage';
 export type { ContainerGroup }            from './components/KonvaContainerLayer';
+export { layoutContainers, measurePill, drawHull, drawPill } from './design/containers';
+export type { PlacedContainer, PlacedPill } from './design/containers';
 

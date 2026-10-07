@@ -1,5 +1,8 @@
 // ─── Mindmap Core Types ────────────────────────────────────────────────────────
 
+import type { TopicName } from '../generated/designSystem.js';
+import type { IdeaKind } from '../generated/geometry/idea.js';
+
 export interface MindMapNode {
   id: string;
   title: string;
@@ -35,7 +38,15 @@ export interface FlatNode {
   relationshipLabel?: string;
 
   // Visual
+  /** Colour as authored in the document (any CSS colour, or a topic name); empty when the file gives none. */
   color: string;
+  /** Design-system topic this idea is drawn with (fill + ring colour per theme): a named or missing colour. */
+  topic?: TopicName;
+  /** A colour that isn't a topic, drawn as given (the design system's customColor); `ring` null → the `edge` token. */
+  custom?: { fill: string; ring: string | null };
+  /** The idea's size kind (the design system's idea.ts): 'root' for a radial map's centre, else 'node'. */
+  kind?: IdeaKind;
+  /** The idea's size for its label (idea.ts ideaSize): the outline's half width is width / 2, half height height / 2. */
   width: number;
   height: number;
 
@@ -100,6 +111,8 @@ export interface MindMapConnection {
   to: string;
   level: number;
   label?: string;
+  /** 'dashed' draws the connector dashed (design-system `is-dashed`). */
+  style?: 'solid' | 'dashed';
 }
 
 export interface TopLevelConnection {

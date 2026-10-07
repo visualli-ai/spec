@@ -1,4 +1,7 @@
 import { defineConfig } from 'tsup';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -24,5 +27,6 @@ export default defineConfig({
   // shim which is Node.js-only and crashes in browsers.
   define: {
     'process.env.NODE_ENV': '"production"',
+    __SDK_VERSION__: JSON.stringify(pkg.version),
   },
 });

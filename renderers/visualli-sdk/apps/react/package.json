@@ -7,17 +7,20 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:loader": "vite build -c vite.loader.config.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
     "@visualli/react": "*",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "@visualli/core": "*"
   },
   "devDependencies": {
-    "@visualli/typescript-config": "*",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@visualli/eslint-config": "*",
+    "@visualli/typescript-config": "*",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "5.9.2",
     "vite": "^6.3.5"

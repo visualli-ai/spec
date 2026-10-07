@@ -1,4 +1,9 @@
 // ─── Performance & Rendering Constants ───────────────────────────────────────
+//
+// Performance budgets and interaction thresholds. Visual values (colours,
+// stroke widths, node size, zoom range) come from the design system tokens.
+
+import { VIEW } from '../generated/geometry/interaction.js';
 
 // ── FPS ───────────────────────────────────────────────────────────────────────
 
@@ -50,36 +55,12 @@ export const CULLING_QUERY_TIME_BUDGET = 5;
 export const RBUSH_MAX_ENTRIES        = 16;
 export const SPATIAL_INDEX_BUILD_BUDGET = 50;
 
-// ── Node Dimensions ───────────────────────────────────────────────────────────
-
-export const NODE_MIN_WIDTH    = 200;
-export const NODE_HEIGHT       = 80;
-export const NODE_PADDING      = 40;
-export const CHAR_WIDTH        = 8;
-export const TITLE_MAX_LENGTH  = 150;
-
-// ── Visual Styling ────────────────────────────────────────────────────────────
-
-export const CORNER_RADIUS         = 8;
-export const BORDER_WIDTH_NORMAL   = 2;
-export const BORDER_WIDTH_SELECTED = 3;
-
-export const COLOR_SELECTED      = '#1B2D4F';
-export const COLOR_BORDER_LIGHT  = '#4A3728';
-export const COLOR_BORDER_DARK   = '#FAF6F1';
-export const COLOR_DEFAULT_NODE  = '#FAF6F1';
-
 // ── Zoom Constraints ──────────────────────────────────────────────────────────
 
-export const ZOOM_MIN              = 0.05;
-export const ZOOM_MAX              = 5.0;
+// Zoom limits: the design system's VIEW (geometry/interaction.ts; equal to the zoom-min / zoom-max tokens).
+export const ZOOM_MIN              = VIEW.zoomMin;
+export const ZOOM_MAX              = VIEW.zoomMax;
 export const ZOOM_DEFAULT          = 1.0;
-export const ZOOM_STEP             = 0.1;
-export const ZOOM_WHEEL_SENSITIVITY = 0.001;
-
-export const ZOOM_NAV_IN_THRESHOLD  = 2.7;
-export const ZOOM_NAV_OUT_THRESHOLD = 0.4;
-export const TEXT_LABEL_HIDE_BELOW_ZOOM = 0.3;
 
 // ── Quality Level Presets ─────────────────────────────────────────────────────
 

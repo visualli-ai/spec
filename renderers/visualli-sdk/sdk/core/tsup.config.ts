@@ -11,6 +11,7 @@ export default defineConfig({
     'src/performance/index.ts',
     'src/animations/index.ts',
     'src/config/index.ts',
+    'src/theme/index.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,

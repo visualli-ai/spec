@@ -16,13 +16,20 @@
 //  • Delegates all canvas/navigation/zoom logic to VisualliCanvas
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { VisualliDocument, VisualliLayer, FlatNode } from '@visualli/core';
-import { parseVisualliFile } from '@visualli/core';
+import type { VisualliDocument, Comfort, ThemeInput, TopicName } from '@visualli/core';
+import { blobPath, parseVisualliFile, shapeForLevel } from '@visualli/core';
 import VisualliCanvas from './VisualliCanvas';
+import { useDesign } from './design/useDesign';
+import { ensureDesignSystemStyles, type DesignSystemAssets } from './design/runtime';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type VisualliTheme = 'dark' | 'light' | 'auto';
+/**
+ * Any of the 8 design-system themes ('light', 'dark', 'focus-light', 'focus-dark', 'colorsafe-light',
+ * 'colorsafe-dark', 'contrast-light', 'contrast-dark'), a family ('focus' | 'colorsafe' | 'contrast'),
+ * or 'auto' (follow the reader's colour scheme). 'light' | 'dark' | 'auto' are the pre-0.2 values and keep working.
+ */
+export type VisualliTheme = ThemeInput;
 
 export interface VisualliRendererProps {
   /**
@@ -50,19 +57,40 @@ export interface VisualliRendererProps {
   useWorker?: boolean;
 
   /**
-   * Colour theme.
-   *  - 'dark'  → always dark background
-   *  - 'light' → always light background
-   *  - 'auto'  → follows the OS/browser prefers-color-scheme
+   * Colour theme (see VisualliTheme).
+   *  - 'auto' follows prefers-color-scheme (and switches to high contrast under forced-colors)
    * @default 'light'
    */
   theme?: VisualliTheme;
 
+  /** Comfort settings: readable type, larger text, reduced motion ('system' follows the OS). */
+  comfort?: Comfort;
+
+  /** Switch to the high-contrast theme under forced-colors. @default true */
+  respectForcedColors?: boolean;
+
+  /**
+   * Interaction layout: 'auto' follows the reader's input (touch -> bottom-sheet peek and larger
+   * controls, pointer -> floating peek on hover); force one with 'touch' or 'pointer'.
+   * @default 'auto'
+   */
+  layout?: 'auto' | 'touch' | 'pointer';
+
+  /** Where the zoom / fit controls sit: the design system's 'bottom-right' (default) or the pre-0.2 'top-right'. */
+  /**
+   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
+   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
+   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   */
+  app?: boolean;
+  /** Where the zoom / fit controls sit: 'top-right' (default, the design system's placement) or 'bottom-right'. */
+  controlsPosition?: 'top-right' | 'bottom-right';
+
   /**
    * Enable chromatic immersion background effect.
    * When true:
-   *  - Root layer (level 0) shows base background color
-   *  - Child layers show parent node's color as semi-transparent background
+   *  - Root layer (level 0) shows the plain canvas
+   *  - Child layers are tinted with the parent idea's topic colour
    * @default false
    */
   chromaticImmersion?: boolean;
@@ -81,6 +109,12 @@ export interface VisualliRendererProps {
    */
   height?: string | number;
 
+  /** Directory URL the bundled Caveat font is served from (defaults to the copy in the npm package, via jsDelivr). */
+  fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
+
+  /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
+  loadWebFonts?: DesignSystemAssets['loadWebFonts'];
+
   /** Additional CSS class on the root element. */
   className?: string;
 
@@ -88,116 +122,42 @@ export interface VisualliRendererProps {
   style?: React.CSSProperties;
 }
 
-// ── System dark-mode hook ─────────────────────────────────────────────────────
-
-function useSystemDark(): boolean {
-  const mq = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-color-scheme: dark)')
-    : null;
-
-  const [dark, setDark] = useState<boolean>(mq?.matches ?? false);
-
-  useEffect(() => {
-    if (!mq) return;
-    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [mq]);
-
-  return dark;
-}
-
-// ── Font Injection Hook ───────────────────────────────────────────────────────
-
-function useFontInjection() {
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    
-    const links = [
-      'https://fonts.googleapis.com',
-      'https://fonts.gstatic.com',
-      'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Nunito+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap',
-      'https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@300;400;600;800&family=Story+Script:wght@400&display=swap'
-    ];
-
-    links.forEach((href, i) => {
-      const id = `visualli-font-${i}`;
-      if (!document.getElementById(id)) {
-        const link = document.createElement('link');
-        link.id = id;
-        link.rel = i < 2 ? 'preconnect' : 'stylesheet';
-        link.href = href;
-        if (i === 1) link.crossOrigin = 'anonymous';
-        document.head.appendChild(link);
-      }
-    });
-  }, []);
-}
-
 // ── Empty / Loading / Error states ───────────────────────────────────────────
+// A still note in the middle of the map: an idea's blob in a topic colour, a title and a line of text — the design
+// system's shapes, tokens and type styles only, and no motion of its own (the product's own state screens live in
+// Visualli's apps).
 
-// ── UI State Components ───────────────────────────────────────────────────────
+const stateBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', gap: 'var(--space-3)', padding: 'var(--space-7)', boxSizing: 'border-box', textAlign: 'center', color: 'var(--ink-muted)', background: 'var(--canvas)' };
 
-function EmptyState({ isDark }: { isDark: boolean }) {
-  const bg = isDark ? '#131311' : '#F5F3EF';
-  const fg = isDark ? 'rgba(240,237,230,0.35)' : 'rgba(26,26,24,0.35)';
-  const bd = isDark ? '#2A2A28' : '#DDD9D0';
-  const code = { fontFamily: 'monospace', fontSize: 12, padding: '1px 4px', borderRadius: 4, background: isDark ? '#222220' : '#E8E4DC', border: `1px solid ${bd}` };
+function StateNote({ topic, title, children, role }: { topic: TopicName; title: string; children?: React.ReactNode; role?: 'status' | 'alert' }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', gap: 16, background: bg, color: fg, fontFamily: "'Nunito', system-ui, sans-serif" }}>
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke={fg} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="10" y="6" width="28" height="36" rx="3" />
-        <line x1="16" y1="16" x2="32" y2="16" />
-        <line x1="16" y1="22" x2="32" y2="22" />
-        <line x1="16" y1="28" x2="26" y2="28" />
+    <div className="vi-map" style={stateBox} role={role} aria-live={role === 'status' ? 'polite' : undefined}>
+      <svg width="64" height="52" viewBox="-32 -26 64 52" aria-hidden="true">
+        <path d={blobPath(shapeForLevel(0), 26, 20)} fill={`var(--topic-${topic})`} stroke={`var(--topic-${topic}-ring)`} strokeWidth="2" />
       </svg>
-      <div style={{ textAlign: 'center', lineHeight: 1.7 }}>
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: isDark ? 'rgba(240,237,230,0.7)' : 'rgba(26,26,24,0.7)' }}>
-          No .visualli file provided
-        </p>
-        <p style={{ margin: '4px 0 0', fontSize: 13 }}>
-          Pass a <code style={code}>visualliFile</code> or <code style={code}>visualliString</code> prop.
-        </p>
-      </div>
+      <p className="label" style={{ margin: 0, color: 'var(--ink)' }}>{title}</p>
+      {children && <div className="body-sm" style={{ margin: 0, maxWidth: 480, overflowWrap: 'anywhere' }}>{children}</div>}
     </div>
   );
 }
 
-function LoadingState({ isDark }: { isDark: boolean }) {
-  const bg  = isDark ? '#131311' : '#F5F3EF';
-  const fg  = isDark ? 'rgba(240,237,230,0.5)' : 'rgba(26,26,24,0.5)';
-  const dot = isDark ? 'rgba(240,237,230,0.6)' : 'rgba(26,26,24,0.45)';
+function EmptyState() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', gap: 16, background: bg, color: fg, fontFamily: "'Nunito', system-ui, sans-serif" }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: dot, animation: `vr-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-        ))}
-      </div>
-      <style>{`@keyframes vr-pulse{0%,80%,100%{opacity:.2;transform:scale(.9)}40%{opacity:1;transform:scale(1.1)}}`}</style>
-      <p style={{ margin: 0, fontSize: 14 }}>Loading .visualli file…</p>
-    </div>
+    <StateNote topic="stone" title="Nothing to show yet">
+      Pass a <code style={{ fontFamily: 'var(--font-mono)' }}>visualliFile</code> or <code style={{ fontFamily: 'var(--font-mono)' }}>visualliString</code>.
+    </StateNote>
   );
 }
 
-function ErrorState({ message, isDark }: { message: string; isDark: boolean }) {
-  const bg   = isDark ? '#131311' : '#F5F3EF';
-  const bd   = isDark ? '#3a1f1f' : '#F0CECE';
-  const card = isDark ? '#1e1212' : '#FFF5F5';
-  const head = isDark ? '#F87171' : '#DC2626';
-  const body = isDark ? 'rgba(248,113,113,0.8)' : 'rgba(180,40,40,0.8)';
+function LoadingState() {
+  return <StateNote topic="teal" title="Opening the map…" role="status" />;
+}
+
+function ErrorState({ message }: { message: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: '24px', background: bg, fontFamily: "'Nunito', system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, width: '100%', padding: '20px 24px', borderRadius: 12, border: `1px solid ${bd}`, background: card }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={head} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <span style={{ fontSize: 15, fontWeight: 700, color: head }}>Failed to parse .visualli file</span>
-        </div>
-        <p style={{ margin: 0, fontSize: 13, color: body, lineHeight: 1.6, wordBreak: 'break-word', fontFamily: 'monospace' }}>{message}</p>
-      </div>
-    </div>
+    <StateNote topic="berry" title="This map couldn't be opened" role="alert">
+      <code style={{ fontFamily: 'var(--font-mono)' }}>{message}</code>
+    </StateNote>
   );
 }
 
@@ -215,6 +175,7 @@ self.onmessage = function(e) {
       layers: new Map(),
       layersByLevel: new Map(),
       rootLayer: null,
+      extensions: {},
     };
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
@@ -230,6 +191,8 @@ self.onmessage = function(e) {
         if (!doc.layersByLevel.has(obj.level)) doc.layersByLevel.set(obj.level, []);
         doc.layersByLevel.get(obj.level).push(obj);
         if (obj.level === 0) doc.rootLayer = obj;
+      } else if (obj.type === 'extension' && typeof obj.id === 'string') {
+        doc.extensions[obj.id] = Array.isArray(obj.data) ? obj.data : [];
       }
     }
     if (!doc.meta)      throw new Error('Missing required meta section');
@@ -368,16 +331,23 @@ export default function VisualliRenderer({
   visualliString,
   visualliFile,
   theme = 'light',
+  comfort,
+  respectForcedColors,
+  layout,
+  controlsPosition,
+  app,
   width = '100%',
   height = '100%',
   useWorker = true,
   chromaticImmersion = false,
+  fontBaseUrl,
+  loadWebFonts,
   className,
   style,
 }: VisualliRendererProps) {
-  useFontInjection();
-  const systemDark = useSystemDark();
-  const isDark = theme === 'dark' ? true : theme === 'light' ? false : systemDark;
+  // Resolve once here so the empty / loading / error states carry the same theme attributes as the map.
+  const design = useDesign({ theme, comfort, respectForcedColors });
+  useState(() => { ensureDesignSystemStyles({ fontBaseUrl, loadWebFonts }); return true; });
 
   const cssWidth  = typeof width  === 'number' ? `${width}px`  : width;
   const cssHeight = typeof height === 'number' ? `${height}px` : height;
@@ -396,21 +366,22 @@ export default function VisualliRenderer({
   }, [parseState]);
 
   const wrapperStyle: React.CSSProperties = { width: cssWidth, height: cssHeight, overflow: 'hidden', ...style };
+  const attrs = design.attrs;
 
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (!visualliString && !visualliFile) {
-    return <div className={className} style={wrapperStyle}><EmptyState isDark={isDark} /></div>;
+    return <div className={className} {...attrs} style={wrapperStyle}><EmptyState /></div>;
   }
 
   // ── Loading state ───────────────────────────────────────────────────────────
   if (fileReading || parseState.status === 'loading') {
-    return <div className={className} style={wrapperStyle}><LoadingState isDark={isDark} /></div>;
+    return <div className={className} {...attrs} style={wrapperStyle}><LoadingState /></div>;
   }
 
   // ── Error state ─────────────────────────────────────────────────────────────
   if (fileReadError || parseState.status === 'error') {
     const msg = fileReadError ?? (parseState.status === 'error' ? parseState.message : 'Unknown error');
-    return <div className={className} style={wrapperStyle}><ErrorState message={msg} isDark={isDark} /></div>;
+    return <div className={className} {...attrs} style={wrapperStyle}><ErrorState message={msg} /></div>;
   }
 
   // ── Canvas ──────────────────────────────────────────────────────────────────
@@ -418,7 +389,14 @@ export default function VisualliRenderer({
     <div className={className} style={wrapperStyle}>
       <VisualliCanvas
         preParsedVisualli={resolvedDoc ?? undefined}
-        isDark={isDark}
+        theme={theme}
+        comfort={comfort}
+        respectForcedColors={respectForcedColors}
+        layout={layout}
+        controlsPosition={controlsPosition}
+        app={app}
+        fontBaseUrl={fontBaseUrl}
+        loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}
         style={{ width: '100%', height: '100%' }}
       />

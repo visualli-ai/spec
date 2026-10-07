@@ -12,7 +12,6 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import type Konva from 'konva';
-import { ZOOM_MIN, ZOOM_MAX } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useRenderConfigStore } from '../stores/stores';
 
@@ -27,19 +26,18 @@ export interface UseKonvaRendererReturn {
   handleMouseDown:(e: Konva.KonvaEventObject<MouseEvent>) => void;
   handleMouseMove:(e: Konva.KonvaEventObject<MouseEvent>) => void;
   handleMouseUp:  (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  /** End a one-finger / mouse pan now (e.g. a second finger turns it into a pinch), keeping how far it moved. */
+  cancelPan:      () => void;
   canvasWidth:    number;
   canvasHeight:   number;
 }
 
 export function useKonvaRenderer({
   containerRef,
-  stageRef,
   enabled = true,
 }: UseKonvaRendererOptions): UseKonvaRendererReturn {
   const pan              = useViewportStore(s => s.pan);
   const zoom             = useViewportStore(s => s.zoom);
-  const setZoom          = useViewportStore(s => s.setZoom);
-  const setCenter        = useViewportStore(s => s.setCenter);
   const updateCanvasSize = useViewportStore(s => s.updateCanvasSize);
   const autoAdjust       = useRenderConfigStore(s => s.autoAdjustQuality);
 
@@ -114,7 +112,7 @@ export function useKonvaRenderer({
     }
 
     return () => {
-      ro ? ro.disconnect() : window.removeEventListener('resize', updateSize);
+      if (ro) ro.disconnect(); else window.removeEventListener('resize', updateSize);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [enabled, containerRef, updateCanvasSize]);
@@ -138,19 +136,11 @@ export function useKonvaRenderer({
       isPanningRef.current = true;
       lastPanPointRef.current = { x: e.evt.clientX, y: e.evt.clientY };
       panAccumRef.current = { x: 0, y: 0 };
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = 'grabbing';
     }
   }, []);
 
   const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>): void => {
-    if (!isPanningRef.current) {
-      // Update cursor on empty canvas
-      const isOverEmpty = e.target === e.target.getStage();
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = isOverEmpty ? 'grab' : 'default';
-      return;
-    }
+    if (!isPanningRef.current) return;
     e.evt.preventDefault();
     const deltaX = e.evt.clientX - lastPanPointRef.current.x;
     const deltaY = e.evt.clientY - lastPanPointRef.current.y;
@@ -168,7 +158,7 @@ export function useKonvaRenderer({
     lastPanPointRef.current = { x: e.evt.clientX, y: e.evt.clientY };
   }, []); // No Zustand dep — pan flushed on mouseUp
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent>): void => {
+  const handleMouseUp = useCallback((): void => {
     if (isPanningRef.current) {
       isPanningRef.current = false;
       const { x, y } = panAccumRef.current;
@@ -176,10 +166,15 @@ export function useKonvaRenderer({
         pan(x, y);
         panAccumRef.current = { x: 0, y: 0 };
       }
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = 'grab';
     }
   }, [pan]);
 
-  return { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, canvasWidth, canvasHeight };
+  const cancelPan = useCallback((): void => {
+    if (!isPanningRef.current) return;
+    isPanningRef.current = false;
+    const { x, y } = panAccumRef.current;
+    if (x !== 0 || y !== 0) { pan(x, y); panAccumRef.current = { x: 0, y: 0 }; }
+  }, [pan]);
+
+  return { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, cancelPan, canvasWidth, canvasHeight };
 }

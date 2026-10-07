@@ -2,7 +2,7 @@
 //
 // Reads JSONL (JSON Lines) format and parses into a structured VisualliDocument.
 
-import type { VisualliDocument } from '../types/document.js';
+import type { VisualliDocument, SemanticAnchor } from '../types/document.js';
 import type { VisualliMeta } from '../types/meta.js';
 import type { VisualliLayer } from '../types/layer.js';
 import type { Layer } from '../types/schema.js';
@@ -92,6 +92,14 @@ export function parseVisualliFile(content: string): VisualliDocument {
         break;
       }
 
+      case 'extension': {
+        const id = obj['id'];
+        if (typeof id === 'string') {
+          (doc.extensions ??= {})[id] = Array.isArray(obj['data']) ? (obj['data'] as unknown[]) : [];
+        }
+        break;
+      }
+
       default:
         // Unknown type — silently skip
         break;
@@ -148,6 +156,13 @@ export function loadVisualliFileFromFile(file: File): Promise<VisualliDocument> 
 // ── Tree Helpers ──────────────────────────────────────────────────────────────
 
 /** Return all layers whose `parentNodeId` matches the given node ID. */
+/** Terms defined by the document's `semantic-anchors` extension (empty when absent). */
+export function getSemanticAnchors(doc: VisualliDocument): SemanticAnchor[] {
+  const raw = doc.extensions?.['semantic-anchors'];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((a): a is SemanticAnchor => !!a && typeof (a as SemanticAnchor).word === 'string' && typeof (a as SemanticAnchor).description === 'string');
+}
+
 export function getChildLayers(
   doc: VisualliDocument,
   nodeId: string,

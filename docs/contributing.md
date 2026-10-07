@@ -48,6 +48,31 @@ To verify your documentation changes locally:
 make docs-serve
 ```
 
+### 4. Changing the SDK: measure performance
+Every change to the SDK's performance or visuals must be measured before it's merged. That covers anything in
+`@visualli/core` or `@visualli/react` that affects rendering or how a map looks or moves (including design-system
+updates), layout, culling, the spatial index, caches, level of detail or the canvas's event handling.
+
+1. **Run the comparison** on your branch:
+   ```bash
+   npm run bench:compare
+   ```
+   It builds `origin/main` and your branch, measures both back to back on the same machine (alternating, 3 runs
+   each) and prints one before / after table. Compare against another ref with `--base <ref>`; add `--channel chrome`
+   if Playwright's Chromium isn't installed.
+2. **Decide for yourself how the change performs.** Lower *layer ready* and higher frame rates are better, and 60 fps
+   is the display's limit. Changes within ±5% are noise. Explain or fix every row marked *worse*: a slower result can be
+   an accepted cost of a visible improvement, but it must be a deliberate decision, never an unnoticed one.
+   [`bench/results/README.md`](https://github.com/visualli-ai/spec/blob/main/bench/results/README.md) explains each
+   metric.
+3. **Put the results in your pull request.** Paste the table into the PR description under a *Performance* heading,
+   with a line on each row marked *worse*. Reviewers rely on it to judge the change, and later PRs can refer back to
+   it. A PR that changes the SDK's performance or visuals without these results isn't ready for review.
+
+Benchmark numbers only mean something as a pair from the same session on the same machine. Never compare runs from
+different days or machines, and don't commit result files (they're git-ignored). The comparison isn't a CI check,
+because shared CI machines vary too much to judge frame rates; that's why each PR carries its own measurement.
+
 ## Style Guide
 
 - **Accuracy over brevity**: Don't compress to the point of ambiguity, but avoid filler.

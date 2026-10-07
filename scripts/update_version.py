@@ -48,10 +48,14 @@ def update_version():
     for p in paths:
         if os.path.exists(p):
             with open(p, "r") as f:
-                pkg = json.load(f)
+                raw = f.read()
+            pkg = json.loads(raw)
             pkg["version"] = version
             with open(p, "w") as f:
                 json.dump(pkg, f, indent=2)
+                # Keep the file's own ending (npm writes a trailing newline), so an unchanged version leaves no diff.
+                if raw.endswith("\n"):
+                    f.write("\n")
             print(f"Updated {p}")
 
     # 4. Sync package-lock.json using JSON parser to preserve OS-specific optional dependencies

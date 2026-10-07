@@ -1,36 +1,37 @@
 // ─── VisualliCanvas ───────────────────────────────────────────────────────────
 //
-// Main canvas component for rendering a VisualliDocument.
-// Matches the visualli.ai enhanced canvas implementation:
+// Main canvas component for rendering a VisualliDocument, drawn with the Visualli
+// design system (tokens, fonts and geometry from design-system/):
+//   • Konva canvas for ideas, rings and connectors; DOM overlays for the peek,
+//     term cards, depth trail and controls (the design system's own CSS)
 //   • Stage-level hit detection via RBush spatial index (no Konva hit-canvas)
-//   • Node description tooltip (sketchy-box style)
-//   • Chromatic immersion background (color from current node)
-//   • Auto-zoom navigation (zoom in → child layer, zoom out → parent layer)
-//   • Professional layer transitions (zoom in / zoom out animations)
-//   • Vertical left-side navigation stack
-//   • Zoom controls (icon-based, top-right)
-//   • Context menu (right-click to go back)
+//   • 8 themes + comfort settings (readable type, larger text, reduced motion)
+//   • Step inside / back out by idea, peek, depth trail, Escape or Backspace — zoom and pinch never navigate
+//   • Layer transitions with the design system's motion (CSS-transform driven, no canvas redraws while animating)
+//   • A visually hidden DOM mirror of the visible ideas for screen readers / Tab
 //
-// NOT included (SDK-only, no generation UI):
-//   • Sidebar, search, generation
-//   • Semantic anchor tooltips (special word meanings)
-//   • Branding logo
-//   • Help overlay / view-source panel
+// NOT included (read-only viewer): editing, generation, chat, sources, export.
 
-import React, { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '@visualli/core';
+import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection, Comfort, ThemeInput } from '@visualli/core';
 import {
   parseVisualliFile,
   getNodesForLayer,
-  getThemeBackground,
-  darkenHexColor,
+  getSemanticAnchors,
+  ideaColor,
+  motionVars,
+  nodeRadii,
+  ringsFor,
+  peekPosition,
+  TRAIL,
   RBushSpatialIndex,
-  NODE_HEIGHT,
-  TEXT_LABEL_HIDE_BELOW_ZOOM,
-  ZOOM_NAV_IN_THRESHOLD,
-  ZOOM_NAV_OUT_THRESHOLD,
-  ZOOM_MIN,
+  GESTURE,
+  pinchZoom,
+  zoomAround,
+  VIEW,
+  PEEK,
+  SHEET,
 } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
@@ -38,43 +39,25 @@ import { useViewportStore }    from './stores/useViewportStore';
 import { useSelectionStore }   from './stores/stores';
 
 import { useKonvaRenderer }          from './hooks/useKonvaRenderer';
-import { useKonvaLayerTransition }   from './hooks/useKonvaLayerTransition';
+import { useLayerChoreography }      from './hooks/useLayerChoreography';
+import { RevealClock }              from './design/choreography';
 
 import KonvaStage           from './components/KonvaStage';
 import KonvaNodeLayer       from './components/KonvaNodeLayer';
 import KonvaEdgeLayer       from './components/KonvaEdgeLayer';
 import KonvaContainerLayer  from './components/KonvaContainerLayer';
+import KonvaContainerLabelLayer from './components/KonvaContainerLabelLayer';
 import NavigationStack, { type NavStackEntry } from './components/NavigationStack';
-import ZoomControls         from './components/ZoomControls';
-import SketchyBoxKonva      from './components/SketchyBoxKonva';
+import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
+import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
-import type { AnimatorViewport } from './animations/konvaLayerTransition';
-import { DESCRIPTION_TEXT_BASE_FONT_PX } from './config/textScaling';
-import { useVisualli } from './context/VisualliContext';
-
-// Helper to convert hex color to rgba with transparency
-function hexToRgba(hex: string, alpha: number): string {
-  // Remove # if present
-  hex = hex.replace(/^#/, '');
-  
-  // Parse hex values
-  let r: number, g: number, b: number;
-  if (hex.length === 3) {
-    r = parseInt(hex[0] + hex[0], 16);
-    g = parseInt(hex[1] + hex[1], 16);
-    b = parseInt(hex[2] + hex[2], 16);
-  } else if (hex.length === 6) {
-    r = parseInt(hex.substring(0, 2), 16);
-    g = parseInt(hex.substring(2, 4), 16);
-    b = parseInt(hex.substring(4, 6), 16);
-  } else {
-    return `rgba(240, 237, 230, ${alpha})`; // fallback
-  }
-  
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+import type { AnimatorViewport } from './hooks/useLayerChoreography';
+import { useDesign } from './design/useDesign';
+import { ideaMeasure } from './design/measure';
+import { paintVars, type IdeaPaint } from './components/Overlays';
+import { ensureDesignSystemStyles, loadCanvasFonts, type DesignSystemAssets } from './design/runtime';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,6 +86,16 @@ function layerLabel(doc: VisualliDocument, layer: VisualliLayer, layerId: string
   return layer.description ?? layerId;
 }
 
+/** Colour of the idea a layer opens from — the idea's own colour, including the sibling-order topic of an uncoloured
+ *  idea (the design system's TRAIL); the root layer is the map itself, TRAIL.rootTopic. */
+function layerPaint(doc: VisualliDocument, layer: VisualliLayer): IdeaPaint {
+  const parentLayer = layer.parentLayerId ? doc.layers.get(layer.parentLayerId) : null;
+  const index = parentLayer ? parentLayer.nodes.findIndex(n => n.id === layer.parentNodeId) : -1;
+  if (!parentLayer || index < 0) return { topic: TRAIL.rootTopic };
+  const { topic, custom } = ideaColor(parentLayer.nodes[index]!.data.color, index);
+  return topic ? { topic } : { custom: custom! };
+}
+
 function getRootLayerId(doc: VisualliDocument): string | null {
   for (const [id, layer] of doc.layers) {
     if (!layer.parentLayerId) return id;
@@ -126,14 +119,51 @@ export interface VisualliCanvasProps {
    * Component handles all fetching and parsing automatically.
    */
   visualliFile?: File | string;
+  /**
+   * Theme: one of the 8 design-system themes ('light', 'dark', 'focus-light', …), a family
+   * ('focus' | 'colorsafe' | 'contrast') or 'auto' (follow the reader). Default 'light'.
+   */
+  theme?: ThemeInput;
+  /** @deprecated use `theme`. true -> 'dark', false -> 'light'. Kept for one release. */
   isDark?: boolean;
+  /** Comfort settings: readable type, larger text, reduced motion. */
+  comfort?: Comfort;
+  /**
+   * How a layer arrives. 'gradual' (default): ideas bloom in one by one, then connectors draw
+   * (design-system motion). 'instant': everything fades in together, as with reduced motion.
+   */
+  reveal?: 'gradual' | 'instant';
+  /** Switch to the high-contrast theme under forced-colors. Default true. */
+  respectForcedColors?: boolean;
+  /**
+   * Interaction layout. 'auto' (default) follows the reader's input: touch devices get the design
+   * system's bottom-sheet peek and larger controls, pointer devices the floating peek on hover.
+   * Force one with 'touch' or 'pointer'.
+   */
+  layout?: 'auto' | 'touch' | 'pointer';
+  /**
+   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
+   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
+   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   */
+  app?: boolean;
+  /**
+   * Where the zoom / fit controls sit. Default 'top-right', the design system's placement (`.vi-map__ctrls`,
+   * opposite the depth trail). 'bottom-right' moves them to the bottom corner for hosts that need the top edge;
+   * there they rise above the touch peek sheet while it's open.
+   */
+  controlsPosition?: 'top-right' | 'bottom-right';
+  /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
+  fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
+  /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
+  loadWebFonts?: DesignSystemAssets['loadWebFonts'];
   chromaticImmersion?: boolean;
   onNodeClick?: (node: FlatNode) => void;
   onLayerChange?: (layerId: string, layer: VisualliLayer) => void;
   onNodeHover?: (nodeId: string | null) => void;
   
   // Extension points for private features (implement in consuming app)
-  renderOverlay?: (params: { isDark: boolean; containerWidth: number; containerHeight: number }) => React.ReactNode;
+  renderOverlay?: (params: { isDark: boolean; theme: string; containerWidth: number; containerHeight: number }) => React.ReactNode;
   renderNodeContent?: (params: { 
     summary: string; 
     nodeId: string; 
@@ -150,7 +180,17 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { isDark = false, chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop = '16px', navigationStackLeft = '16px', className = '', style } = props;
+  const { chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
+  // The host's hover callback, read through a ref so the stage's pointer handlers stay stable when it changes.
+  const onNodeHoverRef = useRef(onNodeHover);
+  onNodeHoverRef.current = onNodeHover;
+
+  // Design system: resolve theme + comfort, inject its CSS once, and hold the first draw until its fonts are loaded.
+  const design = useDesign({ theme: props.theme ?? (props.isDark === undefined ? 'light' : undefined), isDark: props.isDark, comfort: props.comfort, respectForcedColors: props.respectForcedColors });
+  const isDark = design.isDark;
+  const [fontSheet] = useState(() => ensureDesignSystemStyles({ fontBaseUrl: props.fontBaseUrl, loadWebFonts: props.loadWebFonts }));
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => { let live = true; loadCanvasFonts(fontSheet).then(() => { if (live) setFontsReady(true); }); return () => { live = false; }; }, [fontSheet]);
 
   // Read file if provided (handles both File objects and string paths)
   const [fileText, setFileText] = useState<string | undefined>(undefined);
@@ -190,6 +230,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const [navStack, setNavStack]           = useState<NavStackEntry[]>([]);
   const [currentLayerId, setCurrentLayerId] = useState<string | null>(null);
   const parentViewports                   = useRef<AnimatorViewport[]>([]);
+  /** The idea being stepped into: the depth trail entry takes its colour and label from it, so they always match the idea that was clicked. */
+  const stepTargetRef                     = useRef<{ paint: IdeaPaint; label: string } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false);
 
@@ -199,21 +241,25 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!rootId) return;
     const rootLayer = doc.layers.get(rootId)!;
     setCurrentLayerId(rootId);
-    setNavStack([{ layerId: rootId, layer: rootLayer, label: 'Home' }]);
+    // The trail starts with the map's title (the design system's DepthTrail).
+    setNavStack([{ layerId: rootId, layer: rootLayer, label: doc.meta?.title || 'Home', paint: { topic: TRAIL.rootTopic } }]);
     parentViewports.current = [];
   }, [doc]);
 
   // ── Active layer → FlatNodes ──────────────────────────────────────────────
+  // Ideas are sized for their labels (the design system's idea.ts) with the real label face, so sizes are taken once
+  // the fonts are in, and again when the face or the label scale changes (readable type, larger text).
+  const sizing = useMemo(() => ({ measure: ideaMeasure(design), labelScale: design.labelScale }), [design.fontHand, design.labelScale, design.comfort.readableType, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
   const { flatNodes, connections, containers } = useMemo(() => {
     if (!doc || !currentLayerId) return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] };
     try {
       return {
-        flatNodes: getNodesForLayer(doc, currentLayerId),
+        flatNodes: getNodesForLayer(doc, currentLayerId, sizing),
         connections: getConnectionsForLayer(doc, currentLayerId),
         containers: getContainersForLayer(doc, currentLayerId) as ContainerGroup[],
       };
     } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] }; }
-    }, [doc, currentLayerId]);
+    }, [doc, currentLayerId, sizing]);
     const viewport  = useViewportStore(s => ({
       centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel,
       canvasWidth: s.canvasWidth, canvasHeight: s.canvasHeight,
@@ -235,18 +281,28 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     clearSel();
   }, [flatNodes, setNodes, clearSel]);
 
+  // ── Choreography: a layer's arrival (ideas bloom, connectors draw) ────────
+  const clock = useMemo(() => new RevealClock(), []);
+  const instantReveal = design.comfort.reducedMotion || props.reveal === 'instant';
+  useEffect(() => {
+    if (!fontsReady || flatNodes.length === 0) return;
+    clock.start(flatNodes, connections.length, instantReveal);
+    // Lift the step-inside veil two frames from now, once the new layer's first frame has been painted.
+    const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(arrive); });
+    let r2 = 0;
+    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+  }, [flatNodes, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => clock.subscribe((running) => {
+    const el = containerRef.current;
+    if (el) el.dataset.viReveal = running ? 'running' : 'idle';
+  }), [clock]);
+  useEffect(() => () => clock.stop(), [clock]);
+
   // ── Canvas refs ───────────────────────────────────────────────────────────
   const containerRef     = useRef<HTMLDivElement | null>(null);
   const stageRef         = useRef<Konva.Stage | null>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
-  // ── GPU CSS-transform transition refs (matches visualli.ai) ───────────────
-  // During animations we express viewport deltas as CSS transforms on Konva's
-  // container div — zero canvas redraws, handled entirely by the GPU compositor.
-  const baselineTransformRef  = useRef<{ x: number; y: number; scaleX: number; scaleY: number } | null>(null);
-  const konvaContentDivRef    = useRef<HTMLDivElement | null>(null);
-  const lastAnimViewportRef   = useRef<{ centerX: number; centerY: number; zoomLevel: number } | null>(null);
-  const zoomOutTargetRef      = useRef<{ centerX: number; centerY: number; zoomLevel: number } | null>(null);
   // canvasSizeRef is kept in sync with the measured container size (not window).
   // Initialise to 0 — it will be updated synchronously before the first frame.
   const canvasSizeRef         = useRef({ width: 0, height: 0 });
@@ -256,34 +312,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const dragMoveLatestRef   = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const dragStartPosRef     = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // ── Background color (with chromatic immersion support) ──────────────────
-  const baseBgColor = isDark ? '#141412' : '#F0EDE6';
-  
-  // For chromatic immersion: get the parent node color for child layers
-  const chromaticBgColor = useMemo(() => {
-    if (!chromaticImmersion || !doc || !currentLayerId) return baseBgColor;
-    
-    const currentLayer = doc.layers.get(currentLayerId);
-    if (!currentLayer) return baseBgColor;
-    
-    // Root layer always uses base background
-    if (currentLayer.level === 0 || !currentLayer.parentNodeId) return baseBgColor;
-    
-    // For child layers, find the parent node's color
-    const parentLayer = currentLayer.parentLayerId ? doc.layers.get(currentLayer.parentLayerId) : null;
-    if (parentLayer) {
-      const parentNode = parentLayer.nodes.find(n => n.id === currentLayer.parentNodeId);
-      if (parentNode) {
-        const nodeColor = parentNode.data.color || baseBgColor;
-        // Add transparency to the parent node color for subtle effect
-        return hexToRgba(nodeColor, 0.15);
-      }
-    }
-    
-    return baseBgColor;
-  }, [chromaticImmersion, doc, currentLayerId, baseBgColor]);
-  
-  const bgColor = chromaticImmersion ? chromaticBgColor : baseBgColor;
+  // ── Chromatic immersion: the colour of the idea stepped into tints the canvas at `immersion-alpha` ──
+  const immersionFill = useMemo<string | null>(() => {
+    if (!chromaticImmersion || !doc || !currentLayerId) return null;
+    const layer = doc.layers.get(currentLayerId);
+    if (!layer || layer.level === 0 || !layer.parentNodeId) return null;
+    return paintVars(layerPaint(doc, layer)).fill;
+  }, [chromaticImmersion, doc, currentLayerId]);
 
   // ── Spatial index (for stage-level hit detection) ─────────────────────────
   const spatialIndexRef = useRef<RBushSpatialIndex | null>(null);
@@ -291,14 +326,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (flatNodes.length === 0) { spatialIndexRef.current?.clear(); return; }
     const idx = new RBushSpatialIndex();
     idx.bulkLoad(flatNodes.map(n => {
-      const blobHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (n.width / 2) * 0.74);
-      return {
-        nodeId: n.id,
-        bounds: {
-          minX: n.x - n.width / 2, minY: n.y - blobHalfH,
-          maxX: n.x + n.width / 2, maxY: n.y + blobHalfH,
-        },
-      };
+      const { rx, ry } = nodeRadii(n);
+      return { nodeId: n.id, bounds: { minX: n.x - rx, minY: n.y - ry, maxX: n.x + rx, maxY: n.y + ry } };
     }));
     spatialIndexRef.current = idx;
     return () => { spatialIndexRef.current?.clear(); };
@@ -310,6 +339,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     handleMouseDown: rendererHandleMouseDown,
     handleMouseMove: rendererHandleMouseMove,
     handleMouseUp:   rendererHandleMouseUp,
+    cancelPan:       rendererCancelPan,
     canvasWidth,
     canvasHeight,
   } = useKonvaRenderer({ containerRef, stageRef });
@@ -352,16 +382,16 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (node) {
         const oldPos = dragStartPosRef.current.get(nodeId);
         if (oldPos) {
-          const oldHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (node.width / 2) * 0.74);
+          const { rx, ry } = nodeRadii(node);
           spatialIndexRef.current.remove(nodeId, {
-            minX: oldPos.x - node.width / 2, minY: oldPos.y - oldHalfH,
-            maxX: oldPos.x + node.width / 2, maxY: oldPos.y + oldHalfH,
+            minX: oldPos.x - rx, minY: oldPos.y - ry,
+            maxX: oldPos.x + rx, maxY: oldPos.y + ry,
           });
         }
-        const newHalfH = Math.max((NODE_HEIGHT * 1.6) / 2, (node.width / 2) * 0.74);
+        const { rx, ry } = nodeRadii(node);
         spatialIndexRef.current.insert(nodeId, {
-          minX: x - node.width / 2, minY: y - newHalfH,
-          maxX: x + node.width / 2, maxY: y + newHalfH,
+          minX: x - rx, minY: y - ry,
+          maxX: x + rx, maxY: y + ry,
         });
       }
     }
@@ -378,17 +408,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     // relative to the renderer's actual bounding box.
     const cw = canvasSizeRef.current.width  || containerRef.current?.getBoundingClientRect().width  || 800;
     const ch = canvasSizeRef.current.height || containerRef.current?.getBoundingClientRect().height || 600;
-    const { centerX, centerY } = calculateFitView(flatNodes, cw, ch);
-    // Root layer: always use 1.0 zoom to match visualli.ai reference behaviour.
-    // calculateFitZoom for a single node or dense layout on a 1920-default canvas
-    // produces zoom > 2 which triggers the auto-zoom-in threshold immediately.
-    const isRootLayer = navStack.length <= 1;
-    // Root layer: use 1.0 zoom to match visualli.ai reference behaviour.
-    // Child layers use the bounding-box fit zoom (already clamped to [0.4, 5]).
-    const zoomLevel = isRootLayer ? 1.0 : calculateFitView(flatNodes, cw, ch).zoomLevel;
+    // Every layer, the root included, fits the same way (the design system's fit; never beyond VIEW.fitMax).
+    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch, containers);
+    // Zoom limits (VIEW) apply relative to the fit, as in the design system's map.
+    useViewportStore.getState().setFit(zoomLevel, centerX, centerY);
     setCenter(centerX, centerY);
     setZoom(zoomLevel);
-  }, [flatNodes, navStack.length, setCenter, setZoom]);
+  }, [flatNodes, containers, setCenter, setZoom]);
 
   // Keep ref in sync after every render so async callbacks always use latest closure
   fitToScreenRef.current = fitToScreen;
@@ -409,14 +435,22 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // Stores the target nav-back index so onSwapBack can read it
   const navBackTargetRef = useRef<number>(-1);
 
-  const { zoomIntoLayer, zoomOutToParent, isTransitioning: isAnimating } = useKonvaLayerTransition({
+  const { stepInside: diveInto, backOut, arrive, isTransitioning: isAnimating } = useLayerChoreography({
     stageRef,
     canvasWrapperRef,
+    reducedMotion: design.comfort.reducedMotion || props.reveal === 'instant',
     onSwapLayer: (childLayerId) => {
       const childLayer = doc?.layers.get(childLayerId);
       if (!childLayer || !doc) return;
       setCurrentLayerId(childLayerId);
-      setNavStack(prev => [...prev, { layerId: childLayerId, layer: childLayer, label: layerLabel(doc, childLayer, childLayerId) }]);
+      const target = stepTargetRef.current;
+      stepTargetRef.current = null;
+      setNavStack(prev => [...prev, {
+        layerId: childLayerId,
+        layer: childLayer,
+        label: target?.label || layerLabel(doc, childLayer, childLayerId),
+        paint: target?.paint ?? layerPaint(doc, childLayer),
+      }]);
       onLayerChange?.(childLayerId, childLayer);
     },
     onSwapBack: () => {
@@ -434,87 +468,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       setIsTransitioning(false);
       isTransitioningRef.current = false;
       // After every layer switch, snap to the fit view so zoom is always clean.
-      // rAF ensures React has committed new node data before we compute the fit.
       requestAnimationFrame(() => { fitToScreenRef.current(); });
-    },
-    // GPU CSS-transform callbacks (matching visualli.ai exactly):
-    onViewportFrame: (vp) => {
-      lastAnimViewportRef.current = vp;
-      const baseline = baselineTransformRef.current;
-      const contentDiv = konvaContentDivRef.current;
-      const { width, height } = canvasSizeRef.current;
-      if (baseline && contentDiv) {
-        const targetX = width / 2 - vp.centerX * vp.zoomLevel;
-        const targetY = height / 2 - vp.centerY * vp.zoomLevel;
-        const ratio = vp.zoomLevel / baseline.scaleX;
-        const tx = targetX - baseline.x * ratio;
-        const ty = targetY - baseline.y * ratio;
-        contentDiv.style.transform = `translate(${tx}px, ${ty}px) scale(${ratio})`;
-      } else {
-        const stage = stageRef.current;
-        if (stage) {
-          stage.x(width / 2 - vp.centerX * vp.zoomLevel);
-          stage.y(height / 2 - vp.centerY * vp.zoomLevel);
-          stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-          stage.batchDraw();
-        }
-      }
-    },
-    onViewportFinal: (vp) => {
-      if (konvaContentDivRef.current) konvaContentDivRef.current.style.transform = '';
-      const stage = stageRef.current;
-      if (stage) {
-        const { width, height } = canvasSizeRef.current;
-        stage.x(width / 2 - vp.centerX * vp.zoomLevel);
-        stage.y(height / 2 - vp.centerY * vp.zoomLevel);
-        stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-        stage.getLayers().forEach(l => l.drawScene());
-      }
-      setCenter(vp.centerX, vp.centerY);
-      setZoom(vp.zoomLevel);
-    },
-    onPhaseChange: (phase) => {
-      const stage = stageRef.current;
-      const contentDiv = konvaContentDivRef.current;
-      if (stage && contentDiv && (phase === 'swap' || phase === 'zoom-back')) {
-        contentDiv.style.transform = '';
-        const vp = phase === 'zoom-back' ? zoomOutTargetRef.current : lastAnimViewportRef.current;
-        if (vp) {
-          const { width, height } = canvasSizeRef.current;
-          const nx = width / 2 - vp.centerX * vp.zoomLevel;
-          const ny = height / 2 - vp.centerY * vp.zoomLevel;
-          stage.x(nx); stage.y(ny);
-          stage.scaleX(vp.zoomLevel); stage.scaleY(vp.zoomLevel);
-          stage.getLayers().forEach(l => l.drawScene());
-          baselineTransformRef.current = { x: nx, y: ny, scaleX: vp.zoomLevel, scaleY: vp.zoomLevel };
-        }
-      }
-    },
-    onTransitionLifecycle: (phase) => {
-      const stage = stageRef.current;
-      if (phase === 'start') {
-        if (canvasWrapperRef.current) canvasWrapperRef.current.style.willChange = 'opacity, transform';
-        if (stage) {
-          baselineTransformRef.current = { x: stage.x(), y: stage.y(), scaleX: stage.scaleX(), scaleY: stage.scaleY() };
-          const container = stage.container();
-          const cd = container?.querySelector('.konvajs-content') as HTMLDivElement | null;
-          if (cd) {
-            konvaContentDivRef.current = cd;
-            cd.style.transformOrigin = '0 0';
-            cd.style.willChange = 'transform';
-          }
-          stage.getLayers().forEach(l => { l.listening(false); });
-        }
-      } else {
-        if (canvasWrapperRef.current) canvasWrapperRef.current.style.willChange = 'auto';
-        if (konvaContentDivRef.current) { konvaContentDivRef.current.style.willChange = 'auto'; konvaContentDivRef.current = null; }
-        baselineTransformRef.current = null;
-        zoomOutTargetRef.current = null;
-        if (stage) {
-          stage.getLayers().forEach(l => { l.listening(true); });
-          stage.batchDraw();
-        }
-      }
     },
   });
 
@@ -534,7 +488,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!childLayerId) {
       return;
     }
-    const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId); } catch { return []; } })();
+    const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId, sizing); } catch { return []; } })();
     if (childNodes.length === 0) {
       return;
     }
@@ -547,19 +501,15 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     // rather than the arbitrary zoom that happened to trigger the navigation.
     const cw = canvasSizeRef.current.width  || 800;
     const ch = canvasSizeRef.current.height || 600;
-    const fitVp = calculateFitView(flatNodes, cw, ch);
-    const isRootNow = navStack.length <= 1;
-    parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: isRootNow ? 0.85 : fitVp.zoomLevel });
+    const fitVp = calculateFitView(flatNodes, cw, ch, containers);
+    parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: fitVp.zoomLevel });
 
+    stepTargetRef.current = { paint: { topic: node.topic, custom: node.custom }, label: node.title };
     setIsTransitioning(true);
     isTransitioningRef.current = true;
 
-    zoomIntoLayer(
-      doc, node, childLayerId, childNodes,
-      node.color ?? getThemeBackground(isDark, 'secondary'),
-      node.color ?? getThemeBackground(isDark, 'primary'),
-    );
-  }, [doc, currentLayerId, nodes, isDark, isAnimating, zoomIntoLayer]);
+    diveInto(node, childLayerId, childNodes);
+  }, [doc, currentLayerId, nodes, isAnimating, diveInto, sizing, flatNodes, containers]);
 
   const handleNavigateBack = useCallback((targetIndex: number) => {
     if (targetIndex >= navStack.length - 1) return;
@@ -569,47 +519,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     navBackTargetRef.current = targetIndex;
     setIsTransitioning(true);
     isTransitioningRef.current = true;
-    zoomOutToParent(savedVp, getThemeBackground(isDark, 'primary'), getThemeBackground(isDark, 'secondary'));
-  }, [navStack.length, isDark, isAnimating, zoomOutToParent]);
-
-  // ── Auto-zoom navigation (Google Maps style) ──────────────────────────────
-  const baseZoomRef           = useRef(1.0);
-  const lastZoomTransitionRef = useRef(0);
-  const ZOOM_COOLDOWN         = 1000;
-
-  useEffect(() => { baseZoomRef.current = 1.0; }, [currentLayerId]);
-
-  useEffect(() => {
-    if (isTransitioningRef.current || isAnimating()) return;
-    const now = Date.now();
-    if (now - lastZoomTransitionRef.current < ZOOM_COOLDOWN) return;
-    const relative = viewport.zoomLevel / baseZoomRef.current;
-
-    if (relative >= ZOOM_NAV_IN_THRESHOLD) {
-      // Zoom in threshold — drill into closest node
-      let closest: FlatNode | null = null;
-      let minDist = Infinity;
-      for (const node of nodes.values()) {
-        const dx = node.x - viewport.centerX;
-        const dy = node.y - viewport.centerY;
-        const d  = dx * dx + dy * dy;
-        if (d < minDist) { minDist = d; closest = node; }
-      }
-      if (closest) {
-        const childLayer = doc ? getChildLayerForNode(doc, closest.id, currentLayerId ?? '') : null;
-        if (childLayer) {
-          lastZoomTransitionRef.current = now;
-          handleNavigate(closest.id);
-          baseZoomRef.current = 1.0;
-        }
-      }
-    } else if (relative < ZOOM_NAV_OUT_THRESHOLD && navStack.length > 1) {
-      // Zoom out threshold — go back to parent
-      lastZoomTransitionRef.current = now;
-      handleNavigateBack(navStack.length - 2);
-      baseZoomRef.current = 1.0;
-    }
-  }, [viewport.zoomLevel, viewport.centerX, viewport.centerY, nodes, doc, currentLayerId, navStack, isAnimating, handleNavigate, handleNavigateBack]); // eslint-disable-line react-hooks/exhaustive-deps
+    backOut(savedVp);
+  }, [navStack.length, isAnimating, backOut]);
 
   // ── Stage-level hit detection ─────────────────────────────────────────────
   const toWorldCoords = useCallback((stage: Konva.Stage, pointer: { x: number; y: number }) => {
@@ -680,9 +591,55 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     return () => { window.removeEventListener('pointerdown', close); window.removeEventListener('keydown', onKey); };
   }, [canvasContextMenu]);
 
+  const selectedNodeId = useSelectionStore(st => st.selectedId);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const anchors = useMemo(() => (doc ? getSemanticAnchors(doc) : []), [doc]);
+
+  // ── Touch mode + pinned peek (bottom sheet) ───────────────────────────────
+  // Touch browsers also fire compatibility mouse events after a tap; those are ignored so
+  // they can neither reopen nor close the sheet.
+  const [autoTouch, setAutoTouch] = useState<boolean>(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(hover: none)').matches);
+  const touchMode = props.layout === 'touch' ? true : props.layout === 'pointer' ? false : autoTouch;
+  const touchModeRef = useRef(touchMode);
+  touchModeRef.current = touchMode;
+  const lastTouchAtRef = useRef(0);
+  const emptyTapRef = useRef<{ x: number; y: number } | null>(null);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const isEmulatedMouse = (evt: Event) => evt.type.startsWith('mouse') && performance.now() - lastTouchAtRef.current < 700;
+  /** Client coordinates of a mouse or touch event. */
+  const clientOf = (evt: MouseEvent | TouchEvent) => {
+    const t = ('touches' in evt && (evt.touches[0] ?? evt.changedTouches[0])) || (evt as MouseEvent);
+    return { x: t.clientX, y: t.clientY };
+  };
+  const pinnedIdRef = useRef<string | null>(null);
+  pinnedIdRef.current = pinnedId;
+  /** Collapsed sheet height: the design system's SHEET — a share of the map, at most SHEET.maxHeight. */
+  const sheetHeight = Math.min(SHEET.maxHeight, Math.round((viewport.canvasHeight || canvasSizeRef.current.height || 600) * SHEET.heightRatio));
+
+  /** Open the bottom sheet for an idea, scrolling the map so the idea stays visible above it. */
+  const openSheet = (node: FlatNode) => {
+    setPinnedId(node.id);
+    setSheetExpanded(false);
+    setHoveredNode(null);
+    const vp = useViewportStore.getState();
+    const ch = canvasSizeRef.current.height || vp.canvasHeight;
+    const sh = Math.min(SHEET.maxHeight, Math.round(ch * SHEET.heightRatio));
+    const screenY = (node.y - vp.centerY) * vp.zoomLevel + ch / 2;
+    const reach = nodeRadii(node).ry * vp.zoomLevel;
+    if (screenY + reach > ch - sh - 12 || screenY - reach < 0) vp.setCenter(vp.centerX, node.y + sh / (2 * vp.zoomLevel));
+  };
+  // Close the sheet when the layer changes.
+  useEffect(() => { setPinnedId(null); }, [currentLayerId]);
+
   // ── Stage event handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (e.evt.button !== 0) { rendererHandleMouseDown(e); return; }
+    if (isEmulatedMouse(e.evt)) return;
+    const isTouch = e.evt.type.startsWith('touch');
+    if (isTouch) lastTouchAtRef.current = performance.now();
+    if (props.layout === undefined || props.layout === 'auto') setAutoTouch(isTouch);
+    // Touch events carry no `button`: a touch is always a primary press.
+    if (!isTouch && e.evt.button !== 0) { rendererHandleMouseDown(e); return; }
     const stage = e.target.getStage();
     if (!stage) { rendererHandleMouseDown(e); return; }
     const pointer = stage.getPointerPosition();
@@ -695,7 +652,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         select(nodeId);
         stageActiveNodeIdRef.current = nodeId;
         stageDragNodeOffsetRef.current = { x: worldX - node.x, y: worldY - node.y };
-        stageMouseDownPosRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+        stageMouseDownPosRef.current = clientOf(e.evt);
         stageDragCommittedRef.current = false;
         setPressedNodeId(nodeId);
         setHoveredNode(null);
@@ -703,11 +660,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       }
     }
     setHoveredNode(null);
+    emptyTapRef.current = clientOf(e.evt);
     isCanvasPanningRef.current = true;
     rendererHandleMouseDown(e);
-  }, [hitTestNode, toWorldCoords, nodes, select, rendererHandleMouseDown]);
+  }, [hitTestNode, toWorldCoords, nodes, select, rendererHandleMouseDown, props.layout]);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isEmulatedMouse(e.evt)) return;
     const stage = e.target.getStage();
     if (!stage) { rendererHandleMouseMove(e); return; }
     const pointer = stage.getPointerPosition();
@@ -715,7 +674,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const { worldX, worldY } = toWorldCoords(stage, pointer);
 
     if (stageActiveNodeIdRef.current && stageMouseDownPosRef.current) {
-      const moved = Math.hypot(e.evt.clientX - stageMouseDownPosRef.current.x, e.evt.clientY - stageMouseDownPosRef.current.y);
+      const cur = clientOf(e.evt);
+      const moved = Math.hypot(cur.x - stageMouseDownPosRef.current.x, cur.y - stageMouseDownPosRef.current.y);
       if (!stageDragCommittedRef.current && moved >= 5) {
         stageDragCommittedRef.current = true;
         isDraggingRef.current = true;
@@ -727,7 +687,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (stageDragCommittedRef.current) {
         const offset = stageDragNodeOffsetRef.current;
         handleDragMove(stageActiveNodeIdRef.current, worldX - offset.x, worldY - offset.y);
-        stage.container().style.cursor = 'grabbing';
         return;
       }
       return;
@@ -747,19 +706,17 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (hovered !== pointerNodeIdRef.current) {
         pointerNodeIdRef.current = hovered;
         setPointerNodeId(hovered);
-        onNodeHover?.(hovered);
+        onNodeHoverRef.current?.(hovered);
       }
-      if (hovered) {
-        stage.container().style.cursor = 'pointer';
-      } else {
-        stage.container().style.cursor = 'grab';
-      }
+      // Cursors as the design system's: an idea is a button (pointer); the canvas keeps the default.
+      stage.container().style.cursor = hovered ? 'pointer' : '';
     }
 
     rendererHandleMouseMove(e);
   }, [toWorldCoords, hitTestNode, handleDragStart, handleDragMove, rendererHandleMouseMove]);
 
   const handleStageMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isEmulatedMouse(e.evt)) return;
     setPressedNodeId(null);
     if (stageActiveNodeIdRef.current) {
       const nodeId = stageActiveNodeIdRef.current;
@@ -779,7 +736,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         const node = nodes.get(nodeId);
         if (node) {
           const childLayer = doc ? getChildLayerForNode(doc, nodeId, currentLayerId ?? '') : null;
-          if (childLayer) {
+          if (touchModeRef.current && childLayer && pinnedIdRef.current === nodeId) {
+            // Touch: tapping the idea whose sheet is open steps inside (same as the sheet's Step inside).
+            setPinnedId(null);
+            handleNavigate(nodeId);
+          } else if (touchModeRef.current && (node.description || childLayer)) {
+            // Touch: the first tap opens the sheet; nothing flashes or navigates by itself.
+            openSheet(node);
+          } else if (childLayer) {
             handleNavigate(nodeId);
           }
           onNodeClick?.(node);
@@ -792,9 +756,16 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       stageDragCommittedRef.current = false;
       return;
     }
+    // A tap (not a pan) on empty canvas dismisses the sheet.
+    const tap = emptyTapRef.current;
+    emptyTapRef.current = null;
+    if (tap && pinnedIdRef.current) {
+      const end = clientOf(e.evt);
+      if (!Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < 6) setPinnedId(null);
+    }
     isCanvasPanningRef.current = false;
     rendererHandleMouseUp(e);
-  }, [toWorldCoords, handleDragEnd, nodes, handleNavigate, onNodeClick, rendererHandleMouseUp]);
+  }, [toWorldCoords, handleDragEnd, nodes, handleNavigate, onNodeClick, rendererHandleMouseUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStageContextMenu = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     e.evt.preventDefault();
@@ -805,41 +776,81 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setCanvasContextMenu({ x: localX, y: localY });
   }, [navStack.length]);
 
-  // Touch passthrough
-  const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseDown]);
-  const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseMove]);
-  const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseUp]);
-
-  // Wheel with auto-nav guard on non-root layers
-  const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
-    const isZoomOut = e.evt.deltaY > 0;
-    if (!isZoomOut) { rendererHandleWheel(e); return; }
-
-    const liveZoom = useViewportStore.getState().zoomLevel;
-    const projected = Math.max(ZOOM_MIN, liveZoom * (1 - e.evt.deltaY / 1000));
-
-    // Root layer: no parent to navigate to — let the user zoom freely down to ZOOM_MIN
-    // (do NOT clamp at ZOOM_NAV_OUT_THRESHOLD; content may require lower zoom to fit)
-
-    if (navStack.length > 1 && projected <= ZOOM_NAV_OUT_THRESHOLD && !isTransitioningRef.current && !isAnimating()) {
-      e.evt.preventDefault();
-      const now = Date.now();
-      if (now - lastZoomTransitionRef.current >= ZOOM_COOLDOWN) {
-        lastZoomTransitionRef.current = now;
-        handleNavigateBack(navStack.length - 2);
-        baseZoomRef.current = 1.0;
-      }
-      return;
+  // ── Pinch to zoom (the design system's GESTURE, geometry/interaction.ts) ─────
+  // Two touch pointers zoom the contents around the point between them (pinchZoom / zoomAround, within VIEW's
+  // limits) and pan as they move together. Only the Konva world moves — the trail, controls, peek and sheet are
+  // DOM and never scale. A pinch never navigates, and never ends as a tap, a pan or an idea drag.
+  const touchPointsRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ d0: number; m0: { x: number; y: number }; z0: number; c0: { x: number; y: number } } | null>(null);
+  const pinchEndedAtRef = useRef(-Infinity);
+  const [pinching, setPinching] = useState(false);
+  const localOf = (e: React.PointerEvent) => { const r = containerRef.current!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const onPinchDown = (e: React.PointerEvent) => {
+    if (!GESTURE.pinchZoom || !GESTURE.pointers.includes(e.pointerType)) return;
+    touchPointsRef.current.set(e.pointerId, localOf(e));
+    if (touchPointsRef.current.size !== 2 || isTransitioningRef.current || isAnimating()) return;
+    const [a, b] = [...touchPointsRef.current.values()];
+    const vp = useViewportStore.getState();
+    pinchRef.current = { d0: Math.hypot(a.x - b.x, a.y - b.y), m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, z0: vp.zoomLevel, c0: { x: vp.centerX, y: vp.centerY } };
+    // The first finger's press becomes part of the pinch: no tap, pan or drag comes of it.
+    rendererCancelPan();
+    isCanvasPanningRef.current = false;
+    emptyTapRef.current = null;
+    stageActiveNodeIdRef.current = null;
+    stageDragCommittedRef.current = false;
+    isDraggingRef.current = false;
+    setPressedNodeId(null);
+    setPinching(true);
+  };
+  const onPinchMove = (e: React.PointerEvent) => {
+    if (!touchPointsRef.current.has(e.pointerId)) return;
+    touchPointsRef.current.set(e.pointerId, localOf(e));
+    const p = pinchRef.current;
+    if (!p || touchPointsRef.current.size < 2) return;
+    const [a, b] = [...touchPointsRef.current.values()];
+    const fit = useViewportStore.getState().fitScale;
+    const z = pinchZoom(p.z0 / fit, p.d0, Math.hypot(a.x - b.x, a.y - b.y)) * fit; // VIEW's limits relative to the fit
+    const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const cw = canvasSizeRef.current.width || containerRef.current?.clientWidth || 800;
+    const ch = canvasSizeRef.current.height || containerRef.current?.clientHeight || 600;
+    // screen = (world − centre) × zoom + size / 2, i.e. translation t = size / 2 − centre × zoom
+    const t = zoomAround({ x: cw / 2 - p.c0.x * p.z0, y: ch / 2 - p.c0.y * p.z0 }, p.z0, z, p.m0, GESTURE.twoFingerPan ? m : p.m0);
+    setZoom(z);
+    setCenter((cw / 2 - t.x) / z, (ch / 2 - t.y) / z);
+  };
+  const onPinchUp = (e: React.PointerEvent) => {
+    if (!touchPointsRef.current.delete(e.pointerId)) return;
+    if (pinchRef.current && touchPointsRef.current.size < 2) {
+      pinchRef.current = null;
+      pinchEndedAtRef.current = performance.now();
+      setPinching(false);
     }
-    rendererHandleWheel(e);
-  }, [rendererHandleWheel, navStack, setZoom, isAnimating, handleNavigateBack]);
+  };
+  /** True while two fingers pinch, and for a moment after: the lifting fingers are not a tap. */
+  const inPinch = () => pinchRef.current !== null || touchPointsRef.current.size > 1 || performance.now() - pinchEndedAtRef.current < 300;
+
+  // Touch passthrough (one finger); a pinch owns the touches while it lasts.
+  const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch() || e.evt.touches.length > 1) return;
+    handleStageMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseDown]);
+  const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch() || e.evt.touches.length > 1) return;
+    handleStageMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseMove]);
+  const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch()) { isCanvasPanningRef.current = false; return; }
+    handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseUp]);
+
+  // Wheel / trackpad: zoom within VIEW's limits. It never navigates — stepping inside and backing out are
+  // the design system's explicit actions (the idea, its peek, the depth trail, Escape / Backspace).
+  const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => { rendererHandleWheel(e); }, [rendererHandleWheel]);
 
   // Canvas mouse move for description tooltip
   const lastHoverCheckRef = useRef(0);
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (touchModeRef.current || isEmulatedMouse(e.nativeEvent)) return; // no hover peek on touch
     if (!containerRef.current || isDraggingRef.current || isCanvasPanningRef.current) {
       setHoveredNode(null);
       return;
@@ -884,7 +895,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
       clearTooltipTimerRef.current = setTimeout(() => {
         if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) setHoveredNode(null);
-      }, 150);
+      }, PEEK.hoverClose); // the design system's peek grace (geometry/interaction.ts)
     } else {
       if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; }
     }
@@ -896,12 +907,11 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       keepTooltipOpenRef.current = event.detail.keep;
     };
     
-    // @ts-ignore - custom event
-    window.addEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+    // A custom event: its listener takes a CustomEvent, so it is cast to the DOM's EventListener.
+    window.addEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen as EventListener);
     
     return () => {
-      // @ts-ignore - custom event
-      window.removeEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+      window.removeEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen as EventListener);
     };
   }, []);
 
@@ -914,77 +924,125 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     };
   }, []);
 
-  // ── Zoom controls ─────────────────────────────────────────────────────────
-  const handleZoomIn  = useCallback(() => setZoom(Math.min(viewport.zoomLevel * 1.2, 5)), [viewport.zoomLevel, setZoom]);
-  const handleZoomOut = useCallback(() => {
-    // Non-root: allow zoom to ZOOM_MIN so the wheel-driven ZOOM_NAV_OUT_THRESHOLD
-    // transition can still trigger via scroll; button just navigates zoom value.
-    // Root: also ZOOM_MIN (no parent layer to navigate to, allow full zoom-out).
-    setZoom(Math.max(viewport.zoomLevel / 1.2, ZOOM_MIN));
-  }, [viewport.zoomLevel, setZoom]);
+  // ── Activate an idea (click, or Enter/Space on its accessible button) ───────
+  const activateNode = useCallback((node: FlatNode) => {
+    const childLayer = doc ? getChildLayerForNode(doc, node.id, currentLayerId ?? '') : null;
+    if (touchModeRef.current && childLayer && pinnedIdRef.current === node.id) { setPinnedId(null); handleNavigate(node.id); }
+    else if (touchModeRef.current && (node.description || childLayer)) openSheet(node);
+    else if (childLayer) handleNavigate(node.id);
+    onNodeClick?.(node);
+  }, [doc, currentLayerId, handleNavigate, onNodeClick]);
 
-  // Extension rendering removed - not part of open spec
+  const stepInside = useCallback((nodeId: string) => { setHoveredNode(null); handleNavigate(nodeId); }, [handleNavigate]);
+
+  // The peek can unmount while the pointer is on it (Step inside, layer change): no mouseleave
+  // fires then, so clear the "pointer is on the peek" flag whenever it closes.
+  useEffect(() => { if (!hoveredNode) tooltipHoverRef.current = false; }, [hoveredNode]);
+
+  // Keyboard, as the design system's canvas language: Escape or Backspace steps back out (Escape first closes a
+  // pinned peek); ⌘ / Ctrl + + / − / 0 zoom in, zoom out and fit (by VIEW.zoomStep, within VIEW's limits).
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return;
+    const cmd = e.metaKey || e.ctrlKey;
+    if (cmd && !e.altKey) {
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(viewport.zoomLevel * VIEW.zoomStep); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(viewport.zoomLevel / VIEW.zoomStep); }
+      else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
+      return;
+    }
+    if (e.altKey || e.shiftKey) return;
+    if (e.key === 'Escape' && pinnedIdRef.current) { e.preventDefault(); setPinnedId(null); }
+    else if ((e.key === 'Escape' || e.key === 'Backspace') && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
+  }, [navStack.length, handleNavigateBack, setZoom, viewport.zoomLevel, fitToScreen]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!doc) {
     return (
-      <div className={className} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColor, ...style }}>
-        <span style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)', fontSize: 14 }}>No document</span>
+      <div className={`vi-map ${className}`} {...design.attrs} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
+        <span className="body-sm" style={{ color: 'var(--ink-muted)' }}>No document</span>
       </div>
     );
   }
 
   const hasBackOption = navStack.length > 1;
+  const currentLayerTitle = navStack[navStack.length - 1]?.label ?? '';
+  const peekNode = hoveredNode ? nodes.get(hoveredNode.nodeId) : undefined;
+  const pinnedNode = pinnedId ? nodes.get(pinnedId) : undefined;
+  const pinnedHasChild = !!(pinnedNode && getChildLayerForNode(doc, pinnedNode.id, currentLayerId ?? ''));
+  const compact = (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 560;
+  const medium = !compact && (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 900;
+  const peekHasChild = !!(peekNode && doc && getChildLayerForNode(doc, peekNode.id, currentLayerId ?? ''));
 
   return (
     <div
       ref={containerRef}
-      className={className}
-      style={{ 
-        position: 'relative', 
-        overflow: 'hidden', 
-        userSelect: 'none', 
-        background: bgColor, 
-        width: '100%', 
-        height: '100%', 
-        ...style 
-      }}
+      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''}${pinching ? ' is-pinching' : ''}${props.app ? ' is-app' : ''} ${className}`}
+      {...design.attrs}
+      data-reveal={instantReveal ? 'instant' : undefined}
+      role="group"
+      aria-label={`${doc.meta?.title ?? 'Map'}${currentLayerTitle ? `, ${currentLayerTitle}` : ''}`}
+      onKeyDown={handleKeyDown}
+      // Focusable by pointer so Esc / + / - / 0 work after clicking the map (Tab order is the mirrored ideas).
+      tabIndex={-1}
+      onPointerDownCapture={(e) => { onPinchDown(e); if (!(e.target as HTMLElement).closest('button, a, input')) containerRef.current?.focus({ preventScroll: true }); }}
+      onPointerMoveCapture={onPinchMove}
+      onPointerUpCapture={onPinchUp}
+      onPointerCancelCapture={onPinchUp}
+      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
-        // Only close tooltip on mouse leave if not keeping it open
+        // Only close the peek on mouse leave if not keeping it open
         if (!tooltipHoverRef.current && !keepTooltipOpenRef.current) {
           setHoveredNode(null);
         }
       }}
     >
-      {/* Konva canvas — opacity driven imperatively during transitions */}
+      {/* Chromatic immersion tint */}
+      <div className="vi-map__immersion" style={{ background: immersionFill ?? 'transparent' }} aria-hidden="true" />
+
+      {/* Konva canvas — opacity driven imperatively during transitions. Held back until the fonts are ready. */}
       <div ref={canvasWrapperRef} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
-        <KonvaStage
-          ref={stageRef}
-          onWheel={handleWheel}
-          onMouseDown={handleStageMouseDown}
-          onMouseMove={handleStageMouseMove}
-          onMouseUp={handleStageMouseUp}
-          onContextMenu={handleStageContextMenu}
-          onTouchStart={handleStageTouchStart}
-          onTouchMove={handleStageTouchMove}
-          onTouchEnd={handleStageTouchEnd}
-        >
-          <KonvaContainerLayer nodes={flatNodes} containers={containers} isDark={isDark} />
-          <KonvaEdgeLayer 
-            nodes={flatNodes} 
-            connections={connections} 
-            isDark={isDark} 
-            isDragging={isDraggingState} 
-          />
-          <KonvaNodeLayer
-            isTransitioning={isTransitioning}
-            isDragging={isDraggingState}
-            hoveredNodeId={pointerNodeId}
-            pressedNodeId={pressedNodeId}
-          />
-        </KonvaStage>
+        {fontsReady && (
+          <KonvaStage
+            ref={stageRef}
+            onWheel={handleWheel}
+            onMouseDown={handleStageMouseDown}
+            onMouseMove={handleStageMouseMove}
+            onMouseUp={handleStageMouseUp}
+            onContextMenu={handleStageContextMenu}
+            onTouchStart={handleStageTouchStart}
+            onTouchMove={handleStageTouchMove}
+            onTouchEnd={handleStageTouchEnd}
+          >
+            <KonvaContainerLayer nodes={flatNodes} containers={containers} connections={connections} design={design} />
+            <KonvaEdgeLayer nodes={flatNodes} connections={connections} design={design} isDragging={isDraggingState} clock={clock} />
+            <KonvaNodeLayer
+              design={design}
+              clock={clock}
+              isTransitioning={isTransitioning}
+              isDragging={isDraggingState}
+              hoveredNodeId={pointerNodeId}
+              pressedNodeId={pressedNodeId}
+              selectedNodeId={selectedNodeId}
+              focusedNodeId={focusedNodeId}
+              touch={touchMode}
+              peekedNodeId={touchMode ? pinnedId : null}
+            />
+            {/* Container names above connectors and ideas, so nothing runs over them. */}
+            <KonvaContainerLabelLayer containers={containers} connections={connections} design={design} />
+          </KonvaStage>
+        )}
       </div>
+
+      {/* Screen-reader / keyboard mirror of the visible ideas */}
+      <A11yLayer
+        nodes={flatNodes}
+        label={`Ideas in ${currentLayerTitle || 'this map'}`}
+        hasChildLayer={(id) => !!getChildLayerForNode(doc, id, currentLayerId ?? '')}
+        onActivate={activateNode}
+        onFocusNode={setFocusedNodeId}
+        announcement={hasBackOption ? `Now inside ${currentLayerTitle}` : undefined}
+      />
 
       {/* Context menu (right-click to go back) */}
       {canvasContextMenu && hasBackOption && (
@@ -993,7 +1051,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           aria-label="Canvas options"
           style={{
             position: 'absolute',
-            zIndex: 60,
+            zIndex: 'var(--z-menu)' as unknown as number,
             pointerEvents: 'auto',
             left: `${Math.min(canvasContextMenu.x, Math.max(8, (canvasSizeRef.current.width  || 800)  - 152))}px`,
             top: `${Math.min(canvasContextMenu.y, Math.max(8, (canvasSizeRef.current.height || 600) - 72))}px`,
@@ -1003,16 +1061,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         >
           <button
             type="button"
-            style={{
-              padding: '6px 16px',
-              borderRadius: '10px',
-              border: `1px solid ${isDark ? '#333330' : '#DDD9D0'}`,
-              background: isDark ? '#1C1C1A' : '#FAF8F4',
-              color: isDark ? '#F0EDE6' : '#1A1A18',
-              cursor: 'pointer',
-              fontSize: 13,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
+            role="menuitem"
+            className="vi-iconbtn vi-iconbtn--surface"
+            style={{ width: 'auto', padding: '6px var(--space-4)', boxShadow: 'var(--shadow-pop)' }}
             onClick={() => { setCanvasContextMenu(null); handleNavigateBack(navStack.length - 2); }}
           >
             Back
@@ -1020,70 +1071,62 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         </div>
       )}
 
-      {/* Navigation stack (left, matches reference) */}
-      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} isDark={isDark} top={navigationStackTop} left={navigationStackLeft} />
+      {/* Depth trail (top-left) */}
+      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Zoom controls (top-right) */}
-      <div data-help="zoom-controls" style={{ position: 'absolute', top: '24px', right: '16px', zIndex: 50, pointerEvents: 'auto' }}>
-        <ZoomControls isDark={isDark} />
+      {/* Canvas controls: the design system's placement (top-right); 'bottom-right' only on request */}
+      <div
+        className="vi-map__ctrls"
+        style={props.controlsPosition === 'bottom-right'
+          ? { top: 'auto', bottom: pinnedNode && touchMode ? `calc(var(--space-4) + ${sheetHeight}px)` : 'var(--space-4)' }
+          : undefined}
+      >
+        <ZoomControls onFit={fitToScreen} touch={touchMode} />
       </div>
 
-      {/* Custom overlay from consuming app (for private features like help button, chromatic bg, etc.) */}
-      {renderOverlay?.({ isDark, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
+      {/* Custom overlay from the consuming app */}
+      {renderOverlay?.({ isDark, theme: design.theme, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
 
-      {/* Node description tooltip (sketchy-box, above node) - rendered before extensions so extensions appear on top */}
-      {hoveredNode && hoveredNodePosition && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
-        const nodeData = nodes.get(hoveredNode.nodeId);
-        const borderColor = nodeData?.color ? darkenHexColor(nodeData.color, 0.13) : '#5BA8D4';
-        const VP_PAD = 8;
-        const HALF_W = 160;
-        const APPROX_H = 90;
-        const containerW = canvasSizeRef.current.width || 800;
-        const safeLeft = Math.max(HALF_W + VP_PAD, Math.min(hoveredNodePosition.screenX, containerW - HALF_W - VP_PAD));
-        const rawTop   = hoveredNodePosition.screenY - 60 * hoveredNodePosition.zoom;
-        const safeTop  = Math.max(VP_PAD + APPROX_H, rawTop);
+      {/* Touch: the peek is the design system's bottom sheet, pinned until dismissed */}
+      {touchMode && pinnedNode && (
+        <PeekSheet
+          node={pinnedNode}
+          anchors={anchors}
+          height={sheetHeight}
+          expanded={sheetExpanded}
+          onToggleExpanded={() => setSheetExpanded((v) => !v)}
+          onClose={() => setPinnedId(null)}
+          onStepInside={pinnedHasChild ? () => { setPinnedId(null); handleNavigate(pinnedNode.id); } : undefined}
+          renderContent={renderNodeContent ? (summary) => renderNodeContent({ summary, nodeId: pinnedNode.id, nodeColor: pinnedNode.color, zoom: viewport.zoomLevel }) : undefined}
+        />
+      )}
+
+      {/* Pointer: the peek floats over the hovered idea — the design system's card */}
+      {!touchMode && hoveredNode && hoveredNodePosition && peekNode && (() => {
+        // Beside the idea — right of it if it fits, else left — level with it (the design system's peekPosition).
+        const rings = ringsFor(peekNode.branchCount);
+        const half = nodeRadii(peekNode).rx * (rings.length ? rings[rings.length - 1]!.scale : 1) * hoveredNodePosition.zoom;
+        const at = peekPosition({ x: hoveredNodePosition.screenX, y: hoveredNodePosition.screenY, half }, { w: canvasSizeRef.current.width || 800, h: canvasSizeRef.current.height || 600 });
         return (
           <div
-            data-node-tooltip="true"
-            style={{
-              position: 'absolute',
-              zIndex: 50,
-              left: safeLeft,
-              top: safeTop,
-              transform: 'translate(-50%, -100%)',
-              transformOrigin: 'bottom center',
-              pointerEvents: 'auto',
-            }}
+            className="vi-map__fact"
+            style={{ left: at.left, top: at.top, pointerEvents: 'auto', zIndex: 'var(--z-card)' as unknown as number }}
             onMouseEnter={() => { tooltipHoverRef.current = true; if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; } }}
-            onMouseLeave={() => { 
-              tooltipHoverRef.current = false; 
-              // Delay clearing to allow external extensions to request keeping tooltip open
+            onMouseLeave={() => {
+              tooltipHoverRef.current = false;
+              // Delay clearing to allow external extensions to request keeping the peek open
               if (clearTooltipTimerRef.current) clearTimeout(clearTooltipTimerRef.current);
               clearTooltipTimerRef.current = setTimeout(() => {
                 if (!keepTooltipOpenRef.current) setHoveredNode(null);
-              }, 100);
+              }, PEEK.hoverClose);
             }}
           >
-            <div style={{ maxWidth: '20rem', minWidth: '12rem', maxHeight: '15rem', overflowY: 'auto' }}>
-              <SketchyBoxKonva fill="#ffffff" stroke={borderColor} backStroke={borderColor} padding="1rem 1.25rem">
-                <p style={{
-                  fontFamily: "'Playpen Sans', cursive",
-                  fontSize: `${DESCRIPTION_TEXT_BASE_FONT_PX}px`,
-                  fontWeight: 300,
-                  color: '#000000',
-                  textAlign: 'center',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}>
-                  {renderNodeContent ? renderNodeContent({ 
-                    summary: hoveredNode.summary, 
-                    nodeId: hoveredNode.nodeId,
-                    nodeColor: nodeData?.color,
-                    zoom: viewport.zoomLevel,
-                  }) : hoveredNode.summary}
-                </p>
-              </SketchyBoxKonva>
-            </div>
+            <PeekCard
+              node={peekNode}
+              anchors={anchors}
+              onStepInside={peekHasChild ? () => stepInside(peekNode.id) : undefined}
+              renderContent={renderNodeContent ? (summary) => renderNodeContent({ summary, nodeId: peekNode.id, nodeColor: peekNode.color, zoom: viewport.zoomLevel }) : undefined}
+            />
           </div>
         );
       })()}

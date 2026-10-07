@@ -1,6 +1,6 @@
 {
   "name": "@visualli/react",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "React canvas renderer for .visualli files \u2014 built on @visualli/core",
   "repository": {
     "type": "git",
@@ -19,11 +19,15 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "licenses",
+    "fonts"
   ],
   "scripts": {
-    "build": "tsup",
-    "check-types": "tsc --noEmit"
+    "build": "node ../../../../scripts/gen-design-system.mjs && tsup",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src --max-warnings 0"
   },
   "peerDependencies": {
     "react": "^18.0.0",
@@ -40,6 +44,7 @@
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@visualli/eslint-config": "*",
     "typescript": "^5.5.4"
   },
   "engines": {

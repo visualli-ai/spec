@@ -1,5 +1,6 @@
 import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '../types/index.js';
-import { ZOOM_MAX, ZOOM_NAV_OUT_THRESHOLD } from '../constants/performanceConstants.js';
+import { fitView, layerBounds, type FrameBox } from '../generated/geometry/interaction.js';
+import { containerHull } from '../generated/geometry/container.js';
 
 // ── Connection helpers ────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ export function getConnectionsForLayer(
     to: c.to,
     level: layer.level,
     label: c.data?.label,
+    style: c.data?.style === 'dashed' ? 'dashed' : 'solid',
   } satisfies MindMapConnection));
 }
 
@@ -51,7 +53,11 @@ export function getLayerForNavigation(
   return getChildLayerForNode(doc, nodeId, currentLayerId);
 }
 
-// ── Viewport fitting math ─────────────────────────────────────────────────────
+// ── Fit to view ───────────────────────────────────────────────────────────────
+//
+// The design system's fit (geometry/interaction.ts → layerBounds / fitView): every
+// idea at its real size with room around it, and every container hull with room for
+// its name pill; never enlarging a layer beyond VIEW.fitMax.
 
 export interface FitResult {
   centerX: number;
@@ -59,65 +65,28 @@ export interface FitResult {
   zoomLevel: number;
 }
 
-/**
- * Calculates the zoom level needed to fit all `nodes` inside a canvas of
- * `(canvasWidth, canvasHeight)`.
- *
- * @param paddingFraction - Fractional padding on each side (0.15 = 15%).
- *   Pixel-padding variant still available when a value >=1 is passed.
- */
-export function calculateFitZoom(
-  nodes: FlatNode[],
-  canvasWidth: number,
-  canvasHeight: number,
-  padding = 0.15,
-): number {
-  if (nodes.length === 0) return 1;
-
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const n of nodes) {
-    // Use the actual node boundaries (center +/- half-width/height)
-    minX = Math.min(minX, n.x - n.width / 2);
-    minY = Math.min(minY, n.y - n.height / 2);
-    maxX = Math.max(maxX, n.x + n.width / 2);
-    maxY = Math.max(maxY, n.y + n.height / 2);
+/** The box a layer is framed by: its ideas (their real sizes) and the hulls of its `containers`. */
+export function layerFrame(nodes: ReadonlyArray<FlatNode>, containers: ReadonlyArray<{ nodeIds: string[] }> = []): FrameBox {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const hulls: FrameBox[] = [];
+  for (const c of containers) {
+    const hull = containerHull(c.nodeIds.flatMap((id) => { const n = byId.get(id); return n ? [{ x: n.x, y: n.y, rx: n.width / 2, ry: n.height / 2 }] : []; }));
+    if (hull) hulls.push(hull);
   }
-
-  const rawW = maxX - minX;
-  const rawH = maxY - minY;
-
-  // Minimum spread — single isolated node should appear comfortably
-  // Matches visualli.ai's spread logic for single nodes
-  const spreadW = nodes.length === 1 ? Math.max(rawW, 600) : rawW;
-  const spreadH = nodes.length === 1 ? Math.max(rawH, 400) : rawH;
-
-  const zoomX = (canvasWidth * (1 - padding)) / spreadW;
-  const zoomY = (canvasHeight * (1 - padding)) / spreadH;
-
-  const z = Math.min(zoomX, zoomY);
-
-  // Scale back 20% so nodes aren't edge-to-edge, clamp to at least
-  // ZOOM_NAV_OUT_THRESHOLD so arriving at the layer never immediately
-  // re-triggers the zoom-out transition.
-  return Math.max(z * 0.80, ZOOM_NAV_OUT_THRESHOLD);
+  return layerBounds(nodes.map((n) => ({ x: n.x, y: n.y, rx: n.width / 2, ry: n.height / 2 })), hulls);
 }
 
-/**
- * Calculates the world-space center point that puts all `nodes` in the middle
- * of the viewport. Matches the visualli.ai `calculateFitCenter` approach:
- * uses bounding-box midpoint rather than centroid so the layout is always
- * geometrically centred.
- */
-export function calculateFitCenter(nodes: FlatNode[]): { x: number; y: number } {
+/** The zoom that fits a layer's ideas (and container hulls) into a canvas of `canvasWidth` × `canvasHeight`. */
+export function calculateFitZoom(nodes: FlatNode[], canvasWidth: number, canvasHeight: number, containers: ReadonlyArray<{ nodeIds: string[] }> = []): number {
+  if (nodes.length === 0) return 1;
+  return fitView(layerFrame(nodes, containers), canvasWidth, canvasHeight).scale;
+}
+
+/** The world point a fitted layer is centred on: the middle of its frame. */
+export function calculateFitCenter(nodes: FlatNode[], containers: ReadonlyArray<{ nodeIds: string[] }> = []): { x: number; y: number } {
   if (nodes.length === 0) return { x: 0, y: 0 };
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const n of nodes) {
-    minX = Math.min(minX, n.x - n.width / 2);
-    minY = Math.min(minY, n.y - n.height / 2);
-    maxX = Math.max(maxX, n.x + n.width / 2);
-    maxY = Math.max(maxY, n.y + n.height / 2);
-  }
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const f = layerFrame(nodes, containers);
+  return { x: (f.x0 + f.x1) / 2, y: (f.y0 + f.y1) / 2 };
 }
 
 // ── Container helpers ────────────────────────────────────────────────────────
@@ -131,7 +100,7 @@ export interface ContainerGroupInfo {
 }
 
 /**
- * Returns the container groups for the given layer, normalising both the
+ * Returns the container groups the given layer draws, normalising both the
  * nested-data format `{data:{label,formation}}` and the flat format `{label}`.
  */
 export function getContainersForLayer(
@@ -145,21 +114,22 @@ export function getContainersForLayer(
   const containers = layer.containers ?? [];
   if (!Array.isArray(containers)) return [];
   
-  return containers.map(c => {
+  // A container whose style is 'none' groups ideas without a hull or a name (the design system draws nothing for it).
+  return containers.filter(c => c.data?.style !== 'none').map(c => {
     // Schema Container has nested data.label structure
     const label = c.data?.label ?? c.id;
     return { id: c.id, label, nodeIds: c.nodes, level: layer.level };
   });
 }
 
-/** Convenience: returns both center and zoom for a single `fitView` call. */
+/** Fit to view: centre and zoom for a layer in one call (the design system's fitView). */
 export function calculateFitView(
   nodes: FlatNode[],
   canvasWidth: number,
   canvasHeight: number,
+  containers: ReadonlyArray<{ nodeIds: string[] }> = [],
 ): FitResult {
-  const center = calculateFitCenter(nodes);
-  const zoom   = calculateFitZoom(nodes, canvasWidth, canvasHeight);
-  return { centerX: center.x, centerY: center.y, zoomLevel: zoom };
+  if (nodes.length === 0) return { centerX: 0, centerY: 0, zoomLevel: 1 };
+  const { scale, center } = fitView(layerFrame(nodes, containers), canvasWidth, canvasHeight);
+  return { centerX: center.x, centerY: center.y, zoomLevel: scale };
 }
-

@@ -4,9 +4,9 @@
 
 import React, { createContext, useContext } from 'react';
 
-export interface VisualliContextValue {
-  // Reserved for future use
-}
+// Reserved for future use (public type, kept as an open interface).
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface VisualliContextValue {}
 
 const VisualliContext = createContext<VisualliContextValue | null>(null);
 
