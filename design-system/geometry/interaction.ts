@@ -108,7 +108,7 @@ export function peekPosition(idea: { x: number; y: number; half: number }, box: 
  *  topic or custom color the idea is drawn in, including the sibling-order topic of an uncolored idea). The first
  *  entry is the map itself: a `stone` dot and the home glyph only (`rootLabel: 'icon'`) — no text, since a map's title
  *  usually repeats its centre idea's, which the next entry shows; its accessible name and tooltip are the map's title.
- *  The dot is that level's blob shape. */
+ *  The dot is the idea shape (shapeForLevel). */
 export const TRAIL = { rootTopic: 'stone', rootLabel: 'icon', homeIconSize: 12, dotBox: 16, dotRadius: 6.4, stroke: 1.25, currentStroke: 1.75 } as const;
 
 /** How an input answers: a mouse hovers (peeks and terms open on hover); touch and pen tap. Null for unknown pointers. */
