@@ -23,6 +23,9 @@ import {
   motionVars,
   nodeRadii,
   RBushSpatialIndex,
+  GESTURE,
+  pinchZoom,
+  zoomAround,
   VIEW,
   PEEK,
   SHEET,
@@ -138,6 +141,12 @@ export interface VisualliCanvasProps {
    * Where the zoom / fit controls sit. Default 'bottom-right', the design system's placement
    * (`.vi-map__ctrls`); 'top-right' keeps the pre-0.2 SDK placement for hosts that need it.
    */
+  /**
+   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
+   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
+   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   */
+  app?: boolean;
   controlsPosition?: 'bottom-right' | 'top-right';
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
   fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
@@ -318,6 +327,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     handleMouseDown: rendererHandleMouseDown,
     handleMouseMove: rendererHandleMouseMove,
     handleMouseUp:   rendererHandleMouseUp,
+    cancelPan:       rendererCancelPan,
     canvasWidth,
     canvasHeight,
   } = useKonvaRenderer({ containerRef, stageRef });
@@ -756,13 +766,71 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setCanvasContextMenu({ x: localX, y: localY });
   }, [navStack.length]);
 
-  // Touch passthrough
-  const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseDown]);
-  const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseMove]);
-  const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
-    handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseUp]);
+  // ── Pinch to zoom (the design system's GESTURE, geometry/interaction.ts) ─────
+  // Two touch pointers zoom the contents around the point between them (pinchZoom / zoomAround, within VIEW's
+  // limits) and pan as they move together. Only the Konva world moves — the trail, controls, peek and sheet are
+  // DOM and never scale. A pinch never navigates, and never ends as a tap, a pan or an idea drag.
+  const touchPointsRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ d0: number; m0: { x: number; y: number }; z0: number; c0: { x: number; y: number } } | null>(null);
+  const pinchEndedAtRef = useRef(-Infinity);
+  const [pinching, setPinching] = useState(false);
+  const localOf = (e: React.PointerEvent) => { const r = containerRef.current!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const onPinchDown = (e: React.PointerEvent) => {
+    if (!GESTURE.pinchZoom || !GESTURE.pointers.includes(e.pointerType)) return;
+    touchPointsRef.current.set(e.pointerId, localOf(e));
+    if (touchPointsRef.current.size !== 2 || isTransitioningRef.current || isAnimating()) return;
+    const [a, b] = [...touchPointsRef.current.values()];
+    const vp = useViewportStore.getState();
+    pinchRef.current = { d0: Math.hypot(a.x - b.x, a.y - b.y), m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, z0: vp.zoomLevel, c0: { x: vp.centerX, y: vp.centerY } };
+    // The first finger's press becomes part of the pinch: no tap, pan or drag comes of it.
+    rendererCancelPan();
+    isCanvasPanningRef.current = false;
+    emptyTapRef.current = null;
+    stageActiveNodeIdRef.current = null;
+    stageDragCommittedRef.current = false;
+    isDraggingRef.current = false;
+    setPressedNodeId(null);
+    setPinching(true);
+  };
+  const onPinchMove = (e: React.PointerEvent) => {
+    if (!touchPointsRef.current.has(e.pointerId)) return;
+    touchPointsRef.current.set(e.pointerId, localOf(e));
+    const p = pinchRef.current;
+    if (!p || touchPointsRef.current.size < 2) return;
+    const [a, b] = [...touchPointsRef.current.values()];
+    const z = pinchZoom(p.z0, p.d0, Math.hypot(a.x - b.x, a.y - b.y));
+    const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const cw = canvasSizeRef.current.width || containerRef.current?.clientWidth || 800;
+    const ch = canvasSizeRef.current.height || containerRef.current?.clientHeight || 600;
+    // screen = (world − centre) × zoom + size / 2, i.e. translation t = size / 2 − centre × zoom
+    const t = zoomAround({ x: cw / 2 - p.c0.x * p.z0, y: ch / 2 - p.c0.y * p.z0 }, p.z0, z, p.m0, GESTURE.twoFingerPan ? m : p.m0);
+    setZoom(z);
+    setCenter((cw / 2 - t.x) / z, (ch / 2 - t.y) / z);
+  };
+  const onPinchUp = (e: React.PointerEvent) => {
+    if (!touchPointsRef.current.delete(e.pointerId)) return;
+    if (pinchRef.current && touchPointsRef.current.size < 2) {
+      pinchRef.current = null;
+      pinchEndedAtRef.current = performance.now();
+      setPinching(false);
+    }
+  };
+  /** True while two fingers pinch, and for a moment after: the lifting fingers are not a tap. */
+  const inPinch = () => pinchRef.current !== null || touchPointsRef.current.size > 1 || performance.now() - pinchEndedAtRef.current < 300;
+
+  // Touch passthrough (one finger); a pinch owns the touches while it lasts.
+  const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch() || e.evt.touches.length > 1) return;
+    handleStageMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseDown]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch() || e.evt.touches.length > 1) return;
+    handleStageMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseMove]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (inPinch()) { isCanvasPanningRef.current = false; return; }
+    handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>);
+  }, [handleStageMouseUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wheel / trackpad: zoom within VIEW's limits. It never navigates — stepping inside and backing out are
   // the design system's explicit actions (the idea, its peek, the depth trail, Escape / Backspace).
@@ -898,7 +966,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   return (
     <div
       ref={containerRef}
-      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''} ${className}`}
+      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''}${pinching ? ' is-pinching' : ''}${props.app ? ' is-app' : ''} ${className}`}
       {...design.attrs}
       data-reveal={instantReveal ? 'instant' : undefined}
       role="group"
@@ -906,7 +974,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       onKeyDown={handleKeyDown}
       // Focusable by pointer so Esc / + / - / 0 work after clicking the map (Tab order is the mirrored ideas).
       tabIndex={-1}
-      onPointerDownCapture={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) containerRef.current?.focus({ preventScroll: true }); }}
+      onPointerDownCapture={(e) => { onPinchDown(e); if (!(e.target as HTMLElement).closest('button, a, input')) containerRef.current?.focus({ preventScroll: true }); }}
+      onPointerMoveCapture={onPinchMove}
+      onPointerUpCapture={onPinchUp}
+      onPointerCancelCapture={onPinchUp}
       style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {

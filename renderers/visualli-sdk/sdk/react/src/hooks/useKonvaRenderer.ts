@@ -27,6 +27,8 @@ export interface UseKonvaRendererReturn {
   handleMouseDown:(e: Konva.KonvaEventObject<MouseEvent>) => void;
   handleMouseMove:(e: Konva.KonvaEventObject<MouseEvent>) => void;
   handleMouseUp:  (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  /** End a one-finger / mouse pan now (e.g. a second finger turns it into a pinch), keeping how far it moved. */
+  cancelPan:      () => void;
   canvasWidth:    number;
   canvasHeight:   number;
 }
@@ -181,5 +183,12 @@ export function useKonvaRenderer({
     }
   }, [pan]);
 
-  return { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, canvasWidth, canvasHeight };
+  const cancelPan = useCallback((): void => {
+    if (!isPanningRef.current) return;
+    isPanningRef.current = false;
+    const { x, y } = panAccumRef.current;
+    if (x !== 0 || y !== 0) { pan(x, y); panAccumRef.current = { x: 0, y: 0 }; }
+  }, [pan]);
+
+  return { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, cancelPan, canvasWidth, canvasHeight };
 }

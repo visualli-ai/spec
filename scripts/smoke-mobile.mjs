@@ -135,6 +135,34 @@ try {
     check('desktop: hover shows the floating peek, not a sheet', (await page.locator('.vi-map__fact .vi-peek').count()) === 1 && (await page.locator('.vi-fact--sheet').count()) === 0);
     await ctx.close();
   }
+  // ── pinch to zoom (the design system's GESTURE): contents only, never navigates ──
+  {
+    const { ctx, page, errors } = await open({ width: 390, height: 844 }, { touch: true });
+    const pct = () => page.evaluate(() => parseInt(document.querySelector('.vi-ctrls__pct').textContent));
+    const depth = () => page.locator('.vi-trail li').count();
+    const ctrlW = () => page.evaluate(() => document.querySelector('.vi-ctrls').getBoundingClientRect().width);
+    const pinch = (from, to) => page.evaluate(async ([from, to]) => {
+      const el = document.querySelector('.vi-map canvas') || document.querySelector('.vi-map');
+      const r = document.querySelector('.vi-map').getBoundingClientRect(), cx = r.width / 2, cy = r.height * 0.45;
+      const ev = (t, id, x, y) => el.dispatchEvent(new PointerEvent(t, { pointerId: id, pointerType: 'touch', clientX: r.left + x, clientY: r.top + y, bubbles: true, isPrimary: id === 1 }));
+      ev('pointerdown', 1, cx - from, cy); ev('pointerdown', 2, cx + from, cy);
+      for (let k = 1; k <= 10; k++) { const d = from + (to - from) * k / 10; ev('pointermove', 1, cx - d, cy); ev('pointermove', 2, cx + d, cy); await new Promise(res => setTimeout(res, 16)); }
+      ev('pointerup', 1, cx - to, cy); ev('pointerup', 2, cx + to, cy);
+    }, [from, to]);
+    check('pinch: the app map takes every touch gesture', await page.evaluate(() => getComputedStyle(document.querySelector('.vi-map')).touchAction) === 'none');
+    const z0 = await pct(), d0 = await depth(), w0 = await ctrlW();
+    await pinch(40, 160); await page.waitForTimeout(400);
+    const z1 = await pct();
+    check('pinch out zooms the contents in', z1 > z0 * 2, `${z0}% -> ${z1}%`);
+    check('…the controls don\'t scale', Math.abs((await ctrlW()) - w0) < 1);
+    check('…and the layer doesn\'t change', (await depth()) === d0);
+    await pinch(200, 10); await page.waitForTimeout(400);
+    const z2 = await pct();
+    check('pinch in zooms out, down to the design system\'s floor', z2 === 30, `${z1}% -> ${z2}%`);
+    check('…still on the same layer', (await depth()) === d0);
+    check('pinch: no page errors', errors.length === 0, errors.join(' | '));
+    await ctx.close();
+  }
   // ── controls position ──
   {
     const rect = async (q) => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });

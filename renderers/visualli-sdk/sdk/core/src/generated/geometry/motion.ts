@@ -55,6 +55,11 @@ export const MOTION = {
   },
   /** Reduced motion, or Gradual reveal off: everything appears together with a short fade; dives become cross-fades. */
   reduced: { fade: 120 },
+  /** Large layers. The stagger is written for a dozen ideas; a layer of hundreds would take minutes to arrive and
+   *  every frame of a bloom repaints the whole layer. Above `staggerSlots` ideas (and connectors), they share that many
+   *  slots, so a layer never takes longer to arrive than `staggerSlots` ideas would. Above `bloomMax` ideas the layer
+   *  fades in together (the reduced fade) and hover lifts snap instead of easing. */
+  largeLayer: { staggerSlots: 30, bloomMax: 150 },
 } as const;
 
 export type Point = { x: number; y: number };
@@ -81,6 +86,29 @@ export function bloomOffset(node: Point, center: Point): Point {
 /** When the layers swap after Step inside ('in') or Back out ('out'). 0 with reduced motion (a cross-fade). */
 export function swapDelay(dir: 'in' | 'out', reduced = false): number {
   return reduced ? 0 : dir === 'in' ? MOTION.dive.swapAfter : MOTION.surface.swapAfter;
+}
+
+/** The stagger slot of item `i` of `count` (ideas or connectors): its own index up to `staggerSlots`, then shared. */
+export function revealSlot(i: number, count: number): number {
+  const slots = Math.min(count, MOTION.largeLayer.staggerSlots);
+  return count > slots ? Math.floor((i * slots) / count) : i;
+}
+
+/** Whether a layer of `nodeCount` ideas blooms in one by one (else it fades in together and hover lifts snap). */
+export function layerBlooms(nodeCount: number): boolean { return nodeCount <= MOTION.largeLayer.bloomMax; }
+
+/** A layer's whole arrival, large layers included: when idea `i` and connector `i` start, and when the layer is idle. */
+export function layerReveal(nodeCount: number, connectorCount: number, reduced = false) {
+  const instant = reduced || !layerBlooms(nodeCount);
+  const slots = Math.min(nodeCount, MOTION.largeLayer.staggerSlots);
+  const edgeSlots = Math.min(connectorCount, MOTION.largeLayer.staggerSlots);
+  return {
+    /** Fades in together (reduced motion, Gradual reveal off, or a layer past `bloomMax`). */ instant,
+    ideaDelay: (i: number) => (instant ? 0 : revealDelay(revealSlot(i, nodeCount))),
+    connectorDelay: (i: number) => (instant ? 0 : connectorDelay(revealSlot(i, connectorCount), slots)),
+    /** Until the map is idle again. */
+    total: instant ? (reduced ? 0 : MOTION.reduced.fade) : Math.max(revealTotal(slots), edgeSlots ? connectorDelay(edgeSlots - 1, slots) + MOTION.connector.draw : 0),
+  };
 }
 
 /** CSS form of an easing. */

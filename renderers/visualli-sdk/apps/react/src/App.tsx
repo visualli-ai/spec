@@ -11,6 +11,7 @@ export default function App() {
       theme="light"
       width="100vw"
       height="100vh"
+      app
     />
   );
 }

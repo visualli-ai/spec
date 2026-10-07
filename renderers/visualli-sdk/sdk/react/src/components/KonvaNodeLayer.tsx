@@ -8,7 +8,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react';
 import { KLayer as Layer, KShape as Shape } from '../konvaCompat';
 import type Konva from 'konva';
-import { RBushSpatialIndex, TEXT_LABEL_HIDE_BELOW_ZOOM, intersectsViewport, nodeBounds, type FlatNode } from '@visualli/core';
+import { RBushSpatialIndex, layerBlooms, shadowsShown, TEXT_LABEL_HIDE_BELOW_ZOOM, intersectsViewport, nodeBounds, type FlatNode } from '@visualli/core';
 import { useNodeStore } from '../stores/useNodeStore';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { useFontsEpoch } from '../design/runtime';
@@ -16,13 +16,7 @@ import { IDLE, drawIdea, type IdeaState } from '../design/drawing';
 import { HoverTweens, type RevealClock, type Arrival } from '../design/choreography';
 import { useFrames } from './useFrames';
 
-/** Above this many visible ideas the idea drop shadow is skipped (it is the costliest canvas effect).
- *  Pending upstream: an SDK performance adaptation, not yet a design-system rule. */
-const SHADOW_MAX_VISIBLE = 150;
 const SPATIAL_INDEX_THRESHOLD = 200;
-/** Hover lifts are tweened for layers up to this many ideas; denser layers snap (every tween frame repaints the whole layer, and in a dense layer the pointer changes idea constantly). */
-const HOVER_TWEEN_MAX_NODES = 150;
-
 export interface KonvaNodeLayerProps {
   nodes?: FlatNode[];
   isTransitioning?: boolean;
@@ -78,8 +72,8 @@ export default function KonvaNodeLayer({
     if (hoveredNodeId) raised.add(hoveredNodeId);
     if (pressedNodeId) raised.add(pressedNodeId);
     if (selectedNodeId) raised.add(selectedNodeId);
-    if (tweens.set(raised, design.comfort.reducedMotion || nodes.length > HOVER_TWEEN_MAX_NODES)) frames.run();
-  }, [hoveredNodeId, pressedNodeId, selectedNodeId, design.comfort.reducedMotion, nodes.length > HOVER_TWEEN_MAX_NODES, tweens, frames]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (tweens.set(raised, design.comfort.reducedMotion || !layerBlooms(nodes.length))) frames.run();
+  }, [hoveredNodeId, pressedNodeId, selectedNodeId, design.comfort.reducedMotion, layerBlooms(nodes.length), tweens, frames]); // eslint-disable-line react-hooks/exhaustive-deps
   useLayoutEffect(() => clock?.subscribe(() => frames.run()), [clock, frames]);
 
   useLayoutEffect(() => { layerRef.current?.batchDraw(); }, [nodes, index, design, fonts, hoveredNodeId, pressedNodeId, selectedNodeId, focusedNodeId, isDragging]);
@@ -96,7 +90,7 @@ export default function KonvaNodeLayer({
 
     const c = ctx._context;
     const m = c.getTransform();
-    const opt = { shadows: !isDragging && visible.length <= SHADOW_MAX_VISIBLE, labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b), base: m };
+    const opt = { shadows: !isDragging && shadowsShown(visible.length), labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b), base: m };
     const st: IdeaState = { ...IDLE };
     const now = performance.now();
     const arrival: Arrival = { alpha: 1, scale: 1, dx: 0, dy: 0 };

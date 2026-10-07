@@ -11,6 +11,8 @@
 
 import {
   CANVAS_STYLE,
+  DETAIL,
+  ideaDetail,
   EDGE_LABEL_BASE_FONT_PX,
   RINGS,
   TYPE_STYLES,
@@ -132,15 +134,10 @@ export interface IdeaOptions {
   base?: DOMMatrix;
 }
 
-/**
- * Level of detail, by on-screen width of the idea. Far-out views of huge maps
- * show ideas as specks: below LOD_TINY_PX a filled box is drawn, below
- * LOD_DETAIL_PX only the body (no rings, shadow or label). Both are invisible
- * differences at those sizes and keep 10k-idea maps interactive.
- * Pending upstream: an SDK performance adaptation, not yet a design-system rule.
- */
-export const LOD_TINY_PX = 12;
-export const LOD_DETAIL_PX = 24;
+/** @deprecated Use DETAIL.speckBelow (the design system's level of detail, geometry/detail.ts). */
+export const LOD_TINY_PX = DETAIL.speckBelow;
+/** @deprecated Use DETAIL.bodyOnlyBelow (geometry/detail.ts). */
+export const LOD_DETAIL_PX = DETAIL.bodyOnlyBelow;
 
 /** The topic an idea is drawn with. */
 export const topicOf = (n: Pick<FlatNode, 'topic' | 'color' | 'id'>) => n.topic ?? topicForColor(n.color, n.id);
@@ -159,7 +156,9 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   const base = opt.base;
 
   // Specks: one filled box, no transform changes.
-  if (screenW < LOD_TINY_PX && !st.selected && !st.focused && !st.hovered) {
+  // Level of detail (geometry/detail.ts): a speck below DETAIL.speckBelow, body only below DETAIL.bodyOnlyBelow.
+  const detail = ideaDetail(screenW, st.selected || st.focused || st.hovered);
+  if (detail === 'speck') {
     const a = (st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (st.arrival ? st.arrival.alpha : 1);
     if (a !== 1) c.globalAlpha = a;
     c.fillStyle = fill;
@@ -168,7 +167,7 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
     return;
   }
 
-  const detailed = screenW >= LOD_DETAIL_PX || st.selected || st.focused || st.hovered;
+  const detailed = detail === 'full';
   const shape = shapeOfLevel(node.level);
   const rings = detailed ? ringsFor(node.branchCount) : NO_RINGS;
   const raised = st.hovered || st.pressed || st.selected;

@@ -3,7 +3,7 @@
 ## 0.2.0 — Visualli design system rendering
 
 `@visualli/core` and `@visualli/react` 0.2.0 render a `.visualli` map exactly like the Visualli design system.
-**Conforms to design system 0.1.1 (with `geometry/interaction.ts` and `geometry/color.ts`)** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
+**Conforms to design system 0.1.5** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
 
 ### Added
 - All 8 design-system themes (`light`, `dark`, `focus-*`, `colorsafe-*`, `contrast-*`) via the `theme` prop; family names (`focus`, `colorsafe`, `contrast`) and `'auto'` follow the reader. Forced-colors switches to the high-contrast theme (`respectForcedColors`).
@@ -51,7 +51,8 @@
   - The peek shows at any zoom (it was hidden beyond 3× and below 0.3×).
   - Keyboard as the design system's canvas language: Escape or **Backspace** steps back out; **⌘ / Ctrl + = / − / 0** zoom in, out and fit (were plain + / − / 0).
   - `controlsPosition` defaults to the design system's **'bottom-right'** (was 'top-right'; pass `'top-right'` to keep the old placement).
-- Performance adaptations that are not yet design-system rules are marked *pending upstream* in the code: the compressed stagger above 30 ideas and the fade-in above 150 (`design/choreography.ts`), no idea shadows above 150 visible ideas, and level of detail for ideas under 24px on screen. They belong in the design system's `geometry/motion.ts` so every renderer follows them.
+- Large layers and level of detail follow the design system (0.1.5): `geometry/motion.ts` → `largeLayer` / `layerReveal` (above 30 ideas the stagger shares 30 slots; above 150 the layer fades in together and hover lifts snap) and `geometry/detail.ts` (`ideaDetail`: body only under 24px on screen, a speck under 12px; `shadowsShown`: no shadows above 150 visible ideas). These were the SDK's own constants; they now come from the design system, with the same results. `REVEAL_STAGGER_CAP`, `REVEAL_MAX_NODES`, `LOD_TINY_PX` and `LOD_DETAIL_PX` remain as deprecated aliases of the design-system values.
+- **Pinch to zoom** (the design system's `GESTURE`, `pinchZoom`, `zoomAround`): on any touch input, two fingers zoom the map's contents around the point between them, within `VIEW` (0.3–5), and pan as they move together; the depth trail, controls, peek and sheet never scale. A pinch never navigates and never ends as a tap, a pan or an idea drag. New prop `app` (on `VisualliRenderer` and `VisualliCanvas`): the map is the page and takes every touch gesture (the design system's `.vi-map.is-app`, `touch-action: none`); without it the map is embedded and one finger still scrolls the page. The Visualli web app should pass `app`. `npm run smoke:mobile` checks the pinch against `VIEW`.
 
 ### Deprecated
 - `isDark` (use `theme`); `'light' | 'dark' | 'auto'` remain valid `theme` values for this release.

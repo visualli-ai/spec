@@ -77,6 +77,12 @@ export interface VisualliRendererProps {
   layout?: 'auto' | 'touch' | 'pointer';
 
   /** Where the zoom / fit controls sit: the design system's 'bottom-right' (default) or the pre-0.2 'top-right'. */
+  /**
+   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
+   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
+   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   */
+  app?: boolean;
   controlsPosition?: 'bottom-right' | 'top-right';
 
   /**
@@ -338,6 +344,7 @@ export default function VisualliRenderer({
   respectForcedColors,
   layout,
   controlsPosition,
+  app,
   width = '100%',
   height = '100%',
   useWorker = true,
@@ -396,6 +403,7 @@ export default function VisualliRenderer({
         respectForcedColors={respectForcedColors}
         layout={layout}
         controlsPosition={controlsPosition}
+        app={app}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}

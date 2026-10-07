@@ -137,6 +137,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     preParsedVisualli={doc}
     fontBaseUrl="/fonts"
     controlsPosition={CONTROLS}
+    app
     // `theme` is the new prop; older SDK builds only know `isDark`.
     {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
     style={{ width: '100vw', height: '100vh' }}
