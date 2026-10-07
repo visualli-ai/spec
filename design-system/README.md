@@ -2,7 +2,7 @@
 
 Everything a `.visualli` viewer needs to look and move **exactly** like Visualli: the spec tokens for all 8 themes, the CSS of the spec components, the node / ring / connector geometry, and the fonts.
 
-> Generated from the Visualli design system (v0.1.9). **Don't edit files here** — changes arrive as pull requests from the design system, so the spec and the Visualli apps can never drift apart.
+> Generated from the Visualli design system (v0.2.0). **Don't edit files here** — changes arrive as pull requests from the design system, so the spec and the Visualli apps can never drift apart.
 
 ## Use it
 
