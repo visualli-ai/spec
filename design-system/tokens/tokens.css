@@ -1,4 +1,4 @@
-/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.1.7). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.1.8). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root, [data-theme="light"] {
   --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-ui: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
