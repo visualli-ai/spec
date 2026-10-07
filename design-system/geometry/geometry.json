@@ -1,5 +1,5 @@
 {
-  "$comment": "Normalized node outlines (rx = ry = 1; one shape per level, consecutive levels never repeat) and the depth-ring recipe. Connector math: geometry/blob.ts (edgePath, arrowPath).",
+  "$comment": "Normalized node outlines (rx = ry = 1; every idea uses SHAPE.idea, see geometry/blob.ts — the others are for explicit use) and the depth-ring recipe. Connector math: geometry/blob.ts (edgePath, arrowPath).",
   "blobShapes": [
     [
       [
