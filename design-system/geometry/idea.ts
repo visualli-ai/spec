@@ -42,7 +42,7 @@ export function wrapLines(text: string, maxWidth: number, measure: (s: string) =
 export function ideaSize(kind: IdeaKind, label: string, measure: (text: string, px: number) => number, labelScale = 1) {
   const px = IDEA.labelSize[kind] * labelScale * LABEL_GROWTH.idea;
   const fit = (w: number) => wrapLines(label, w - IDEA.labelInset, (t) => measure(t, px));
-  const base = IDEA.baseWidth[kind], max = IDEA.maxWidth[kind];
+  const base: number = IDEA.baseWidth[kind], max: number = IDEA.maxWidth[kind];
   let width = base, lines = fit(width);
   while (lines.length > IDEA.labelLines && width < max) { width = Math.min(max, width + IDEA.step); lines = fit(width); }
   const rx = width / 2;
