@@ -35,6 +35,33 @@ export const VIEW = {
   /** Fit to view never enlarges a layer beyond this. */ fitMax: 1.1,
 } as const;
 
+/** Touch gestures on the map (any touch input — phones, tablets and touchscreen laptops alike; it follows the pointer
+ *  in use, not the device, so a mouse or trackpad on the same laptop isn't affected). */
+export const GESTURE = {
+  /** Two fingers pinch to zoom the map's contents — ideas, connectors, containers and their labels — around the
+   *  point between the fingers, within VIEW's limits. Controls, the depth trail, the peek, chat and the page never scale. */ pinchZoom: true,
+  /** Moving both fingers pans the contents. */ twoFingerPan: true,
+  /** The pointers that pinch (PointerEvent.pointerType). */ pointers: ['touch'] as readonly string[],
+  /** Where the map is the page (an app: AppShell, the mobile app), it takes every touch gesture (touch-action: none),
+   *  so the browser never zooms the page. Embedded on a scrolling page (website, docs), one finger still scrolls the
+   *  page (touch-action: pan-x pan-y); two fingers that land together pinch the map. */ appTouchAction: 'none', embeddedTouchAction: 'pan-x pan-y',
+  /** Zoom never navigates: stepping inside and backing out stay explicit (tap an idea / Step inside, the depth trail,
+   *  Escape or Backspace). */ zoomNavigates: false,
+} as const;
+
+/** The zoom after a pinch: the zoom at the start, scaled by how far the fingers spread, within VIEW's limits. */
+export function pinchZoom(startZoom: number, startDistance: number, distance: number): number {
+  const z = startZoom * (distance / Math.max(startDistance, 1));
+  return Math.min(VIEW.zoomMax, Math.max(VIEW.zoomMin, z));
+}
+
+/** Keeps the map point that was under `from` under `to` when the scale changes from `s0` to `s1`: the new
+ *  translation, given the old one (screen = world × s + t). Used to zoom around the fingers. */
+export function zoomAround(t0: { x: number; y: number }, s0: number, s1: number, from: { x: number; y: number }, to: { x: number; y: number }): { x: number; y: number } {
+  const wx = (from.x - t0.x) / s0, wy = (from.y - t0.y) / s0;
+  return { x: to.x - wx * s1, y: to.y - wy * s1 };
+}
+
 /** How an input answers: a mouse hovers (peeks and terms open on hover); touch and pen tap. Null for unknown pointers. */
 export function pointerModeFor(pointerType: string): 'hover' | 'touch' | null {
   return pointerType === 'mouse' ? 'hover' : pointerType === 'touch' || pointerType === 'pen' ? 'touch' : null;
