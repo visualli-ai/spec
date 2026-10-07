@@ -20,7 +20,7 @@
   "files": [
     "dist",
     "src",
-    "design-system",
+    "licenses",
     "fonts"
   ],
   "scripts": {

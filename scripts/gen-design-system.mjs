@@ -9,7 +9,7 @@
 //   sdk/core/src/generated/designSystem.ts   tokens (all 8 themes), metrics, fonts, type styles
 //   sdk/core/src/generated/geometry/*.ts     every design-system/geometry/*.ts, verbatim copies
 //   sdk/react/src/generated/specCss.ts       tokens.css + spec.css as strings (injected at runtime)
-//   sdk/{core,react}/design-system/          LICENSE + NOTICE.md (shipped with the packages)
+//   sdk/{core,react}/licenses/visualli-design-system/   its LICENSE + NOTICE.md (shipped with the packages)
 //   sdk/react/fonts/Caveat-Variable.ttf      bundled font file (shipped with the package)
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -200,8 +200,8 @@ export const SPEC_BUNDLED_FONTS = ${j(bundledFonts)} as const;
 
 // ── licences + bundled font ship with the packages ───────────────────────────
 for (const pkg of [core, react]) {
-  copy(resolve(ds, 'LICENSE'), resolve(pkg, 'design-system/LICENSE'));
-  copy(resolve(ds, 'NOTICE.md'), resolve(pkg, 'design-system/NOTICE.md'));
+  copy(resolve(ds, 'LICENSE'), resolve(pkg, 'licenses/visualli-design-system/LICENSE'));
+  copy(resolve(ds, 'NOTICE.md'), resolve(pkg, 'licenses/visualli-design-system/NOTICE.md'));
 }
 copy(resolve(ds, 'fonts/Caveat-Variable.ttf'), resolve(react, 'fonts/Caveat-Variable.ttf'));
 // The playground / benchmark app serves the same file locally.

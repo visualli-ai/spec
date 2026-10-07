@@ -14,7 +14,7 @@
 - Peek, term definitions (the `semantic-anchors` extension), depth trail and canvas controls as DOM styled with the design system's CSS.
 - Accessible DOM mirror of the visible ideas (Tab, Enter / Space), `Esc` to step out, `+` / `-` / `0` to zoom and fit.
 - `@visualli/core`: `theme`, `rendering/nodeGeometry` and the design system's geometry (`blobPath`, `blobRadius`, `RINGS`, `edgePath`, `arrowPath`, `shapeForLevel`), `getSemanticAnchors`, `FlatNode.topic`, `MindMapConnection.style`.
-- `design-system/LICENSE` and `NOTICE.md` ship inside both packages; `@visualli/react` also ships `fonts/Caveat-Variable.ttf`.
+- The design system's `LICENSE` and `NOTICE.md` ship inside both packages (`licenses/visualli-design-system/`); `@visualli/react` also ships `fonts/Caveat-Variable.ttf`.
 - `npm run bench:compare` (`scripts/bench-compare.mjs`: this branch against `origin/main`, back to back on the same machine, a before / after table for the PR; `bench/results/README.md` explains the numbers), `npm run bench` / `scripts/bench.mjs`, `scripts/screenshots.mjs`, `scripts/smoke.mjs`; CI checks that generated files are current and that no colour, font or blob literal exists outside `src/generated/`.
 
 - Choreography from the design system's `geometry/motion.ts` (copied verbatim into `@visualli/core`: `MOTION`, `EASE`, `revealDelay`, `connectorDelay`, `revealTotal`, `bloomOffset`, `swapDelay`, `cssEase`, `easeBezier`, `motionVars`), run on the canvas:

@@ -65,7 +65,7 @@
   "files": [
     "dist",
     "src",
-    "design-system"
+    "licenses"
   ],
   "scripts": {
     "build": "node ../../../../scripts/gen-design-system.mjs && tsup",

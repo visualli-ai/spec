@@ -8,6 +8,13 @@
 
 `npm run check:design` fails on stale generated files and on colour, font or blob literals outside `src/generated/`.
 
+## Where the design system lives (one source, three places)
+| Folder | What it is | Edited by |
+|---|---|---|
+| `design-system/` (repo root) | The Visualli design system's spec subset, synced from visualli.ai — **the only source** | Sync PRs only |
+| `sdk/core/src/generated/`, `sdk/react/src/generated/` | Code generated from it (tokens, CSS strings, verbatim rule modules) | `npm run build` / `gen:design-system` |
+| `sdk/{core,react}/licenses/visualli-design-system/` | Its LICENSE + NOTICE, copied so they ship inside the npm packages (`sdk/react/fonts/` likewise ships the bundled font) | `gen:design-system` |
+
 ## What stays in the SDK
 Implementation, not design: parsing; the radial / linear layouts and container formations for layers whose ideas carry no positions (a file's own positions and colours always win); text measurement for the design system's sizing; and all performance work (culling, spatial index, caches, level-of-detail plumbing, the bench) — keep it in `@visualli/core`, and refactor it only to be equally fast or faster (`npm run bench:compare`). Anything a reader can see or feel — size, colour, type, motion, choreography, gestures, framing, placement — comes from the design system.
 
