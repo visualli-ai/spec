@@ -68,14 +68,19 @@ try {
   await page.keyboard.press('Enter');
   await awaitLayer();
   check('Enter steps inside', (await page.locator('.vi-trail li').count()) === 2);
-  check('depth trail shows the path', /Home/.test(await page.textContent('.vi-trail') ?? '') && /The Water Cycle/.test(await page.textContent('.vi-trail') ?? ''));
+  // The trail starts with the map's title; each entry is the idea stepped into, its dot in that idea's own colour.
+  const trail = await page.locator('.vi-trail li').allTextContents();
+  check('depth trail shows the path', trail.length === 2 && /The Water Cycle/.test(trail[0]) && /The Water Cycle/.test(trail[1]), trail.join(' › '));
+  const dots = await page.$$eval('.vi-trail li > button > svg > path', (ps) => ps.map((p) => p.getAttribute('fill')));
+  check('trail dots: the map in stone, then the clicked idea in its own colour', dots[0] === 'var(--topic-stone)' && dots[1] === '#a6f5d8', dots.join(', '));
   check('mirror lists the new layer', (await page.locator('.vi-sr button[data-node-id]').count()) >= 5);
 
   // ── peek on hover, with Step inside ──
   await hover('Evaporation');
   check('hover opens the peek card', /Evaporation/.test(await page.textContent('.vi-peek .vi-fact__title') ?? ''));
   check('peek has Step inside for ideas with a layer', (await page.locator('.vi-peek .vi-fact__step').count()) === 1);
-  check('peek takes the topic colours as CSS variables', /--topic-/.test(await page.getAttribute('.vi-peek', 'style') ?? ''));
+  // Evaporation's colour in the file is #b7e7f3: a custom colour, drawn as given (the design system's customColor).
+  check('peek takes the idea\'s own colour', /--vi-fact-fill:\s*#b7e7f3/.test(await page.getAttribute('.vi-peek', 'style') ?? ''), await page.getAttribute('.vi-peek', 'style') ?? '');
 
   // ── step inside via the peek button, find a term ──
   await hover('Condensation');
@@ -113,6 +118,8 @@ try {
   // ── controls ──
   await page.mouse.move(5, 5);
   const pct0 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  // As the design system's controls: zoom is shown relative to the layer's fit, and Fit is disabled while fitted.
+  check('a fitted layer reads 100%, with Fit disabled', pct0 === 100 && await page.isDisabled('button[aria-label="Fit map to view"]'), `${pct0}%`);
   await page.click('button[aria-label="Zoom in"]');
   await page.waitForTimeout(200);
   const pct1 = parseInt(await page.textContent('.vi-ctrls__pct'));
@@ -121,10 +128,10 @@ try {
   await page.waitForTimeout(200);
   const pct2 = parseInt(await page.textContent('.vi-ctrls__pct'));
   check('zoom out lowers it', pct2 < pct1, `${pct1}% -> ${pct2}%`);
-  await page.click('button[aria-label="Fit to screen"]');
+  await page.click('button[aria-label="Fit map to view"]');
   await page.waitForTimeout(300);
   const pctFit = parseInt(await page.textContent('.vi-ctrls__pct'));
-  check('fit changes the zoom', pctFit !== pct2, `${pct2}% -> ${pctFit}%`);
+  check('fit returns to 100%', pctFit === 100, `${pct2}% -> ${pctFit}%`);
 
   // ── zooming never navigates (the design system has no zoom-to-step rule) ──
   const depth = () => page.locator('.vi-trail li').count();
@@ -133,11 +140,12 @@ try {
   for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 600); await sleep(40); }
   await sleep(1200);
   check('zooming far out stays on the layer', (await depth()) === before, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
-  check('…and stops at the design system\'s zoom floor', parseInt(await page.textContent('.vi-ctrls__pct')) >= 30);
+  check('…and stops at the design system\'s zoom floor (VIEW.zoomMin of the fit)', parseInt(await page.textContent('.vi-ctrls__pct')) === 30);
   for (let i = 0; i < 16; i++) { await page.mouse.wheel(0, -600); await sleep(40); }
   await sleep(1200);
   check('zooming far in stays on the layer', (await depth()) === before, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
-  await page.click('button[aria-label="Fit to screen"]');
+  check('…and stops at the design system\'s zoom ceiling (VIEW.zoomMax of the fit)', parseInt(await page.textContent('.vi-ctrls__pct')) === 500);
+  await page.click('button[aria-label="Fit map to view"]');
   await sleep(300);
 
   // ⌘ / Ctrl + = zooms in, ⌘ / Ctrl + 0 fits (the design system's keyboard zoom)

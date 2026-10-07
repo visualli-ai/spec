@@ -14,14 +14,17 @@
 
 import React, { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
 import type Konva from 'konva';
-import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection, Comfort, ThemeInput, TopicName } from '@visualli/core';
+import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection, Comfort, ThemeInput } from '@visualli/core';
 import {
   parseVisualliFile,
   getNodesForLayer,
   getSemanticAnchors,
-  topicForColor,
+  ideaColor,
   motionVars,
   nodeRadii,
+  ringsFor,
+  peekPosition,
+  TRAIL,
   RBushSpatialIndex,
   GESTURE,
   pinchZoom,
@@ -29,8 +32,6 @@ import {
   VIEW,
   PEEK,
   SHEET,
-  ZOOM_MIN,
-  ZOOM_MAX,
 } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
@@ -52,10 +53,11 @@ import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
-import type { AnimatorViewport } from './animations/konvaLayerTransition';
+import type { AnimatorViewport } from './hooks/useLayerChoreography';
 import { useVisualli } from './context/VisualliContext';
 import { useDesign } from './design/useDesign';
-import { topicOf } from './design/drawing';
+import { ideaMeasure } from './design/measure';
+import { paintVars, type IdeaPaint } from './components/Overlays';
 import { ensureDesignSystemStyles, loadCanvasFonts, type DesignSystemAssets } from './design/runtime';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -85,11 +87,14 @@ function layerLabel(doc: VisualliDocument, layer: VisualliLayer, layerId: string
   return layer.description ?? layerId;
 }
 
-/** Topic of the idea a layer opens from (the first idea for the root layer). */
-function layerTopic(doc: VisualliDocument, layer: VisualliLayer, layerId: string): TopicName {
+/** Colour of the idea a layer opens from — the idea's own colour, including the sibling-order topic of an uncoloured
+ *  idea (the design system's TRAIL); the root layer is the map itself, TRAIL.rootTopic. */
+function layerPaint(doc: VisualliDocument, layer: VisualliLayer): IdeaPaint {
   const parentLayer = layer.parentLayerId ? doc.layers.get(layer.parentLayerId) : null;
-  const parentNode = parentLayer?.nodes.find(n => n.id === layer.parentNodeId) ?? layer.nodes[0];
-  return topicForColor(parentNode?.data.color, parentNode?.id ?? layerId);
+  const index = parentLayer ? parentLayer.nodes.findIndex(n => n.id === layer.parentNodeId) : -1;
+  if (!parentLayer || index < 0) return { topic: TRAIL.rootTopic };
+  const { topic, custom } = ideaColor(parentLayer.nodes[index]!.data.color, index);
+  return topic ? { topic } : { custom: custom! };
 }
 
 function getRootLayerId(doc: VisualliDocument): string | null {
@@ -223,7 +228,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const [currentLayerId, setCurrentLayerId] = useState<string | null>(null);
   const parentViewports                   = useRef<AnimatorViewport[]>([]);
   /** The idea being stepped into: the depth trail entry takes its colour and label from it, so they always match the idea that was clicked. */
-  const stepTargetRef                     = useRef<{ topic: TopicName; label: string } | null>(null);
+  const stepTargetRef                     = useRef<{ paint: IdeaPaint; label: string } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false);
 
@@ -233,21 +238,25 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!rootId) return;
     const rootLayer = doc.layers.get(rootId)!;
     setCurrentLayerId(rootId);
-    setNavStack([{ layerId: rootId, layer: rootLayer, label: 'Home', topic: layerTopic(doc, rootLayer, rootId) }]);
+    // The trail starts with the map's title (the design system's DepthTrail).
+    setNavStack([{ layerId: rootId, layer: rootLayer, label: doc.meta?.title || 'Home', paint: { topic: TRAIL.rootTopic } }]);
     parentViewports.current = [];
   }, [doc]);
 
   // ── Active layer → FlatNodes ──────────────────────────────────────────────
+  // Ideas are sized for their labels (the design system's idea.ts) with the real label face, so sizes are taken once
+  // the fonts are in, and again when the face or the label scale changes (readable type, larger text).
+  const sizing = useMemo(() => ({ measure: ideaMeasure(design), labelScale: design.labelScale }), [design.fontHand, design.labelScale, design.comfort.readableType, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
   const { flatNodes, connections, containers } = useMemo(() => {
     if (!doc || !currentLayerId) return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] };
     try {
       return {
-        flatNodes: getNodesForLayer(doc, currentLayerId),
+        flatNodes: getNodesForLayer(doc, currentLayerId, sizing),
         connections: getConnectionsForLayer(doc, currentLayerId),
         containers: getContainersForLayer(doc, currentLayerId) as ContainerGroup[],
       };
     } catch { return { flatNodes: [] as FlatNode[], connections: [] as MindMapConnection[], containers: [] as ContainerGroup[] }; }
-    }, [doc, currentLayerId]);
+    }, [doc, currentLayerId, sizing]);
     const viewport  = useViewportStore(s => ({
       centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel,
       canvasWidth: s.canvasWidth, canvasHeight: s.canvasHeight,
@@ -300,12 +309,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const dragMoveLatestRef   = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const dragStartPosRef     = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  // ── Chromatic immersion: the parent idea's topic tints the canvas at `immersion-alpha` ──
-  const immersionTopic = useMemo<TopicName | null>(() => {
+  // ── Chromatic immersion: the colour of the idea stepped into tints the canvas at `immersion-alpha` ──
+  const immersionFill = useMemo<string | null>(() => {
     if (!chromaticImmersion || !doc || !currentLayerId) return null;
     const layer = doc.layers.get(currentLayerId);
     if (!layer || layer.level === 0 || !layer.parentNodeId) return null;
-    return layerTopic(doc, layer, currentLayerId);
+    return paintVars(layerPaint(doc, layer)).fill;
   }, [chromaticImmersion, doc, currentLayerId]);
 
   // ── Spatial index (for stage-level hit detection) ─────────────────────────
@@ -314,7 +323,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (flatNodes.length === 0) { spatialIndexRef.current?.clear(); return; }
     const idx = new RBushSpatialIndex();
     idx.bulkLoad(flatNodes.map(n => {
-      const { rx, ry } = nodeRadii(n.width);
+      const { rx, ry } = nodeRadii(n);
       return { nodeId: n.id, bounds: { minX: n.x - rx, minY: n.y - ry, maxX: n.x + rx, maxY: n.y + ry } };
     }));
     spatialIndexRef.current = idx;
@@ -370,13 +379,13 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (node) {
         const oldPos = dragStartPosRef.current.get(nodeId);
         if (oldPos) {
-          const { rx, ry } = nodeRadii(node.width);
+          const { rx, ry } = nodeRadii(node);
           spatialIndexRef.current.remove(nodeId, {
             minX: oldPos.x - rx, minY: oldPos.y - ry,
             maxX: oldPos.x + rx, maxY: oldPos.y + ry,
           });
         }
-        const { rx, ry } = nodeRadii(node.width);
+        const { rx, ry } = nodeRadii(node);
         spatialIndexRef.current.insert(nodeId, {
           minX: x - rx, minY: y - ry,
           maxX: x + rx, maxY: y + ry,
@@ -397,10 +406,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const cw = canvasSizeRef.current.width  || containerRef.current?.getBoundingClientRect().width  || 800;
     const ch = canvasSizeRef.current.height || containerRef.current?.getBoundingClientRect().height || 600;
     // Every layer, the root included, fits the same way (the design system's fit; never beyond VIEW.fitMax).
-    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch);
+    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch, containers);
+    // Zoom limits (VIEW) apply relative to the fit, as in the design system's map.
+    useViewportStore.getState().setFit(zoomLevel, centerX, centerY);
     setCenter(centerX, centerY);
     setZoom(zoomLevel);
-  }, [flatNodes, setCenter, setZoom]);
+  }, [flatNodes, containers, setCenter, setZoom]);
 
   // Keep ref in sync after every render so async callbacks always use latest closure
   fitToScreenRef.current = fitToScreen;
@@ -435,7 +446,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         layerId: childLayerId,
         layer: childLayer,
         label: target?.label || layerLabel(doc, childLayer, childLayerId),
-        topic: target?.topic ?? layerTopic(doc, childLayer, childLayerId),
+        paint: target?.paint ?? layerPaint(doc, childLayer),
       }]);
       onLayerChange?.(childLayerId, childLayer);
     },
@@ -474,7 +485,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (!childLayerId) {
       return;
     }
-    const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId); } catch { return []; } })();
+    const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId, sizing); } catch { return []; } })();
     if (childNodes.length === 0) {
       return;
     }
@@ -487,15 +498,15 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     // rather than the arbitrary zoom that happened to trigger the navigation.
     const cw = canvasSizeRef.current.width  || 800;
     const ch = canvasSizeRef.current.height || 600;
-    const fitVp = calculateFitView(flatNodes, cw, ch);
+    const fitVp = calculateFitView(flatNodes, cw, ch, containers);
     parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: fitVp.zoomLevel });
 
-    stepTargetRef.current = { topic: topicOf(node), label: node.title };
+    stepTargetRef.current = { paint: { topic: node.topic, custom: node.custom }, label: node.title };
     setIsTransitioning(true);
     isTransitioningRef.current = true;
 
     diveInto(node, childLayerId, childNodes);
-  }, [doc, currentLayerId, nodes, design, isAnimating, diveInto]);
+  }, [doc, currentLayerId, nodes, design, isAnimating, diveInto, sizing, flatNodes, containers]);
 
   const handleNavigateBack = useCallback((targetIndex: number) => {
     if (targetIndex >= navStack.length - 1) return;
@@ -610,9 +621,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     setHoveredNode(null);
     const vp = useViewportStore.getState();
     const ch = canvasSizeRef.current.height || vp.canvasHeight;
-    const sh = Math.min(300, Math.round(ch * 0.5));
+    const sh = Math.min(SHEET.maxHeight, Math.round(ch * SHEET.heightRatio));
     const screenY = (node.y - vp.centerY) * vp.zoomLevel + ch / 2;
-    const reach = nodeRadii(node.width).ry * vp.zoomLevel;
+    const reach = nodeRadii(node).ry * vp.zoomLevel;
     if (screenY + reach > ch - sh - 12 || screenY - reach < 0) vp.setCenter(vp.centerX, node.y + sh / (2 * vp.zoomLevel));
   };
   // Close the sheet when the layer changes.
@@ -673,7 +684,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (stageDragCommittedRef.current) {
         const offset = stageDragNodeOffsetRef.current;
         handleDragMove(stageActiveNodeIdRef.current, worldX - offset.x, worldY - offset.y);
-        stage.container().style.cursor = 'grabbing';
         return;
       }
       return;
@@ -695,11 +705,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         setPointerNodeId(hovered);
         onNodeHover?.(hovered);
       }
-      if (hovered) {
-        stage.container().style.cursor = 'pointer';
-      } else {
-        stage.container().style.cursor = 'grab';
-      }
+      // Cursors as the design system's: an idea is a button (pointer); the canvas keeps the default.
+      stage.container().style.cursor = hovered ? 'pointer' : '';
     }
 
     rendererHandleMouseMove(e);
@@ -798,7 +805,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const p = pinchRef.current;
     if (!p || touchPointsRef.current.size < 2) return;
     const [a, b] = [...touchPointsRef.current.values()];
-    const z = pinchZoom(p.z0, p.d0, Math.hypot(a.x - b.x, a.y - b.y));
+    const fit = useViewportStore.getState().fitScale;
+    const z = pinchZoom(p.z0 / fit, p.d0, Math.hypot(a.x - b.x, a.y - b.y)) * fit; // VIEW's limits relative to the fit
     const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     const cw = canvasSizeRef.current.width || containerRef.current?.clientWidth || 800;
     const ch = canvasSizeRef.current.height || containerRef.current?.clientHeight || 600;
@@ -935,8 +943,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return;
     const cmd = e.metaKey || e.ctrlKey;
     if (cmd && !e.altKey) {
-      if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * VIEW.zoomStep, ZOOM_MAX)); }
-      else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / VIEW.zoomStep, ZOOM_MIN)); }
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(viewport.zoomLevel * VIEW.zoomStep); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(viewport.zoomLevel / VIEW.zoomStep); }
       else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
       return;
     }
@@ -988,7 +996,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       }}
     >
       {/* Chromatic immersion tint */}
-      <div className="vi-map__immersion" style={{ background: immersionTopic ? `var(--topic-${immersionTopic})` : 'transparent' }} aria-hidden="true" />
+      <div className="vi-map__immersion" style={{ background: immersionFill ?? 'transparent' }} aria-hidden="true" />
 
       {/* Konva canvas — opacity driven imperatively during transitions. Held back until the fonts are ready. */}
       <div ref={canvasWrapperRef} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
@@ -1015,6 +1023,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
               pressedNodeId={pressedNodeId}
               selectedNodeId={selectedNodeId}
               focusedNodeId={focusedNodeId}
+              touch={touchMode}
+              peekedNodeId={touchMode ? pinnedId : null}
             />
             {/* Container names above connectors and ideas, so nothing runs over them. */}
             <KonvaContainerLabelLayer containers={containers} connections={connections} design={design} />
@@ -1079,7 +1089,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       {touchMode && pinnedNode && (
         <PeekSheet
           node={pinnedNode}
-          topic={topicOf(pinnedNode)}
           anchors={anchors}
           height={sheetHeight}
           expanded={sheetExpanded}
@@ -1092,17 +1101,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
 
       {/* Pointer: the peek floats over the hovered idea — the design system's card */}
       {!touchMode && hoveredNode && hoveredNodePosition && peekNode && (() => {
-        const VP_PAD = 8;
-        const HALF_W = 160;
-        const APPROX_H = 90;
-        const containerW = canvasSizeRef.current.width || 800;
-        const safeLeft = Math.max(HALF_W + VP_PAD, Math.min(hoveredNodePosition.screenX, containerW - HALF_W - VP_PAD));
-        const rawTop   = hoveredNodePosition.screenY - 60 * hoveredNodePosition.zoom;
-        const safeTop  = Math.max(VP_PAD + APPROX_H, rawTop);
+        // Beside the idea — right of it if it fits, else left — level with it (the design system's peekPosition).
+        const rings = ringsFor(peekNode.branchCount);
+        const half = nodeRadii(peekNode).rx * (rings.length ? rings[rings.length - 1]!.scale : 1) * hoveredNodePosition.zoom;
+        const at = peekPosition({ x: hoveredNodePosition.screenX, y: hoveredNodePosition.screenY, half }, { w: canvasSizeRef.current.width || 800, h: canvasSizeRef.current.height || 600 });
         return (
           <div
             className="vi-map__fact"
-            style={{ left: safeLeft, top: safeTop, transform: 'translate(-50%, -100%)', pointerEvents: 'auto', zIndex: 'var(--z-card)' as unknown as number }}
+            style={{ left: at.left, top: at.top, pointerEvents: 'auto', zIndex: 'var(--z-card)' as unknown as number }}
             onMouseEnter={() => { tooltipHoverRef.current = true; if (clearTooltipTimerRef.current) { clearTimeout(clearTooltipTimerRef.current); clearTooltipTimerRef.current = null; } }}
             onMouseLeave={() => {
               tooltipHoverRef.current = false;
@@ -1115,7 +1121,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
           >
             <PeekCard
               node={peekNode}
-              topic={topicOf(peekNode)}
               anchors={anchors}
               onStepInside={peekHasChild ? () => stepInside(peekNode.id) : undefined}
               renderContent={renderNodeContent ? (summary) => renderNodeContent({ summary, nodeId: peekNode.id, nodeColor: peekNode.color, zoom: viewport.zoomLevel }) : undefined}

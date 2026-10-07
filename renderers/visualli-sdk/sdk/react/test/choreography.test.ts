@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MOTION, revealDelay, connectorDelay, revealTotal, bloomOffset, type FlatNode } from '@visualli/core';
-import { RevealClock, HoverTweens, REVEAL_STAGGER_CAP, REVEAL_MAX_NODES, type Arrival, type EdgeArrival } from '../src/design/choreography';
+import { RevealClock, HoverTweens, type Arrival, type EdgeArrival } from '../src/design/choreography';
 
 const nodes = (n: number): FlatNode[] => Array.from({ length: n }, (_, i) => ({ id: `n${i}`, x: i === 0 ? 0 : 100 * i, y: i === 0 ? 0 : 50, width: 120, level: 1, title: `n${i}` } as unknown as FlatNode));
 const arr = (): Arrival => ({ alpha: 1, scale: 1, dx: 0, dy: 0 });
@@ -38,13 +38,13 @@ describe('RevealClock (design-system motion.ts)', () => {
     c.stop();
   });
   it('compresses the stagger on large layers', () => {
-    const c = new RevealClock(); c.start(nodes(REVEAL_MAX_NODES), 0, false, 0);
-    expect(c.active(revealTotal(REVEAL_STAGGER_CAP) + 1)).toBe(false);
-    const a = arr(); expect(c.node(`n${REVEAL_MAX_NODES - 1}`, 0, 0, revealDelay(REVEAL_STAGGER_CAP - 1) + MOTION.reveal.duration + 1, a)).toBe(false);
+    const c = new RevealClock(); c.start(nodes(MOTION.largeLayer.bloomMax), 0, false, 0);
+    expect(c.active(revealTotal(MOTION.largeLayer.staggerSlots) + 1)).toBe(false);
+    const a = arr(); expect(c.node(`n${MOTION.largeLayer.bloomMax - 1}`, 0, 0, revealDelay(MOTION.largeLayer.staggerSlots - 1) + MOTION.reveal.duration + 1, a)).toBe(false);
     c.stop();
   });
-  it('layers beyond REVEAL_MAX_NODES fade in together instead of blooming', () => {
-    const c = new RevealClock(); c.start(nodes(REVEAL_MAX_NODES + 1), 50, false, 0);
+  it('layers beyond MOTION.largeLayer.bloomMax fade in together instead of blooming', () => {
+    const c = new RevealClock(); c.start(nodes(MOTION.largeLayer.bloomMax + 1), 50, false, 0);
     const a = arr(); c.node('n7', 700, 50, MOTION.reduced.fade / 2, a);
     expect(a.alpha).toBeCloseTo(0.5); expect(a.scale).toBe(1);
     expect(c.active(MOTION.reduced.fade + 60)).toBe(false);
@@ -52,7 +52,7 @@ describe('RevealClock (design-system motion.ts)', () => {
   });
   it('compresses connectors too', () => {
     const c = new RevealClock(); c.start(nodes(100), 500, false, 0);
-    expect(c.active(connectorDelay(REVEAL_STAGGER_CAP - 1, REVEAL_STAGGER_CAP) + MOTION.connector.draw + 1)).toBe(false);
+    expect(c.active(connectorDelay(MOTION.largeLayer.staggerSlots - 1, MOTION.largeLayer.staggerSlots) + MOTION.connector.draw + 1)).toBe(false);
     c.stop();
   });
   it('reduced motion: everything fades in together over reduced.fade, no bloom, no line drawing', () => {

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   THEME_NAMES, TOKENS, TOPICS, METRICS, TYPE_STYLES, CANVAS_STYLE, DESIGN_SYSTEM_VERSION,
-  resolveTheme, resolveComfort, metricsFor, topicForColor, topicStyle, isDarkTheme, token, labelScale,
+  resolveTheme, resolveComfort, metricsFor, topicStyle, isDarkTheme, token, labelScale,
 } from '../src/index';
 
 const repo = resolve(__dirname, '../../../../..');
@@ -39,7 +39,8 @@ describe('generated tokens match tokens.css', () => {
     expect(METRICS.zoomMax).toBe(5);
     expect(TYPE_STYLES['node-label'].size).toBe(22);
     expect(TYPE_STYLES['node-root'].size).toBe(30);
-    expect(CANVAS_STYLE.node.labelMaxLines).toBe(3);
+    expect(CANVAS_STYLE.node.dimmedOpacity).toBe(1);
+    expect(CANVAS_STYLE.node.dimmedOpacityTouch).toBe(0.6);
   });
 });
 
@@ -91,21 +92,6 @@ describe('comfort', () => {
 
 describe('topics', () => {
   it('has the 8 design-system topics', () => expect(TOPICS.length).toBe(8));
-  it('exact topic fills (any theme) map to their topic', () => {
-    for (const theme of THEME_NAMES) for (const t of TOPICS) expect(topicForColor(TOKENS[theme][`topic-${t}`])).toBe(t);
-  });
-  it('document colours resolve to the nearest topic', () => {
-    expect(topicForColor('#a6f5d8')).toBe('teal'); // mint
-    expect(topicForColor('#fff699')).toBe('sun'); // yellow
-    expect(topicForColor('#a1c4fc')).toBe('harbor'); // blue
-    expect(topicForColor('#faada5')).toBe('berry'); // pink
-    expect(topicForColor('#FFF')).toBeTruthy(); // short hex
-  });
-  it('missing / unparsable colours fall back to a stable pick from the seed', () => {
-    expect(topicForColor(undefined, 'node-a')).toBe(topicForColor(undefined, 'node-a'));
-    expect(topicForColor('not a colour', 7)).toBe(topicForColor('also bad', 7));
-    expect(new Set(Array.from({ length: 64 }, (_, i) => topicForColor(undefined, `n${i}`))).size).toBeGreaterThan(3);
-  });
   it('topic style uses the ring colour of the active theme', () => {
     expect(topicStyle('light', 'teal')).toEqual({ topic: 'teal', fill: TOKENS.light['topic-teal'], ring: TOKENS.light['topic-teal-ring'] });
     expect(topicStyle('dark', 'teal').ring).toBe(TOKENS.dark['topic-teal-ring']);

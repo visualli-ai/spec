@@ -10,13 +10,16 @@ import * as DS from '../../../../../design-system/geometry/blob';
 import { BLOB_SHAPES as DS_SHAPES } from '../../../../../design-system/geometry/blobShapes';
 import {
   BLOB_SHAPES, RINGS, blobPath, blobRadius, edgePath, arrowPath, shapeForLevel,
-  connectorGeometry, nodeRadii, outlineRadius, ringsFor, shapeOfLevel, METRICS,
+  connectorGeometry, nodeRadii, outlineRadius, ringsFor, shapeOfLevel, IDEA, ideaSize, approximateMeasure,
 } from '../src/index';
+import * as DS_IDEA from '../../../../../design-system/geometry/idea';
 
 const repo = resolve(__dirname, '../../../../..');
 const gen = resolve(__dirname, '../src/generated');
 const read = (p: string) => readFileSync(p, 'utf8');
 
+/** An idea `w` wide, its height as the design system sizes a short label (idea.ts: width × aspect). */
+const H = (w: number) => w * IDEA.aspect;
 const ANGLES = Array.from({ length: 72 }, (_, i) => (i * Math.PI * 2) / 72 - Math.PI);
 const WIDTHS = [200, 248, 311, 480];
 
@@ -34,7 +37,7 @@ describe('generated geometry is the design system, verbatim', () => {
 describe('outlines', () => {
   it.each(DS_SHAPES.map((_, i) => i))('shape %i: outline path matches for every size', (shape) => {
     for (const w of WIDTHS) {
-      const { rx, ry } = nodeRadii(w);
+      const { rx, ry } = nodeRadii({ width: w, height: H(w) });
       expect(blobPath(shape, rx, ry)).toBe(DS.blobPath(shape, rx, ry));
     }
   });
@@ -45,8 +48,13 @@ describe('outlines', () => {
       if (level > 0) expect(shapeOfLevel(level)).not.toBe(shapeOfLevel(level - 1));
     }
   });
-  it('idea radii follow the design system node aspect', () => {
-    expect(nodeRadii(METRICS.nodeWidth)).toEqual({ rx: METRICS.nodeWidth / 2, ry: METRICS.nodeHeight / 2 });
+  it('idea radii are half the idea size', () => {
+    expect(nodeRadii({ width: 200, height: 148 })).toEqual({ rx: 100, ry: 74 });
+  });
+  it('ideas are sized exactly like the design system (idea.ts)', () => {
+    const labels = ['Sleep', 'The forgetting curve', 'Seeing the same idea as both a picture and a sentence makes it stick twice', 'Pneumonoultramicroscopicsilicovolcanoconiosis explained in a very long title indeed, with more words than any idea should carry'];
+    for (const kind of ['root', 'node', 'mini'] as const) for (const l of labels) for (const k of [1, 1.15])
+      expect(ideaSize(kind, l, approximateMeasure, k)).toEqual(DS_IDEA.ideaSize(kind, l, approximateMeasure, k));
   });
 });
 
@@ -68,7 +76,7 @@ describe('connectors', () => {
   // Expected endpoints are built from the design system's own functions: the
   // outline of the outermost visible ring (or the body), plus edge-gap.
   const expectedRadius = (level: number, width: number, bc: number, angle: number) => {
-    const { rx, ry } = nodeRadii(width);
+    const { rx, ry } = nodeRadii({ width, height: H(width) });
     const shape = DS.shapeForLevel(level);
     const rings = Math.min(bc, 3);
     if (rings === 0) return DS.blobRadius(shape, rx, ry, angle);
@@ -81,7 +89,7 @@ describe('connectors', () => {
       for (const width of WIDTHS)
         for (const bc of [0, 1, 2, 3])
           for (const a of ANGLES)
-            expect(outlineRadius({ x: 0, y: 0, width, level, branchCount: bc }, a)).toBe(expectedRadius(level, width, bc, a));
+            expect(outlineRadius({ x: 0, y: 0, width, height: H(width), level, branchCount: bc }, a)).toBe(expectedRadius(level, width, bc, a));
   });
 
   it('endpoints sit edge-gap outside the real outline; curve and arrow come from edgePath/arrowPath', () => {
@@ -89,8 +97,8 @@ describe('connectors', () => {
     for (let level = 0; level < 6; level++)
       for (const bc of [0, 2, 3])
         for (const a of ANGLES) {
-          const from = { x: 120, y: -40, width: 248, level, branchCount: bc };
-          const to = { x: from.x + Math.cos(a) * 700, y: from.y + Math.sin(a) * 700, width: 311, level: (level + 1) % 6, branchCount: 3 - bc };
+          const from = { x: 120, y: -40, width: 248, height: H(248), level, branchCount: bc };
+          const to = { x: from.x + Math.cos(a) * 700, y: from.y + Math.sin(a) * 700, width: 311, height: H(311), level: (level + 1) % 6, branchCount: 3 - bc };
           const c = connectorGeometry(from, to);
           const theta = Math.atan2(to.y - from.y, to.x - from.x);
           const ra = expectedRadius(from.level, from.width, from.branchCount, theta) + DS_EDGE_GAP;

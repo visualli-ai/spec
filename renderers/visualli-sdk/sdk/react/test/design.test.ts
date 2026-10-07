@@ -87,3 +87,16 @@ describe('splitTerms', () => {
     expect((parts[1] as { word: string }).word).toBe('C++');
   });
 });
+
+import { paintVars } from '../src/components/Overlays';
+
+describe('idea colours in the DOM (peek, depth trail, immersion)', () => {
+  it('a topic uses the active theme’s properties; a custom colour is used as given (topicColors)', () => {
+    expect(paintVars({ topic: 'iris' })).toEqual({ fill: 'var(--topic-iris)', ring: 'var(--topic-iris-ring)' });
+    expect(paintVars({ custom: { fill: '#b7e7f3', ring: '#8fb4be' } })).toEqual({ fill: '#b7e7f3', ring: '#8fb4be' });
+    expect(paintVars({ custom: { fill: 'red', ring: null } })).toEqual({ fill: 'red', ring: 'var(--edge)' });
+  });
+  it('the map itself (the trail’s first entry) is TRAIL.rootTopic', () => {
+    expect(paintVars({})).toEqual({ fill: 'var(--topic-stone)', ring: 'var(--topic-stone-ring)' });
+  });
+});

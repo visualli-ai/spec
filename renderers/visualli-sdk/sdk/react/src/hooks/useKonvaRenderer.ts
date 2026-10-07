@@ -12,7 +12,6 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import type Konva from 'konva';
-import { ZOOM_MIN, ZOOM_MAX } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 import { useRenderConfigStore } from '../stores/stores';
 
@@ -140,19 +139,11 @@ export function useKonvaRenderer({
       isPanningRef.current = true;
       lastPanPointRef.current = { x: e.evt.clientX, y: e.evt.clientY };
       panAccumRef.current = { x: 0, y: 0 };
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = 'grabbing';
     }
   }, []);
 
   const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>): void => {
-    if (!isPanningRef.current) {
-      // Update cursor on empty canvas
-      const isOverEmpty = e.target === e.target.getStage();
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = isOverEmpty ? 'grab' : 'default';
-      return;
-    }
+    if (!isPanningRef.current) return;
     e.evt.preventDefault();
     const deltaX = e.evt.clientX - lastPanPointRef.current.x;
     const deltaY = e.evt.clientY - lastPanPointRef.current.y;
@@ -178,8 +169,6 @@ export function useKonvaRenderer({
         pan(x, y);
         panAccumRef.current = { x: 0, y: 0 };
       }
-      const stage = e.target.getStage();
-      if (stage) stage.container().style.cursor = 'grab';
     }
   }, [pan]);
 

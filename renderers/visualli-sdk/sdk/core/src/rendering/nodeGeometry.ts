@@ -13,15 +13,14 @@ export { BLOB_SHAPES, RINGS, arrowPath, blobPath, blobRadius, edgePath, shapeFor
 export { drawBlob } from '../generated/geometry/blob.js';
 
 /** Minimum a node needs to be drawn / connected. */
-export type NodeLike = Pick<FlatNode, 'x' | 'y' | 'width' | 'level' | 'branchCount'>;
+export type NodeLike = Pick<FlatNode, 'x' | 'y' | 'width' | 'height' | 'level' | 'branchCount'>;
 
 export const MAX_RINGS = RINGS.length;
 const DEG = Math.PI / 180;
 
-/** Outline radii of an idea: rx from its width, ry from the design system's node aspect (148 / 200). */
-export function nodeRadii(width: number): { rx: number; ry: number } {
-  const rx = width / 2;
-  return { rx, ry: (rx * METRICS.nodeHeight) / METRICS.nodeWidth };
+/** Outline radii of an idea: half its size (sized for its label by the design system's idea.ts). */
+export function nodeRadii(n: Pick<FlatNode, 'width' | 'height'>): { rx: number; ry: number } {
+  return { rx: n.width / 2, ry: n.height / 2 };
 }
 
 /** Rings an idea shows: one per layer beneath it, at most 3. */
@@ -50,7 +49,7 @@ const VISUAL_MARGIN = METRICS.nodeStroke * 2 + 24;
  * too. A circle bound is used so ring rotation can never push ink outside it.
  */
 export function nodeBounds(n: NodeLike): { minX: number; minY: number; maxX: number; maxY: number } {
-  const { rx, ry } = nodeRadii(n.width);
+  const { rx, ry } = nodeRadii(n);
   const rings = ringCount(n.branchCount);
   const scale = rings > 0 ? RINGS[rings - 1]!.scale : 1;
   const r = BLOB_MAX_NORM * Math.max(rx, ry) * scale + VISUAL_MARGIN;
@@ -63,7 +62,7 @@ export function nodeBounds(n: NodeLike): { minX: number; minY: number; maxX: num
  * ring (rotated like the ring is drawn), or the body when there are no rings.
  */
 export function outlineRadius(n: NodeLike, angle: number): number {
-  const { rx, ry } = nodeRadii(n.width);
+  const { rx, ry } = nodeRadii(n);
   const shape = shapeOfLevel(n.level);
   const rings = ringCount(n.branchCount);
   if (rings === 0) return blobRadius(shape, rx, ry, angle);

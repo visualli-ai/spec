@@ -7,7 +7,8 @@ import type { VisualliDocument } from '../types/document.js';
 import type { VisualliLayer } from '../types/layer.js';
 import type { FlatNode, NodeMap } from '../types/mindmap.js';
 import { countLayersBeneath } from './visualliParser.js';
-import { TOKENS, topicForColor, topicFromName, type TopicName } from '../theme/index.js';
+import { ideaColor } from '../theme/index.js';
+import { approximateMeasure, ideaKindOf, ideaSize, type IdeaMeasure } from '../rendering/ideaSize.js';
 import { applyCircularLayout, calculateOptimalRadiusPercentage } from '../layout/circularLayout.js';
 import { applyLinearHorizontalLayout, applyLinearVerticalLayout } from '../layout/linearLayout.js';
 
@@ -58,18 +59,22 @@ export function resolveNodeOverlaps(nodes: FlatNode[], maxIterations = 10): void
   }
 }
 
-// ── Colour → design-system topic ─────────────────────────────────────────────
+// ── Options ───────────────────────────────────────────────────────────────────
 
-/**
- * Document colours are topic names or free-form colours; the design system only
- * has topics. Names resolve to their topic, missing colours take the topics in
- * sibling order, free-form colours the nearest topic (theme/topicForColor).
- */
-function resolveNodeColor(nodeId: string, authored: string | undefined, siblingIndex: number): { color: string; topic: TopicName } {
-  const topic = topicForColor(authored, nodeId, siblingIndex);
-  // A named or missing colour is carried as its topic's fill; a free-form colour is kept as authored.
-  const named = !authored || !authored.trim() || topicFromName(authored);
-  return { color: named ? TOKENS.light[`topic-${topic}`]! : authored!, topic };
+export interface ConvertOptions {
+  /** Measures label text in the idea face (the renderer's font engine); ideas are sized with the design system's
+   *  ideaSize. Defaults to an approximation (half an em per character) where no font engine exists. */
+  measure?: IdeaMeasure;
+  /** Label scale (comfort: larger text is 1.15); ideas grow to fit the larger label. */
+  labelScale?: number;
+}
+
+/** Whether a layer's ideas carry their own positions: every idea has one, and (with more than one idea) they aren't
+ *  all on the same spot (a placeholder). Then the file's positions are used as they are. */
+function hasFilePositions(layer: VisualliLayer): boolean {
+  const ps = layer.nodes.map((n) => n.position);
+  if (!ps.length || !ps.every((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))) return false;
+  return ps.length === 1 || ps.some((p) => p!.x !== ps[0]!.x || p!.y !== ps[0]!.y);
 }
 
 // ── Container-formation Layout ────────────────────────────────────────────────
@@ -130,39 +135,33 @@ function proxyRadial(proxies: Proxy[], radius = 500): void {
 
 // ── Layer Conversion ──────────────────────────────────────────────────────────
 
-/**
- * Calculate dynamic node width based on title length.
- * Formula matches visualli.ai: max(200, title.length * 8 + 40)
- */
-function calculateNodeWidth(title: string): number {
-  return Math.max(200, title.length * 8 + 40);
-}
-
 function makeFlatNode(
-  nodeId: string,
-  label: string,
-  summary: string,
+  node: VisualliLayer['nodes'][number],
   layer: VisualliLayer,
-  authoredColor: string | undefined,
-  branchCount: number,
-  x = 0,
-  y = 0,
-  /** Position among the layer's ideas (file order): missing colours cycle the topics by it. */
-  siblingIndex = 0,
+  doc: VisualliDocument,
+  /** Position among the layer's ideas (file order): missing colours cycle the topics by it, and the first idea of the root radial layer is the root. */
+  siblingIndex: number,
+  opts: ConvertOptions,
 ): FlatNode {
-  const { color, topic } = resolveNodeColor(nodeId, authoredColor, siblingIndex);
+  const label = Array.isArray(node.data.label) ? (node.data.label as string[]).join(' ') : (node.data.label || 'Untitled');
+  const branchCount = countLayersBeneath(doc, node.id);
+  const kind = ideaKindOf(layer, siblingIndex);
+  const size = ideaSize(kind, label, opts.measure ?? approximateMeasure, opts.labelScale ?? 1);
+  const { topic, custom } = ideaColor(node.data.color, siblingIndex);
   return {
-    id: nodeId,
+    id: node.id,
     parentId: layer.parentNodeId ?? null,
-    x,
-    y,
+    x: node.position?.x ?? 0,
+    y: node.position?.y ?? 0,
     level: layer.level,
     title: label,
-    description: summary,
-    color,
-    topic,
-    width: calculateNodeWidth(label),
-    height: 80,
+    description: node.data.summary || '',
+    color: node.data.color ?? '',
+    ...(topic ? { topic } : {}),
+    ...(custom ? { custom } : {}),
+    kind,
+    width: size.width,
+    height: size.height,
     isExpanded: branchCount > 0,
     branchCount,
     createdAt: new Date(),
@@ -170,26 +169,8 @@ function makeFlatNode(
   };
 }
 
-function convertLayerWithContainers(
-  layer: VisualliLayer,
-  doc: VisualliDocument,
-): FlatNode[] {
+function layoutLayerWithContainers(layer: VisualliLayer, flatNodes: FlatNode[]): void {
   const PADDING = 80;
-  const flatNodes: FlatNode[] = [];
-
-  layer.nodes.forEach((node, i) => {
-    const label = Array.isArray(node.data.label)
-      ? (node.data.label as string[]).join(' ')
-      : (node.data.label || 'Untitled');
-    const branchCount = countLayersBeneath(doc, node.id);
-    flatNodes.push(
-      makeFlatNode(
-        node.id, label, node.data.summary || '', layer,
-        node.data.color, branchCount, 0, 0, i,
-      ),
-    );
-  });
-
   const byId = new Map(flatNodes.map((n: FlatNode) => [n.id, n]));
   const containerNodeIds = new Set<string>();
   const containerGroups = new Map<string, FlatNode[]>();
@@ -204,11 +185,8 @@ function convertLayerWithContainers(
   }
 
   const proxies: Proxy[] = [];
-  for (const node of layer.nodes) {
-    if (!containerNodeIds.has(node.id)) {
-      const nodeWidth = calculateNodeWidth(node.data.label);
-      proxies.push({ id: node.id, x: 0, y: 0, width: nodeWidth, height: 80 });
-    }
+  for (const n of flatNodes) {
+    if (!containerNodeIds.has(n.id)) proxies.push({ id: n.id, x: 0, y: 0, width: n.width, height: n.height });
   }
   for (const container of layer.containers) {
     const group = containerGroups.get(container.id);
@@ -231,60 +209,43 @@ function convertLayerWithContainers(
       if (fn) { fn.x = proxy.x; fn.y = proxy.y; }
     }
   }
+}
 
-  resolveNodeOverlaps(flatNodes);
-
-  return flatNodes;
+function layoutLayer(layer: VisualliLayer, flatNodes: FlatNode[]): void {
+  const layout = layer.layout || 'radial';
+  if (layout === 'linear-horizontal') {
+    applyLinearHorizontalLayout(flatNodes, { centerX: 0, centerY: 0 });
+  } else if (layout === 'linear-vertical') {
+    applyLinearVerticalLayout(flatNodes, { centerX: 0, centerY: 0 });
+  } else {
+    const pct = calculateOptimalRadiusPercentage(flatNodes.length, 2000, 2000, 200, 30);
+    applyCircularLayout(flatNodes, {
+      radiusPercentage: pct,
+      containerWidth: 2000,
+      containerHeight: 2000,
+      centerX: 0,
+      centerY: 0,
+    });
+  }
 }
 
 /**
- * Convert a single layer to an array of FlatNode objects.
- * Layout algorithm is determined by `layer.layout` (default: radial).
+ * Convert a single layer to an array of FlatNode objects, each sized for its label
+ * (the design system's idea.ts) and coloured by its colour rule (color.ts).
+ * Positions: the file's own when its ideas carry them; otherwise the SDK lays the
+ * layer out by `layer.layout` (default radial) and container formations.
  */
 export function convertLayerToFlatNodes(
   layer: VisualliLayer,
   doc: VisualliDocument,
+  opts: ConvertOptions = {},
 ): FlatNode[] {
-  if ((layer.containers ?? []).length > 0) {
-    return convertLayerWithContainers(layer, doc);
-  }
-
-  const flatNodes: FlatNode[] = [];
-
-  layer.nodes.forEach((node, i) => {
-    const label = Array.isArray(node.data.label)
-      ? (node.data.label as string[]).join(' ')
-      : (node.data.label || 'Untitled');
-    const branchCount = countLayersBeneath(doc, node.id);
-    flatNodes.push(
-      makeFlatNode(
-        node.id, label, node.data.summary || '', layer,
-        node.data.color, branchCount,
-        0, 0, i,
-      ),
-    );
-  });
-
-  if (flatNodes.length > 0) {
-    const layout = layer.layout || 'radial';
-    if (layout === 'linear-horizontal') {
-      applyLinearHorizontalLayout(flatNodes, { centerX: 0, centerY: 0 });
-    } else if (layout === 'linear-vertical') {
-      applyLinearVerticalLayout(flatNodes, { centerX: 0, centerY: 0 });
-    } else {
-      const pct = calculateOptimalRadiusPercentage(flatNodes.length, 2000, 2000, 200, 30);
-      applyCircularLayout(flatNodes, {
-        radiusPercentage: pct,
-        containerWidth: 2000,
-        containerHeight: 2000,
-        centerX: 0,
-        centerY: 0,
-      });
-    }
-  }
-
+  const flatNodes = layer.nodes.map((node, i) => makeFlatNode(node, layer, doc, i, opts));
+  if (flatNodes.length === 0 || hasFilePositions(layer)) return flatNodes;
+  for (const n of flatNodes) { n.x = 0; n.y = 0; }
+  if ((layer.containers ?? []).length > 0) layoutLayerWithContainers(layer, flatNodes);
+  else layoutLayer(layer, flatNodes);
   resolveNodeOverlaps(flatNodes);
-
   return flatNodes;
 }
 
@@ -292,11 +253,11 @@ export function convertLayerToFlatNodes(
  * Convert an entire .visualli document to a flat NodeMap.
  * All layers are converted and a children-index is built for O(1) tree traversal.
  */
-export function convertVisualliToFlatNodes(doc: VisualliDocument): NodeMap {
+export function convertVisualliToFlatNodes(doc: VisualliDocument, opts: ConvertOptions = {}): NodeMap {
   const map: NodeMap = new Map();
 
   for (const layer of doc.layers.values()) {
-    for (const node of convertLayerToFlatNodes(layer, doc)) {
+    for (const node of convertLayerToFlatNodes(layer, doc, opts)) {
       map.set(node.id, node);
     }
   }
@@ -317,9 +278,10 @@ export function convertVisualliToFlatNodes(doc: VisualliDocument): NodeMap {
  *
  * @param doc - Parsed .visualli document
  * @param layerId - Layer ID to extract
+ * @param opts - Text measurement and label scale for sizing ideas
  * @returns FlatNode array, or empty array if layer not found
  */
-export function getNodesForLayer(doc: VisualliDocument, layerId: string): FlatNode[] {
+export function getNodesForLayer(doc: VisualliDocument, layerId: string, opts: ConvertOptions = {}): FlatNode[] {
   const layer = doc.layers.get(layerId);
-  return layer ? convertLayerToFlatNodes(layer, doc) : [];
+  return layer ? convertLayerToFlatNodes(layer, doc, opts) : [];
 }

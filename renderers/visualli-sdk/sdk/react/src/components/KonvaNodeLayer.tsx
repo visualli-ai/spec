@@ -8,7 +8,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react';
 import { KLayer as Layer, KShape as Shape } from '../konvaCompat';
 import type Konva from 'konva';
-import { RBushSpatialIndex, layerBlooms, shadowsShown, TEXT_LABEL_HIDE_BELOW_ZOOM, intersectsViewport, nodeBounds, type FlatNode } from '@visualli/core';
+import { CANVAS_STYLE, RBushSpatialIndex, layerBlooms, shadowsShown, intersectsViewport, nodeBounds, type FlatNode } from '@visualli/core';
 import { useNodeStore } from '../stores/useNodeStore';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { useFontsEpoch } from '../design/runtime';
@@ -29,6 +29,10 @@ export interface KonvaNodeLayerProps {
   design?: Design;
   /** The layer's arrival timeline (bloom). Omit for no arrival animation. */
   clock?: RevealClock;
+  /** Touch layout (`.vi-map.is-touch`): the other ideas fade while one is peeked. */
+  touch?: boolean;
+  /** Idea whose peek (sheet) is open on touch. */
+  peekedNodeId?: string | null;
 }
 
 /** World-space rectangle currently visible in the stage. */
@@ -46,6 +50,8 @@ export default function KonvaNodeLayer({
   focusedNodeId = null,
   design = DEFAULT_DESIGN,
   clock,
+  touch = false,
+  peekedNodeId = null,
 }: KonvaNodeLayerProps) {
   const layerRef = useRef<Konva.Layer | null>(null);
   const fonts = useFontsEpoch();
@@ -61,8 +67,13 @@ export default function KonvaNodeLayer({
   }, [nodes, isDragging]);
   const byId = useMemo(() => (index ? new Map(nodes.map((n) => [n.id, n])) : null), [index, nodes]);
 
-  const highlighted = hoveredNodeId ?? selectedNodeId;
-  const dimOthers = design.theme.startsWith('focus') && highlighted !== null;
+  // While an idea is peeked the others are dimmed (`.vi-node.is-dimmed`): unchanged by default, faded in the focus
+  // themes and on touch — the design system's opacities (CANVAS_STYLE from css/spec.css).
+  const highlighted = hoveredNodeId ?? peekedNodeId ?? selectedNodeId;
+  const N = CANVAS_STYLE.node;
+  const focusTheme = design.theme.startsWith('focus');
+  const dimOpacity = focusTheme ? (touch ? N.dimmedOpacityFocusTouch : N.dimmedOpacityFocus) : touch ? N.dimmedOpacityTouch : N.dimmedOpacity;
+  const dimOthers = highlighted !== null && dimOpacity !== 1;
 
   // Hover / press / select: the design system's lift and ring turn, tweened rather than snapped.
   const tweens = useRef(new HoverTweens()).current;
@@ -76,7 +87,7 @@ export default function KonvaNodeLayer({
   }, [hoveredNodeId, pressedNodeId, selectedNodeId, design.comfort.reducedMotion, layerBlooms(nodes.length), tweens, frames]); // eslint-disable-line react-hooks/exhaustive-deps
   useLayoutEffect(() => clock?.subscribe(() => frames.run()), [clock, frames]);
 
-  useLayoutEffect(() => { layerRef.current?.batchDraw(); }, [nodes, index, design, fonts, hoveredNodeId, pressedNodeId, selectedNodeId, focusedNodeId, isDragging]);
+  useLayoutEffect(() => { layerRef.current?.batchDraw(); }, [nodes, index, design, fonts, hoveredNodeId, pressedNodeId, selectedNodeId, focusedNodeId, isDragging, touch, peekedNodeId]);
 
   const sceneFunc = (ctx: { _context: CanvasRenderingContext2D }, shape: Konva.Shape) => {
     const stage = shape.getStage();
@@ -90,7 +101,7 @@ export default function KonvaNodeLayer({
 
     const c = ctx._context;
     const m = c.getTransform();
-    const opt = { shadows: !isDragging && shadowsShown(visible.length), labels: zoom >= TEXT_LABEL_HIDE_BELOW_ZOOM, k: Math.hypot(m.a, m.b), base: m };
+    const opt = { shadows: !isDragging && shadowsShown(visible.length), k: Math.hypot(m.a, m.b), base: m, dimOpacity };
     const st: IdeaState = { ...IDLE };
     const now = performance.now();
     const arrival: Arrival = { alpha: 1, scale: 1, dx: 0, dy: 0 };

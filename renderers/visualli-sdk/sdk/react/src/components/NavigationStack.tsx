@@ -4,15 +4,16 @@
 // the design system's trail (DepthTrail) from layer entries.
 
 import React, { memo, useMemo } from 'react';
-import { topicForColor, type TopicName, type VisualliLayer } from '@visualli/core';
-import { DepthTrail } from './Overlays';
+import type { VisualliLayer } from '@visualli/core';
+import { DepthTrail, type IdeaPaint } from './Overlays';
 
 export interface NavStackEntry {
   layerId: string;
   layer: VisualliLayer;
   label: string;
-  /** Design-system topic of the idea this layer opens from (derived from the layer id when absent). */
-  topic?: TopicName;
+  /** Colour of the idea this layer opens from (the design system's TRAIL: the clicked idea's own colour); the first
+   *  entry, the map's title, is TRAIL.rootTopic. */
+  paint?: IdeaPaint;
 }
 
 export interface NavigationStackProps {
@@ -27,7 +28,7 @@ export interface NavigationStackProps {
 
 const NavigationStack = memo(function NavigationStack({ stack, onNavigateBack, top, left }: NavigationStackProps) {
   const entries = useMemo(
-    () => stack.map((e) => ({ layerId: e.layerId, label: e.label, level: e.layer.level, topic: e.topic ?? topicForColor(undefined, e.layerId) })),
+    () => stack.map((e) => ({ layerId: e.layerId, label: e.label, level: e.layer.level, paint: e.paint ?? {} })),
     [stack],
   );
   return (

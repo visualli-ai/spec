@@ -3,10 +3,11 @@
 // Peek, term cards, depth trail and canvas controls are plain DOM styled by the
 // design system's own CSS (.vi-fact, .vi-anchor-card, .vi-trail, .vi-ctrls,
 // .vi-iconbtn …). No colours or fonts are set here: topic colours reach the CSS
-// as the --topic-* custom properties of the active theme.
+// as the --topic-* custom properties of the active theme; a custom colour is used
+// as given (the design system's colour rule).
 
 import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { SHEET, TERM, VIEW, ZOOM_MAX, ZOOM_MIN, blobPath, hoverOpensTerm, shapeOfLevel, type FlatNode, type SemanticAnchor, type TopicName } from '@visualli/core';
+import { SHEET, TERM, TRAIL, VIEW, blobPath, hoverOpensTerm, shapeOfLevel, type FlatNode, type SemanticAnchor } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 
 // ── Icons (stroke = currentColor) ─────────────────────────────────────────────
@@ -22,6 +23,7 @@ const FitIcon = () => <Icon><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a
 const ChevronLeftIcon = () => <Icon size={14}><polyline points="15 6 9 12 15 18" /></Icon>;
 const ChevronIcon = () => <Icon size={14}><polyline points="9 6 15 12 9 18" /></Icon>;
 const ExternalIcon = () => <Icon size={14}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></Icon>;
+const HomeIcon = () => <Icon size={12}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>;
 const CloseIcon = () => <Icon size={18}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></Icon>;
 
 // ── Canvas controls ───────────────────────────────────────────────────────────
@@ -39,16 +41,20 @@ export const ZoomControls = memo(function ZoomControls({ onFit, touch = false }:
   const size = touch ? 'vi-iconbtn--md' : 'vi-iconbtn--sm';
   const zoom = useViewportStore((s) => s.zoomLevel);
   const setZoom = useViewportStore((s) => s.setZoom);
-  const zoomIn = useCallback(() => setZoom(Math.min(ZOOM_MAX, zoom * VIEW.zoomStep)), [zoom, setZoom]);
-  const zoomOut = useCallback(() => setZoom(Math.max(ZOOM_MIN, zoom / VIEW.zoomStep)), [zoom, setZoom]);
+  // As the design system's canvas controls: zoom is shown relative to the layer's fit (fit = 100%), the store keeps
+  // it within VIEW's limits, and Fit is disabled while the whole layer is already in view.
+  const fitted = useViewportStore((s) => Math.abs(s.zoomLevel - s.fitScale) < 1e-6 && Math.abs(s.centerX - s.fitCenterX) < 0.5 && Math.abs(s.centerY - s.fitCenterY) < 0.5);
+  const fit = useViewportStore((s) => s.fitScale);
+  const zoomIn = useCallback(() => setZoom(zoom * VIEW.zoomStep), [zoom, setZoom]);
+  const zoomOut = useCallback(() => setZoom(zoom / VIEW.zoomStep), [zoom, setZoom]);
   return (
-    <div className="vi-ctrls" role="group" aria-label="Zoom controls" data-help="zoom-controls">
-      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom out" disabled={zoom <= ZOOM_MIN} onClick={zoomOut}><MinusIcon /></button>
-      <span className="vi-ctrls__pct" aria-live="polite">{Math.round(zoom * 100)}%</span>
-      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom in" disabled={zoom >= ZOOM_MAX} onClick={zoomIn}><PlusIcon /></button>
+    <div className="vi-ctrls" role="toolbar" aria-label="Canvas" data-help="zoom-controls">
+      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom out" onClick={zoomOut}><MinusIcon /></button>
+      <span className="vi-ctrls__pct" aria-live="polite">{Math.round((zoom / fit) * 100)}%</span>
+      <button type="button" className={`vi-iconbtn ${size}`} aria-label="Zoom in" onClick={zoomIn}><PlusIcon /></button>
       {onFit && (<>
         <span className="vi-ctrls__div" aria-hidden="true" />
-        <button type="button" className={`vi-iconbtn ${size}`} aria-label="Fit to screen" onClick={onFit}><FitIcon /></button>
+        <button type="button" className={`vi-iconbtn ${size}`} aria-label="Fit map to view" disabled={fitted} onClick={onFit}><FitIcon /></button>
       </>)}
     </div>
   );
@@ -56,13 +62,29 @@ export const ZoomControls = memo(function ZoomControls({ onFit, touch = false }:
 
 // ── Depth trail ───────────────────────────────────────────────────────────────
 
-export interface TrailEntry { layerId: string; label: string; level: number; topic: TopicName }
+/** An idea's colour: its topic, or a custom colour drawn as given (FlatNode.topic / FlatNode.custom). */
+export type IdeaPaint = Pick<FlatNode, 'topic' | 'custom'>;
 
-const TrailDot = ({ level, topic }: { level: number; topic: TopicName }) => (
-  <svg className="vi-icon" width="16" height="16" viewBox="-9 -9 18 18" aria-hidden="true">
-    <path d={blobPath(shapeOfLevel(level), 6.5, 6.5)} style={{ fill: `var(--topic-${topic})`, stroke: `var(--topic-${topic}-ring)`, strokeWidth: 1.5 }} />
-  </svg>
-);
+/** CSS fill + ring for an idea's colour, as the design system's topicColors: the active theme's topic properties, or
+ *  the custom colour with its darker ring (the `edge` token when it has none). */
+export function paintVars(p: IdeaPaint): { fill: string; ring: string } {
+  if (p.custom) return { fill: p.custom.fill, ring: p.custom.ring ?? 'var(--edge)' };
+  const t = p.topic ?? TRAIL.rootTopic;
+  return { fill: `var(--topic-${t})`, ring: `var(--topic-${t}-ring)` };
+}
+
+/** A depth trail entry: the idea stepped into (its title and colour); the first is the map's title. */
+export interface TrailEntry { layerId: string; label: string; level: number; paint: IdeaPaint }
+
+/** The trail dot: the level's blob shape in the idea's colour (the design system's TRAIL). */
+const TrailDot = ({ level, paint, current }: { level: number; paint: IdeaPaint; current: boolean }) => {
+  const { fill, ring } = paintVars(paint);
+  return (
+    <svg width={TRAIL.dotBox} height={TRAIL.dotBox} viewBox={`${-TRAIL.dotBox / 2} ${-TRAIL.dotBox / 2} ${TRAIL.dotBox} ${TRAIL.dotBox}`} aria-hidden="true">
+      <path d={blobPath(shapeOfLevel(level), TRAIL.dotRadius, TRAIL.dotRadius)} fill={fill} stroke={ring} strokeWidth={current ? TRAIL.currentStroke : TRAIL.stroke} />
+    </svg>
+  );
+};
 
 export interface DepthTrailProps { stack: TrailEntry[]; onNavigateBack: (index: number) => void }
 
@@ -75,7 +97,8 @@ export const DepthTrail = memo(function DepthTrail({ stack, onNavigateBack }: De
         {stack.map((e, i) => (
           <li key={`${e.layerId}-${i}`} className={i === current ? 'is-current' : undefined}>
             <button type="button" disabled={i === current} aria-current={i === current ? 'location' : undefined} onClick={() => onNavigateBack(i)}>
-              <span><TrailDot level={e.level} topic={e.topic} />{e.label}</span>
+              <TrailDot level={e.level} paint={e.paint} current={i === current} />
+              <span>{i === 0 ? <><HomeIcon /> {e.label}</> : e.label}</span>
             </button>
           </li>
         ))}
@@ -186,7 +209,6 @@ export function TermAnchor({ anchor }: { anchor: SemanticAnchor }) {
 
 export interface PeekCardProps {
   node: FlatNode;
-  topic: TopicName;
   anchors: ReadonlyArray<SemanticAnchor>;
   /** Present when the idea has a layer inside it. */
   onStepInside?: () => void;
@@ -195,9 +217,10 @@ export interface PeekCardProps {
   renderContent?: (summary: string) => React.ReactNode;
 }
 
-export const PeekCard = memo(function PeekCard({ node, topic, anchors, onStepInside, onClose, renderContent }: PeekCardProps) {
+export const PeekCard = memo(function PeekCard({ node, anchors, onStepInside, onClose, renderContent }: PeekCardProps) {
   const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
-  const style = { ['--vi-fact-fill' as string]: `var(--topic-${topic})`, ['--vi-fact-ring' as string]: `var(--topic-${topic}-ring)` } as React.CSSProperties;
+  const { fill, ring } = paintVars(node);
+  const style = { ['--vi-fact-fill' as string]: fill, ['--vi-fact-ring' as string]: ring } as React.CSSProperties;
   return (
     <div className="vi-fact vi-peek" style={style} role="dialog" aria-label={node.title} data-node-tooltip="true">
       <div className="vi-fact__head">
@@ -239,14 +262,15 @@ export interface PeekSheetProps extends Omit<PeekCardProps, 'onClose'> {
  * Stays open until dismissed (close button, swipe down, tap on empty canvas, Esc).
  * A tapped term opens its definition inside the sheet, with a Back button.
  */
-export const PeekSheet = memo(function PeekSheet({ node, topic, anchors, onStepInside, onClose, renderContent, expanded, onToggleExpanded, height }: PeekSheetProps) {
+export const PeekSheet = memo(function PeekSheet({ node, anchors, onStepInside, onClose, renderContent, expanded, onToggleExpanded, height }: PeekSheetProps) {
   const [term, setTerm] = useState<SemanticAnchor | null>(null);
   const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
   const startY = useRef<number | null>(null);
   const swiped = useRef(false);
+  const { fill, ring } = paintVars(node);
   const style = {
-    ['--vi-fact-fill' as string]: `var(--topic-${topic})`,
-    ['--vi-fact-ring' as string]: `var(--topic-${topic}-ring)`,
+    ['--vi-fact-fill' as string]: fill,
+    ['--vi-fact-ring' as string]: ring,
     ['--vi-sheet-h' as string]: `${height}px`,
     zIndex: 'var(--z-card)',
   } as React.CSSProperties;

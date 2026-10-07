@@ -91,9 +91,10 @@ export function screenToWorld(
 
 // ── Pan / Zoom ────────────────────────────────────────────────────────────────
 
-/** Clamp zoom to [ZOOM_MIN, ZOOM_MAX]. */
-export function clampZoom(zoom: number): number {
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+/** Clamp zoom to the design system's limits (VIEW: ZOOM_MIN–ZOOM_MAX), which apply to the zoom relative to the
+ *  layer's fit (`fit`: the fit-to-view scale), as in the design system's map (scale = fit × zoom). */
+export function clampZoom(zoom: number, fit = 1): number {
+  return Math.min(ZOOM_MAX * fit, Math.max(ZOOM_MIN * fit, zoom));
 }
 
 /**
@@ -134,8 +135,9 @@ export function zoomViewport(
   pivotY?: number,
   canvasWidth  = DEFAULT_CANVAS_WIDTH,
   canvasHeight = DEFAULT_CANVAS_HEIGHT,
+  fit = 1,
 ): ViewportState {
-  const newZoom = clampZoom(viewport.zoomLevel * (1 + delta));
+  const newZoom = clampZoom(viewport.zoomLevel * (1 + delta), fit);
 
   let cx = viewport.centerX;
   let cy = viewport.centerY;

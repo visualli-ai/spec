@@ -176,7 +176,8 @@ try {
   {
     const { ctx, page } = await open({ width: 390, height: 844 }, { touch: true }, '&doc=noparent');
     const fillOf = (sel) => page.evaluate((q) => { const el = document.querySelector(q); return el && getComputedStyle(el).fill; }, sel);
-    for (const [title, topicVar] of [['Beta', '--topic-harbor'], ['Alpha', '--topic-berry']]) {
+    // Beta and Alpha are custom colours in the file (#a1c4fc, #faada5): the dot is drawn in exactly that colour.
+    for (const [title, colour] of [['Beta', '#a1c4fc'], ['Alpha', '#faada5']]) {
       const p = await pos(page, title);
       await tap(page, p.x, p.y);
       await page.waitForSelector('.vi-fact--sheet');
@@ -185,8 +186,8 @@ try {
       await layerChange(page);
       await tap(page, p2.x, p2.y);
       await awaitLayer(page);
-      const dot = await fillOf('.vi-trail li:last-child svg path');
-      const expected = await page.evaluate((v) => getComputedStyle(document.querySelector('.vi-map')).getPropertyValue(v).trim(), topicVar);
+      const dot = await fillOf('.vi-trail li:last-child > button > svg > path');
+      const expected = colour;
       const toRgb = (hex) => { const n = parseInt(hex.slice(1), 16); return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`; };
       check(`trail: dot after stepping into ${title} has ${title}'s colour`, dot === toRgb(expected), `${dot} vs ${toRgb(expected)}`);
       check(`trail: entry is labelled ${title}`, (await page.textContent('.vi-trail li:last-child'))?.trim() === title);

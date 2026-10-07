@@ -38,8 +38,8 @@ import {
 - **`getBlobTypeForLayer(level: number)`** - Get blob type for a specific tree level
 - **`drawBlobPath(ctx, radiusX, radiusY, blobType)`** - Draw blob path on canvas
 
-### Text Scaling (`textScaling.ts`)
-- Text scaling configuration utilities
+### Idea size (`ideaSize.ts`)
+- The design system's idea sizing and label growth (`idea.ts`); renderers pass their text measurement
 
 ## Adding New Configuration
 

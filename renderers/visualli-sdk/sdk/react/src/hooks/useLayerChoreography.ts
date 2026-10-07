@@ -19,7 +19,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import type Konva from 'konva';
 import { MOTION, cssEase, swapDelay, type FlatNode } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
-import type { AnimatorViewport } from '../animations/konvaLayerTransition';
+/** A viewport to return to: centre and zoom. */
+export interface AnimatorViewport { centerX: number; centerY: number; zoomLevel: number }
 import { calculateFitView } from '../utils/layerNavigation';
 
 export interface LayerChoreographyOptions {

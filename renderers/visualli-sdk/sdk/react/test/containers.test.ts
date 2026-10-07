@@ -4,12 +4,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { CANVAS_STYLE, HULL, type FlatNode } from '@visualli/core';
+import { CANVAS_STYLE, HULL, labelGrowth, type FlatNode } from '@visualli/core';
 import { makeDesign } from '../src/design/design';
-import { layoutContainers, measurePill, pillTextScale } from '../src/design/containers';
+import { layoutContainers, measurePill } from '../src/design/containers';
 
 const d = makeDesign('light', { readableType: false, largerText: false, reducedMotion: false });
-const node = (id: string, x: number, y: number): FlatNode => ({ id, x, y, width: 200, level: 1, branchCount: 0 } as unknown as FlatNode);
+const node = (id: string, x: number, y: number): FlatNode => ({ id, x, y, width: 200, height: 148, level: 1, branchCount: 0 } as unknown as FlatNode);
 const nodes = new Map([node('half', -212, -165), node('ebb', 212, -165), node('penalty', 212, 165), node('fluency', -212, 165)].map((n) => [n.id, n] as const));
 
 describe('container layout', () => {
@@ -22,6 +22,12 @@ describe('container layout', () => {
     expect([clear.x, clear.y, clear.side]).toEqual([0, -40, 'bottom']);
     const crossed = layoutContainers([{ id: 'g', label: 'What Ebbinghaus found', nodeIds: ['half', 'ebb'] }], nodes, [{ from: 'half', to: 'penalty' }], d)[0]!.pill!;
     expect([crossed.x, crossed.y, crossed.side]).toEqual([0, -290, 'top']);
+  });
+  it('a large idea widens the hull (HULL_CLEAR)', () => {
+    const big = new Map(nodes); big.set('ebb', { ...big.get('ebb')!, width: 360, height: 400 });
+    const [c] = layoutContainers([{ id: 'g', label: 'What Ebbinghaus found', nodeIds: ['half', 'ebb'] }], big, [], d);
+    expect(c!.hull.x1).toBeGreaterThan(212 + HULL.padX);
+    expect(c!.hull.y1).toBeGreaterThan(-165 + HULL.padY);
   });
   it('two containers never share a spot', () => {
     const [a, b] = layoutContainers([
@@ -45,7 +51,7 @@ describe('pill style comes from css/spec.css', () => {
     expect(d.tokens[CANVAS_STYLE.group.labelFill]).toBe(d.tokens['topic-stone']);
   });
   it('text grows like idea labels when zoomed out (1 → 1.3), never shrinks', () => {
-    expect(pillTextScale(1)).toBe(1); expect(pillTextScale(2)).toBe(1); expect(pillTextScale(0.5)).toBe(1.3);
+    expect(labelGrowth(1).idea).toBe(1); expect(labelGrowth(2).idea).toBe(1); expect(labelGrowth(0.5).idea).toBe(1.3);
     expect(measurePill('A', d, 1.3, null).h).toBeGreaterThan(measurePill('A', d, 1, null).h);
   });
 });

@@ -11,21 +11,16 @@
 
 import {
   CANVAS_STYLE,
-  DETAIL,
+  IDEA,
   ideaDetail,
-  EDGE_LABEL_BASE_FONT_PX,
   RINGS,
   TYPE_STYLES,
-  NODE_LABEL_PADDING_X,
   blobPath,
-  computeEdgeLabelScale,
-  computeNodeTextWorldScale,
-  labelFontSize,
+  ideaStyle,
+  labelGrowth,
   nodeRadii,
   ringsFor,
   shapeOfLevel,
-  topicForColor,
-  topicStyle,
   type ConnectorGeometry,
   type FlatNode,
 } from '@visualli/core';
@@ -70,8 +65,9 @@ function dashOf(spec: string): number[] {
 const lineCache = new Map<string, string[]>();
 const MAX_CACHED_LAYOUTS = 8192;
 
-/** Greedy word wrap at `maxWidth` (natural px), clamped to `maxLines` with an ellipsis. */
-export function layoutLabel(c: CanvasRenderingContext2D, text: string, font: string, maxWidth: number, maxLines: number): string[] {
+/** Greedy word wrap at `maxWidth` (natural px), clamped to `maxLines` with an ellipsis (ideas pass Infinity: they are
+ *  sized to hold their whole label). */
+export function layoutLabel(c: CanvasRenderingContext2D, text: string, font: string, maxWidth: number, maxLines: number = Infinity): string[] {
   const key = `${fontsEpoch()}|${font}|${maxWidth}|${text}`;
   const hit = lineCache.get(key);
   if (hit) return hit;
@@ -126,21 +122,19 @@ export const IDLE: IdeaState = { hovered: false, pressed: false, selected: false
 export interface IdeaOptions {
   /** Drop shadows are skipped for big maps / while dragging. */
   shadows: boolean;
-  /** Labels are hidden when zoomed far out. */
-  labels: boolean;
   /** Device pixels per world unit (canvas shadows are in device space). Computed once per frame by the caller; derived from the transform when omitted. */
   k?: number;
+  /** Opacity of a dimmed idea (the design system's `.vi-node.is-dimmed` for the theme and layout); default the focus themes'. */
+  dimOpacity?: number;
   /** The context's transform at the start of the frame. When given, ideas are placed with setTransform (no save/restore); the caller must restore it afterwards. */
   base?: DOMMatrix;
 }
 
-/** @deprecated Use DETAIL.speckBelow (the design system's level of detail, geometry/detail.ts). */
-export const LOD_TINY_PX = DETAIL.speckBelow;
-/** @deprecated Use DETAIL.bodyOnlyBelow (geometry/detail.ts). */
-export const LOD_DETAIL_PX = DETAIL.bodyOnlyBelow;
+/** Fill + ring an idea is drawn with in `d`'s theme: its topic's, or its custom colour as given (the design system's colour rule). */
+export const ideaColors = (d: Design, n: Pick<FlatNode, 'topic' | 'custom'>) => ideaStyle(d.theme, n);
 
-/** The topic an idea is drawn with. */
-export const topicOf = (n: Pick<FlatNode, 'topic' | 'color' | 'id'>) => n.topic ?? topicForColor(n.color, n.id);
+/** An idea's label size in natural px: the design system's size for its kind × the comfort label scale. */
+export const ideaLabelPx = (n: Pick<FlatNode, 'kind'>, d: Design): number => IDEA.labelSize[n.kind ?? 'node'] * d.labelScale;
 
 /**
  * Paint one idea (rings, body, label) centred on node.x / node.y.
@@ -150,8 +144,8 @@ export const topicOf = (n: Pick<FlatNode, 'topic' | 'color' | 'id'>) => n.topic 
  * the base transform after the last idea. Without it, state is saved and restored.
  */
 export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design, zoom: number, st: IdeaState, opt: IdeaOptions): void {
-  const { rx, ry } = nodeRadii(node.width);
-  const { fill, ring } = topicStyle(d.theme, topicOf(node));
+  const { rx, ry } = nodeRadii(node);
+  const { fill, ring } = ideaColors(d, node);
   const screenW = node.width * zoom;
   const base = opt.base;
 
@@ -159,7 +153,7 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   // Level of detail (geometry/detail.ts): a speck below DETAIL.speckBelow, body only below DETAIL.bodyOnlyBelow.
   const detail = ideaDetail(screenW, st.selected || st.focused || st.hovered);
   if (detail === 'speck') {
-    const a = (st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (st.arrival ? st.arrival.alpha : 1);
+    const a = (st.dimmed ? opt.dimOpacity ?? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (st.arrival ? st.arrival.alpha : 1);
     if (a !== 1) c.globalAlpha = a;
     c.fillStyle = fill;
     c.fillRect(node.x - rx, node.y - ry, rx * 2, ry * 2);
@@ -183,7 +177,7 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   else { c.save(); c.translate(x, y); }
   if (arr) c.scale(arr.scale, arr.scale);
   c.lineJoin = 'round';
-  const baseAlpha = (st.dimmed ? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (arr ? arr.alpha : 1);
+  const baseAlpha = (st.dimmed ? opt.dimOpacity ?? CANVAS_STYLE.node.dimmedOpacityFocus : 1) * (arr ? arr.alpha : 1);
   c.globalAlpha = baseAlpha;
 
   // Rings, outermost first so the inner ones sit on top.
@@ -226,12 +220,13 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   c.stroke(body);
 
   // Label.
-  if (detailed && opt.labels && node.title) {
-    const px = labelFontSize(node.level) * d.labelScale;
+  // Label: the whole label (the idea is sized for it, idea.ts), growing up to LABEL_GROWTH.idea when zoomed out.
+  if (detailed && node.title) {
+    const px = ideaLabelPx(node, d);
     const font = `${TYPE_STYLES['node-label'].weight} ${px}px ${d.fontHand}`;
-    const lines = layoutLabel(c, node.title, font, node.width - NODE_LABEL_PADDING_X, CANVAS_STYLE.node.labelMaxLines);
-    const s = computeNodeTextWorldScale(node.width, zoom, px);
-    const lh = px * CANVAS_STYLE.node.labelLineHeight;
+    const lines = layoutLabel(c, node.title, font, node.width - IDEA.labelInset);
+    const s = labelGrowth(zoom).idea;
+    const lh = px * IDEA.labelLineHeight;
     c.scale(s, s);
     c.font = font;
     c.fillStyle = d.tokens['node-ink']!;
@@ -290,9 +285,9 @@ export function drawConnector(c: CanvasRenderingContext2D, g: PreparedConnector,
   c.setLineDash([]);
   c.stroke(g.arrowPath);
 
-  const labelPx = label ? computeEdgeLabelScale(zoom) * (d.edgeLabel.size / EDGE_LABEL_BASE_FONT_PX) : 0;
+  // The design system's connector label (`.vi-edge__label`), growing up to LABEL_GROWTH.connector when zoomed out (`--vi-inv`); the readable face is smaller and bolder.
+  const labelPx = label ? d.edgeLabel.size * labelGrowth(zoom).connector : 0;
   if (label && labelPx * zoom >= LABEL_MIN_SCREEN_PX) {
-    // Constant on-screen size, like the spec's `--vi-inv`; the readable face is smaller and bolder.
     const px = labelPx;
     c.font = `${d.edgeLabel.weight} ${px}px ${d.fontNote}`;
     c.textAlign = 'center';

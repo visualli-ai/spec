@@ -7,13 +7,13 @@ Framework-agnostic core logic, types, and algorithms for Visualli. Zero React / 
 | Module | What it provides |
 |--------|------------------|
 | **Types** | Full TypeScript interfaces for `VisualliDocument`, `VisualliLayer`, `FlatNode`, `ViewportState`, `RenderConfig`, `Connection`, and more |
-| **Parser** | Parse `.visualli` JSONL files, convert layers to flat nodes, resolve spatial overlaps |
-| **Layout** | Circular and linear layout algorithms with automatic radius/spacing calculation |
-| **Viewport** | Pure pan/zoom/bounds math — world↔screen coordinate transforms, fit-to-screen |
+| **Parser** | Parse `.visualli` JSONL files and convert layers to flat nodes: each idea sized for its label and coloured by the design system's rules, placed where the file puts it |
+| **Layout** | Circular and linear layouts for files whose ideas carry no positions |
+| **Design system** | The Visualli design system's rules, copied verbatim from `design-system/` (tokens, blob geometry, motion, idea size, colours, containers, fit, peek, trail, level of detail) |
+| **Viewport** | Pure pan/zoom/bounds math — world↔screen coordinate transforms, fit to view |
 | **Spatial index** | RBush-backed O(log n) spatial index for viewport culling of large node graphs |
-| **Animations** | Easing functions (cubic, quartic, sine, bezier LUT) and timing phase constants |
 | **Performance** | rAF-based FPS monitor, memory monitor, profiler |
-| **Constants** | Design tokens (colors, spacing, typography), zoom limits, FPS targets, render config |
+| **Constants** | Zoom limits, FPS targets, render config |
 
 ## Installation
 
@@ -36,6 +36,10 @@ const doc = parseVisualliFile(rawJsonlString);
 // Get the root layer
 const rootLayerId = [...doc.layers.keys()][0];
 const nodes = getNodesForLayer(doc, rootLayerId); // FlatNode[]
+
+// Ideas are sized for their labels (the design system's idea.ts). Renderers pass their own text measurement in the
+// label face; without one, an approximation is used.
+const sized = getNodesForLayer(doc, rootLayerId, { measure: (text, px) => ctx.measureText(text).width, labelScale: 1 });
 ```
 
 ### Apply layouts
@@ -75,25 +79,15 @@ index.bulkLoad(nodes.map(n => ({
 const visible = index.query(viewportBounds); // string[] — node IDs
 ```
 
-### Easing
+### Colours
 
 ```ts
-import { easeInOutCubic, easeOutCubic, createCubicBezier } from '@visualli/core';
+import { ideaColor, ideaStyle } from '@visualli/core';
 
-const t = easeInOutCubic(progress); // 0..1 → 0..1
-const custom = createCubicBezier(0.4, 0, 0.2, 1); // CSS timing function
-```
-
-### Colors & design tokens
-
-```ts
-import {
-  getColorForLevel, getThemeBackground,
-  LEVEL_COLOR_ARRAY, DS_COLORS, BRAND_COLORS,
-} from '@visualli/core';
-
-const nodeColor = getColorForLevel(2);         // '#...' for level 2
-const bg        = getThemeBackground(isDark);  // canvas background
+ideaColor('teal', 0);      // { topic: 'teal', custom: null } — a topic name
+ideaColor(undefined, 2);   // { topic: 'iris', custom: null } — no colour: topics in sibling order
+ideaColor('#b7e7f3', 0);   // { topic: null, custom: { fill: '#b7e7f3', ring: '#8fb4be' } } — drawn as given
+ideaStyle('dark', node);   // { fill, ring } in a theme
 ```
 
 ## Module Reference
@@ -104,7 +98,7 @@ const bg        = getThemeBackground(isDark);  // canvas background
 |--------|-------------|
 | `VisualliDocument` | Top-level document (layers Map, extensions Map) |
 | `VisualliLayer` | A single layer: level, nodes, connections, containers |
-| `FlatNode` | Renderable node (position, size, title, color, level, parentId) |
+| `FlatNode` | Renderable idea: position, size for its label (`width` / `height`, `kind`), title, colour (`topic` or `custom`), level, parentId |
 | `NodeMap` | `Map<string, FlatNode>` |
 | `ViewportState` | `centerX/Y`, `zoomLevel`, `rotation`, `visibleBounds` |
 | `RenderConfig` | Quality level, FPS target, culling flag, render mode |
@@ -116,15 +110,15 @@ const bg        = getThemeBackground(isDark);  // canvas background
 |--------|-------------|
 | `parseVisualliFile(str)` | Parse JSONL → `VisualliDocument` |
 | `loadVisualliFileFromFile(file)` | Parse a browser `File` object |
-| `getNodesForLayer(doc, layerId)` | `FlatNode[]` for one layer |
-| `convertVisualliToFlatNodes(doc)` | All layers → `NodeMap` |
+| `getNodesForLayer(doc, layerId, opts?)` | `FlatNode[]` for one layer (`opts`: `measure`, `labelScale` for sizing ideas) |
+| `convertVisualliToFlatNodes(doc, opts?)` | All layers → `NodeMap` |
 | `getChildLayers(doc, layerId)` | Direct child layers |
 
 ### `layout/`
 
 | Export | Description |
 |--------|-------------|
-| `applyCircularLayout(nodes)` | Radial arrangement |
+| `applyCircularLayout(nodes)` | Radial arrangement (used when the file gives no positions) |
 | `applyLinearHorizontalLayout(nodes)` | Left-to-right tree |
 | `applyLinearVerticalLayout(nodes)` | Top-to-bottom tree |
 | `resolveCollisions(nodes)` | Push apart overlapping nodes |
@@ -137,7 +131,7 @@ const bg        = getThemeBackground(isDark);  // canvas background
 | `zoomViewport(delta, vp, px, py, w, h)` | Zoom to cursor |
 | `panViewport(dx, dy, vp)` | Translate camera |
 | `setViewportCenter(x, y, vp)` | Teleport center |
-| `clampZoom(level)` | Clamp to `[ZOOM_MIN, ZOOM_MAX]` |
+| `clampZoom(level, fit?)` | Clamp to `[ZOOM_MIN, ZOOM_MAX]` × the layer's fit scale (the design system's limits are relative to the fit) |
 | `worldToScreen(x, y, vp, w, h)` | World → screen px |
 | `screenToWorld(x, y, vp, w, h)` | Screen px → world |
 
@@ -145,12 +139,11 @@ const bg        = getThemeBackground(isDark);  // canvas background
 
 | Export | Description |
 |--------|-------------|
-| `ZOOM_MIN` / `ZOOM_MAX` | `0.3` / `5.0` |
-| `ZOOM_NAV_IN_THRESHOLD` | `2.7` — zoom level that triggers drill-in |
-| `ZOOM_NAV_OUT_THRESHOLD` | `0.4` — zoom level that triggers back navigation |
-| `LEVEL_COLOR_ARRAY` | 10-color palette indexed by node level |
+| `ZOOM_MIN` / `ZOOM_MAX` | `0.3` / `5.0` — the design system's `VIEW`, relative to the layer's fit |
 | `DEFAULT_RENDER_CONFIG` | Baseline quality settings |
-| `ANIMATION_PHASES` | Duration constants for layer transitions |
+
+Motion, idea size, colours, fit, peek placement and the depth trail are the design system's rules, exported verbatim
+(`MOTION`, `layerReveal`, `IDEA`, `ideaSize`, `labelGrowth`, `ideaColor`, `layerBounds`, `fitView`, `peekPosition`, `TRAIL` …).
 
 ## TypeScript
 
@@ -178,86 +171,25 @@ npm run typecheck  # tsc --noEmit (0 errors expected)
 
 ```
 src/
-├── types/           TypeScript interfaces, enums, Zod schemas
-│   ├── mindmap.ts   MindMapNode, FlatNode, NodeMap, ViewportState, RenderConfig …
-│   ├── meta.ts      VisualliMeta
-│   ├── layer.ts     VisualliLayer, LayerNode, LayerConnection, LayerContainer …
-│   ├── extension.ts VisualliExtension
-│   ├── document.ts  VisualliDocument
-│   ├── schema.ts    JSON-schema-aligned types + re-exports
-│   ├── processing.ts ConnectionState, ProcessingState, type guards
-│   └── sse.ts       SSEEvent discriminated union + Zod validation + helpers
+├── generated/       The Visualli design system, generated from design-system/ (never edited by hand)
+│   ├── designSystem.ts  TOKENS, METRICS, TYPE_STYLES, CANVAS_STYLE (from css/spec.css)
+│   └── geometry/        blob, motion, idea, color, container, interaction, detail — copied verbatim
 │
-├── layout/          Pure layout algorithms (no side-effects)
-│   ├── circularLayout.ts  applyCircularLayout, calculateOptimalRadiusPercentage
-│   ├── linearLayout.ts    applyLinearHorizontalLayout, applyLinearVerticalLayout
-│   └── layoutUtils.ts     getNodeBounds, resolveCollisions, optimizeLayout
-│
-├── parser/          File parsing and data conversion
-│   ├── visualliParser.ts    parseVisualliFile, loadVisualliFile, getChildLayers …
-│   ├── visualliConverter.ts convertVisualliToFlatNodes, resolveNodeOverlaps …
-│   ├── mindmapUtils.ts      flattenNodes, getVisibleNodes, calculateDistance …
-│   └── configUtils.ts       createMindMapConfig, generateSampleConfig
-│
-├── services/        Network utilities (fetch, SSE, logging)
-│   ├── api.ts       initApi, apiRequest, ApiError, mindmapApi, correlationId helpers
-│   ├── logger.ts    Logger class (buffered remote + console)
-│   └── sseClient.ts createSSEClient (fetch ReadableStream, reconnection)
-│
-├── constants/       Design tokens, performance thresholds, render config
-│   ├── performanceConstants.ts  FPS targets, zoom limits, node dimensions …
-│   ├── design.ts                DS_COLORS, LEVEL_COLORS, BRAND_COLORS, helpers …
-│   └── renderConfig.ts          DEFAULT_RENDER_CONFIG, FEATURE_FLAGS, helpers …
-│
-├── viewport/        Coordinate math and pan/zoom operations
-│   └── viewportUtils.ts  calculateViewportBounds, worldToScreen, zoomViewport …
-│
+├── types/           TypeScript interfaces (FlatNode, VisualliDocument, VisualliLayer, ViewportState …)
+├── parser/          parseVisualliFile; convertLayerToFlatNodes / getNodesForLayer (sizes, colours, positions)
+├── layout/          Circular and linear layouts, for layers whose ideas carry no positions
+├── rendering/       nodeGeometry (radii, rings, connector endpoints), ideaSize (idea.ts + measurement), culling
+├── theme/           Theme and comfort resolution; ideaColor / ideaStyle (the design system's colour rule)
+├── utils/           Layer navigation and fit to view (layerBounds / fitView)
+├── viewport/        Coordinate math and pan / zoom (limits relative to the layer's fit)
+├── constants/       Zoom limits, performance thresholds, render config
 ├── performance/     FPS / memory monitoring (browser APIs, no React)
-│   └── performanceMonitor.ts  FPSMonitor, MemoryMonitor, PerformanceProfiler
-│
-├── animations/      Easing functions and timing constants
-│   ├── easing.ts    easeInOutCubic, createCubicBezier …
-│   └── constants.ts ANIMATION_DURATION, ANIMATION_PHASES, COOLDOWN …
-│
 └── spatial/         RBush spatial index for O(log n) viewport culling
-    └── spatialIndex.ts  RBushSpatialIndex, ISpatialIndex, BoundingBox
-```
-
-## Installation
-
-```bash
-npm install @visualli/core
-```
-
-> **Dependencies:** `zod` (schema validation) · `rbush` (spatial index)
-
-## Quick Start
-
-```ts
-// Parse a .visualli document
-import { parseVisualliFile, convertVisualliToFlatNodes } from '@visualli/core/parser';
-
-const doc      = parseVisualliFile(rawJsonlString);
-const nodeMap  = convertVisualliToFlatNodes(doc);
-
-// Apply a circular layout
-import { applyCircularLayout } from '@visualli/core/layout';
-const nodes = [...nodeMap.values()];
-applyCircularLayout(nodes);
-
-// Viewport math
-import { zoomViewport } from '@visualli/core/viewport';
-const next = zoomViewport(0.1, currentViewport, pivotX, pivotY);
-
-// API client
-import { initApi, mindmapApi } from '@visualli/core/services';
-initApi({ baseUrl: 'https://api.example.com/api' });
-const list = await mindmapApi.getAllMindmaps();
 ```
 
 ## Design Principles
 
 - **No React** — no hooks, no JSX, no Context
-- **No DOM manipulation** — pure data transforms; browser APIs (`fetch`, `FileReader`) are used only at IO boundaries
-- **No Vite env vars** — configure at runtime via `initApi()`
+- **No DOM manipulation** — pure data transforms; text measurement is passed in by the renderer
+- **No design decisions of its own** — every visual rule comes from the Visualli design system (`design-system/`)
 - **Tree-shakeable** — import from sub-paths to avoid bundling unused modules

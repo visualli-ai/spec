@@ -16,8 +16,8 @@
 //  • Delegates all canvas/navigation/zoom logic to VisualliCanvas
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { VisualliDocument, Comfort, ThemeInput } from '@visualli/core';
-import { parseVisualliFile } from '@visualli/core';
+import type { VisualliDocument, Comfort, ThemeInput, TopicName } from '@visualli/core';
+import { blobPath, parseVisualliFile, shapeForLevel } from '@visualli/core';
 import VisualliCanvas from './VisualliCanvas';
 import { useDesign } from './design/useDesign';
 import { ensureDesignSystemStyles, type DesignSystemAssets } from './design/runtime';
@@ -122,51 +122,41 @@ export interface VisualliRendererProps {
 }
 
 // ── Empty / Loading / Error states ───────────────────────────────────────────
-// Styled by the design system's tokens and type styles only.
+// A still note in the middle of the map: an idea's blob in a topic colour, a title and a line of text — the design
+// system's shapes, tokens and type styles only, and no motion of its own (the product's own state screens live in
+// Visualli's apps).
 
-const stateBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', gap: 16, color: 'var(--ink-muted)' };
+const stateBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', gap: 'var(--space-3)', padding: 'var(--space-7)', boxSizing: 'border-box', textAlign: 'center', color: 'var(--ink-muted)', background: 'var(--canvas)' };
+
+function StateNote({ topic, title, children, role }: { topic: TopicName; title: string; children?: React.ReactNode; role?: 'status' | 'alert' }) {
+  return (
+    <div className="vi-map" style={stateBox} role={role} aria-live={role === 'status' ? 'polite' : undefined}>
+      <svg width="64" height="52" viewBox="-32 -26 64 52" aria-hidden="true">
+        <path d={blobPath(shapeForLevel(0), 26, 20)} fill={`var(--topic-${topic})`} stroke={`var(--topic-${topic}-ring)`} strokeWidth="2" />
+      </svg>
+      <p className="label" style={{ margin: 0, color: 'var(--ink)' }}>{title}</p>
+      {children && <div className="body-sm" style={{ margin: 0, maxWidth: 480, overflowWrap: 'anywhere' }}>{children}</div>}
+    </div>
+  );
+}
 
 function EmptyState() {
   return (
-    <div className="vi-map" style={stateBox}>
-      <svg className="vi-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="10" y="6" width="28" height="36" rx="3" />
-        <line x1="16" y1="16" x2="32" y2="16" />
-        <line x1="16" y1="22" x2="32" y2="22" />
-        <line x1="16" y1="28" x2="26" y2="28" />
-      </svg>
-      <div style={{ textAlign: 'center' }}>
-        <p className="label" style={{ margin: 0, color: 'var(--ink)' }}>No .visualli file provided</p>
-        <p className="body-sm" style={{ margin: '4px 0 0' }}>
-          Pass a <code style={{ fontFamily: 'var(--font-mono)' }}>visualliFile</code> or <code style={{ fontFamily: 'var(--font-mono)' }}>visualliString</code> prop.
-        </p>
-      </div>
-    </div>
+    <StateNote topic="stone" title="Nothing to show yet">
+      Pass a <code style={{ fontFamily: 'var(--font-mono)' }}>visualliFile</code> or <code style={{ fontFamily: 'var(--font-mono)' }}>visualliString</code>.
+    </StateNote>
   );
 }
 
 function LoadingState() {
-  return (
-    <div className="vi-map" style={stateBox} role="status" aria-live="polite">
-      <div style={{ display: 'flex', gap: 8 }} aria-hidden="true">
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 8, height: 8, borderRadius: 'var(--radius-pill)', background: 'var(--ink-subtle)', animation: `vr-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-        ))}
-      </div>
-      <style>{`@keyframes vr-pulse{0%,80%,100%{opacity:.2;transform:scale(.9)}40%{opacity:1;transform:scale(1.1)}} [data-motion="reduced"] [style*="vr-pulse"]{animation:none!important}`}</style>
-      <p className="body-sm" style={{ margin: 0 }}>Loading .visualli file…</p>
-    </div>
-  );
+  return <StateNote topic="teal" title="Opening the map…" role="status" />;
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="vi-map" style={{ ...stateBox, padding: 24 }} role="alert">
-      <div className="vi-fact" style={{ width: 'auto', maxWidth: 480, ['--vi-fact-fill' as string]: 'var(--topic-berry)', ['--vi-fact-ring' as string]: 'var(--topic-berry-ring)' } as React.CSSProperties}>
-        <div className="vi-fact__title">Failed to parse .visualli file</div>
-        <p className="vi-fact__body" style={{ margin: 0, fontFamily: 'var(--font-mono)', wordBreak: 'break-word' }}>{message}</p>
-      </div>
-    </div>
+    <StateNote topic="berry" title="This map couldn't be opened" role="alert">
+      <code style={{ fontFamily: 'var(--font-mono)' }}>{message}</code>
+    </StateNote>
   );
 }
 

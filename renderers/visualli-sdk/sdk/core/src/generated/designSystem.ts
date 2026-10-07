@@ -2,7 +2,7 @@
 // Change the design system instead; the next `npm run build` regenerates this file.
 
 /** Version of the design system these modules were generated from. */
-export const DESIGN_SYSTEM_VERSION = "0.1.5" as const;
+export const DESIGN_SYSTEM_VERSION = "0.1.6" as const;
 
 export const THEME_NAMES = [
   "light",
@@ -711,14 +711,14 @@ export const TYPE_STYLES = {
 /** Canvas styling extracted from css/spec.css (node labels, hover, shadows, connector dashes, group frames). */
 export const CANVAS_STYLE = {
   "node": {
-    "labelLineHeight": 1.15,
-    "labelMaxLines": 3,
     "selectedStrokeWidth": 4,
     "hoverRingsRotate": -2,
     "hoverRingsScale": 1.015,
     "hoverLift": -2,
+    "dimmedOpacity": 1,
     "dimmedOpacityFocus": 0.4,
-    "dimmedOpacityHighlight": 0.35,
+    "dimmedOpacityTouch": 0.6,
+    "dimmedOpacityFocusTouch": 0.4,
     "shadowLight": "0 6px 14px rgba(24, 33, 64, .10)",
     "shadowDark": "0 0 22px rgba(255, 255, 255, .10)"
   },
@@ -731,8 +731,7 @@ export const CANVAS_STYLE = {
     "labelSize": 18,
     "readableLabelSize": 14,
     "readableLabelWeight": 600,
-    "labelHaloWidth": 5,
-    "selectedStrokeWidth": 3.5
+    "labelHaloWidth": 5
   },
   "group": {
     "strokeWidth": 1.5,

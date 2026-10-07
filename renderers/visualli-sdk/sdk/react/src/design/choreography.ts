@@ -11,11 +11,6 @@
 
 import { MOTION, easeBezier, bloomOffset, layerReveal, type FlatNode } from '@visualli/core';
 
-/** @deprecated Use MOTION.largeLayer.staggerSlots (the design system's large-layer rule, geometry/motion.ts). */
-export const REVEAL_STAGGER_CAP = MOTION.largeLayer.staggerSlots;
-/** @deprecated Use MOTION.largeLayer.bloomMax / layerBlooms (geometry/motion.ts). */
-export const REVEAL_MAX_NODES = MOTION.largeLayer.bloomMax;
-
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** How an idea looks mid-arrival (multiplies its resting look). */

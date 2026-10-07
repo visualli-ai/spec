@@ -1,8 +1,8 @@
 // ─── Containers ──────────────────────────────────────────────────────────────
 //
 // The design system's containers (geometry/container.ts, copied verbatim into
-// @visualli/core): a dashed hull HULL.padX / HULL.padY beyond the member ideas'
-// centres with HULL.radius corners, and the group's name as a pill straddling
+// @visualli/core): a dashed hull around the member ideas (HULL.padX / HULL.padY
+// beyond their centres, more for large ideas: HULL_CLEAR) with HULL.radius corners, and the group's name as a pill straddling
 // the hull's edge. Where the pill goes is the design system's placeContainerLabel:
 // candidate spots along all four edges, scored against every idea on the layer
 // (with its outermost ring), every connector curve and the names placed before
@@ -15,6 +15,7 @@ import {
   connectorGeometry,
   connectorSamples,
   containerHull,
+  labelGrowth,
   nodeRadii,
   placeContainerLabel,
   ringsFor,
@@ -36,8 +37,6 @@ export interface PlacedContainer { id: string; hull: Hull; pill: PlacedPill | nu
 /** The pill's font at `px`: the note face (the UI face in readable type, via Design.fontNote). */
 export const pillFont = (d: Design, px: number): string => `${PILL.labelWeight} ${px}px ${d.fontNote}`;
 
-/** Zoom compensation for the pill's text, as the design system's --vi-ninv: 1 at 100% and closer, up to 1.3 zoomed out. */
-export const pillTextScale = (zoom: number): number => Math.max(1, Math.min(1 / Math.max(zoom, 0.0001), 1.3));
 
 let measureCtx: CanvasRenderingContext2D | null = null;
 function measurer(): CanvasRenderingContext2D | null {
@@ -71,7 +70,7 @@ export function measurePill(text: string, d: Design, k: number, c: CanvasRenderi
 
 /** The box an idea occupies, its outermost ring included (what a container name must not cover). */
 function ideaBox(n: FlatNode): LabelBox {
-  const { rx, ry } = nodeRadii(n.width);
+  const { rx, ry } = nodeRadii(n);
   const rings = ringsFor(n.branchCount);
   const s = rings.length ? RINGS[rings.length - 1]!.scale : 1;
   return { x0: n.x - rx * s, x1: n.x + rx * s, y0: n.y - ry * s, y1: n.y + ry * s };
@@ -101,7 +100,7 @@ export function layoutContainers(
   const out: PlacedContainer[] = [];
   for (const c of containers) {
     const members = c.nodeIds.map((id) => nodes.get(id)).filter((n): n is FlatNode => !!n);
-    const hull = containerHull(members.map((n) => ({ x: n.x, y: n.y })));
+    const hull = containerHull(members.map((n) => ({ x: n.x, y: n.y, ...nodeRadii(n) })));
     if (!hull) continue;
     let pill: PlacedPill | null = null;
     if (c.label) {
@@ -127,9 +126,9 @@ export function drawHull(c: CanvasRenderingContext2D, h: Hull, d: Design): void 
   c.restore();
 }
 
-/** The name pill (above connectors and ideas), its text grown by the zoom compensation like idea labels. */
+/** The name pill (above connectors and ideas), its text growing like idea labels when zoomed out (labelGrowth). */
 export function drawPill(c: CanvasRenderingContext2D, p: PlacedPill, d: Design, zoom: number): void {
-  const k = pillTextScale(zoom);
+  const k = labelGrowth(zoom).idea;
   const size = k === 1 ? p : measurePill(p.text, d, k, c);
   const contrast = d.theme.startsWith('contrast');
   const bw = contrast ? PILL.contrastLabelBorderWidth : PILL.labelBorderWidth;

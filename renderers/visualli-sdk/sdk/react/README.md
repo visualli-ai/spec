@@ -161,7 +161,7 @@ The SDK exports low-level hooks for building custom rendering pipelines:
 
 - **`useKonvaRenderer`** — Access the Konva stage and rendering loop
 - **`useViewportNodes`** — Get nodes currently visible in the viewport (post-culling)
-- **`useKonvaLayerTransition`** — Control layer transition animations
+- **`useLayerChoreography`** — Step inside / back out with the design system's motion
 - **`useVisualli`** — Access the Visualli context (when wrapped in `VisualliProvider`)
 
 ## Requirements

@@ -98,14 +98,16 @@ const hover = pick(/button\.vi-node:hover \.vi-node__rings \{ transform: rotate\
 const lift = pick(/button\.vi-node:hover \{ transform: translateY\(calc\(var\(--vi-lift, (-?[\d.]+)px\) \* -1\)\)/, 'node hover lift');
 const canvasStyle = {
   node: {
-    labelLineHeight: +pick(/\.vi-node__label \{[^}]*line-height: ([\d.]+)/, '.vi-node__label line-height')[1],
-    labelMaxLines: +pick(/\.vi-node__label \{[^}]*-webkit-line-clamp: (\d+)/, '.vi-node__label line clamp')[1],
+    // Idea size, label size, line height and line count are the design system's idea.ts (geometry), not CSS.
     selectedStrokeWidth: +pick(/\.vi-node\.is-selected \.vi-node__body \{ stroke-width: ([\d.]+)/, 'selected node stroke')[1],
     hoverRingsRotate: +hover[1],
     hoverRingsScale: +hover[2],
     hoverLift: -Math.abs(+lift[1]), // CSS gives the lift magnitude; canvas y offset is negative (up)
+    // The other ideas while one is peeked: unchanged by default, faded in the focus themes and on touch.
+    dimmedOpacity: +pick(/\n\.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'dimmed opacity')[1],
     dimmedOpacityFocus: +pick(/\[data-theme\^="focus"\] \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'focus dimmed opacity')[1],
-    dimmedOpacityHighlight: +pick(/\.vi-map\.has-highlight \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'highlight dimmed opacity')[1],
+    dimmedOpacityTouch: +pick(/\n\.vi-map\.is-touch \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'touch dimmed opacity')[1],
+    dimmedOpacityFocusTouch: +pick(/\[data-theme\^="focus"\] \.vi-map\.is-touch \.vi-node\.is-dimmed \{ opacity: ([\d.]+)/, 'focus touch dimmed opacity')[1],
     shadowLight: pick(/--vi-node-shadow, ([^)]+\))\)/, 'light node shadow')[1],
     shadowDark: pick(/\[data-theme\$="dark"\] \.vi-node__body \{ --vi-node-shadow: ([^;]+);/, 'dark node shadow')[1],
   },
@@ -116,7 +118,6 @@ const canvasStyle = {
     readableLabelSize: +readableEdge[1],
     readableLabelWeight: +readableEdge[2],
     labelHaloWidth: +pick(/\.vi-edge__label \{[^}]*stroke-width: ([\d.]+)px/, 'edge label halo')[1],
-    selectedStrokeWidth: +pick(/\.vi-edge\.is-selected \.vi-edge__line[^{]*\{[^}]*stroke-width: ([\d.]+)/, 'selected edge stroke')[1],
   },
   group: {
     strokeWidth: +pick(/\.vi-map__group rect \{[^}]*stroke-width: ([\d.]+)/, 'group stroke width')[1],
