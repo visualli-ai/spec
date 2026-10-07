@@ -11,6 +11,21 @@
   <meta name="theme-color" content="#ffffff">
 {% endblock %}
 
+{% block header %}
+  {{ super() }}
+  {#- The design system's tokens switch on data-theme (light / dark). Mirror Material's colour scheme onto it as soon
+      as Material has restored the reader's choice (inside the header), and on every toggle. -#}
+  <script>
+    (function () {
+      var sync = function () {
+        document.body.setAttribute('data-theme', document.body.getAttribute('data-md-color-scheme') === 'slate' ? 'dark' : 'light');
+      };
+      sync();
+      new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['data-md-color-scheme'] });
+    })();
+  </script>
+{% endblock %}
+
 {% block scripts %}
   {{ super() }}
   <script src="{{ base_url }}/js/visualli-loader.bundle.js"></script>

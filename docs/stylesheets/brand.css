@@ -1,91 +1,111 @@
-/* Brand palette mapped to Material for MkDocs CSS variables */
+/* ─── spec.visualli.ai — the Visualli look, for docs ──────────────────────────
+   Material for MkDocs, dressed in the Visualli design system (the repo's design-system/ folder, copied to
+   assets/design-system/ and loaded before this file): its tokens for colour, type, radius, shadow and motion, its two
+   themes (light / dark, mirrored from Material's palette onto data-theme in overrides/main.html), and Atkinson
+   Hyperlegible. The docs keep Material's layout and code highlighting — a documentation site in the Visualli family,
+   not the Visualli app. The hand-drawn faces (Kalam, Caveat) appear only as small accents.
+   No colour, font or shadow values are defined here: every one is a design-system token. */
 
-:root {
-  /* Primary: cyan from the VISUALLI logo (#12C7D3) */
-  --md-primary-fg-color: #12C7D3;
-  --md-primary-fg-color--light: #64e3eb;
-  --md-primary-fg-color--dark: #0ea5ad;
+/* ── Material's variables → design-system tokens (both schemes; the tokens follow data-theme) ── */
+[data-md-color-scheme="default"],
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: var(--canvas);
+  --md-default-fg-color: var(--ink);
+  --md-default-fg-color--light: var(--ink-muted);
+  --md-default-fg-color--lighter: var(--ink-subtle);
+  --md-default-fg-color--lightest: var(--line);
 
-  /* Accent: orange from the logo (#F28C16) */
-  --md-accent-fg-color: #F28C16;
+  --md-primary-fg-color: var(--ink);
+  --md-primary-fg-color--light: var(--ink-muted);
+  --md-primary-fg-color--dark: var(--ink);
+  --md-primary-bg-color: var(--on-action);
+  --md-primary-bg-color--light: var(--on-action);
+  --md-accent-fg-color: var(--focus);
+  --md-accent-fg-color--transparent: var(--selection);
+  --md-accent-bg-color: var(--on-action);
 
-  /* Links use accent for consistency */
-  --md-typeset-a-color: var(--md-accent-fg-color);
+  --md-typeset-color: var(--ink);
+  --md-typeset-a-color: var(--link);
+  --md-typeset-mark-color: var(--selection);
+  --md-typeset-table-color: var(--line);
+  --md-typeset-kbd-color: var(--surface);
+  --md-typeset-kbd-border-color: var(--line);
 
-  /* Brand gradient across VISUALLI tones */
-  --brand-gradient: linear-gradient(90deg,
-    #12C7D3 0%,
-    #325E8C 10%,
-    #8A70A6 20%,
-    #F54A57 30%,
-    #FF6C4D 40%,
-    #F28C16 50%,
-    #FFD347 60%,
-    #12C7D3 70%,
-    #7F7F7F 80%,
-    #8D8D8D 90%,
-    #12C7D3 100%
-  );
-  /* Site title used in header banner (rendered inside the clickable logo link) */
+  --md-code-bg-color: var(--surface-sunken);
+  --md-code-fg-color: var(--ink);
+
+  --md-admonition-fg-color: var(--ink);
+  --md-admonition-bg-color: var(--surface);
+
+  --md-footer-fg-color: var(--ink);
+  --md-footer-fg-color--light: var(--ink-muted);
+  --md-footer-fg-color--lighter: var(--ink-subtle);
+  --md-footer-bg-color: var(--surface);
+  --md-footer-bg-color--dark: var(--surface-sunken);
+
+  --md-shadow-z1: var(--shadow-float);
+  --md-shadow-z2: var(--shadow-float);
+  --md-shadow-z3: var(--shadow-pop);
+
+  --md-text-font-family: var(--font-ui);
+  --md-code-font-family: var(--font-mono);
+
+  /* The topic rings in their order — a quiet nod to an idea's colours (header rule, cards). */
+  --vi-topics: linear-gradient(90deg, var(--topic-teal-ring), var(--topic-harbor-ring), var(--topic-iris-ring),
+    var(--topic-berry-ring), var(--topic-coral-ring), var(--topic-amber-ring), var(--topic-sun-ring), var(--topic-stone-ring));
   --site-title: "spec.visualli.ai";
 }
 
-[data-md-color-scheme="slate"] {
-  /* Keep brand colors in dark mode */
-  --md-primary-fg-color: #12C7D3;
-  --md-primary-fg-color--light: #5bd9e2;
-  --md-primary-fg-color--dark: #0b8b93;
-  --md-accent-fg-color: #F28C16;
-  --md-typeset-a-color: var(--md-accent-fg-color);
-}
+body { background: var(--canvas); }
+::selection { background: var(--selection); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.md-typeset { font-feature-settings: normal; }
 
-/* Header: solid black banner with thin gradient line at bottom */
+/* ── Header: a floating surface over the paper canvas, with the topic rule beneath ── */
 .md-header {
-  background-color: #000000;
-  background-image: none; /* remove previous gradient fill */
-  position: fixed; /* make header sticky */
+  position: fixed;
   top: 0;
   z-index: 100;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  border-bottom: 1px solid var(--line);
 }
-
-/* Add padding to body to account for fixed header */
-.md-container {
-  padding-top: 3rem;
-}
-
+.md-header[data-md-state="shadow"], .md-header--shadow { box-shadow: var(--shadow-float); }
 .md-header::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px; /* very thin gradient line */
-  background-image: var(--brand-gradient);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--vi-topics);
 }
+.md-container { padding-top: 3rem; }
+.md-header__button, .md-header .md-icon { color: var(--ink); }
 
-/* Make the left logo act as the full clickable banner title */
+/* The logo link is the site title. */
 .md-header__button.md-logo {
   display: inline-flex;
   align-items: center;
   gap: .6rem;
   text-decoration: none;
-  width: auto !important; /* expand clickable area to include text */
+  width: auto !important;
   max-width: none !important;
-  padding: 0 .5rem; /* small horizontal padding for comfortable click */
-  margin-right: auto; /* keep search + palette icons right-aligned */
+  padding: 0 .5rem;
+  margin-right: auto;
 }
 .md-header__button.md-logo::after {
   content: var(--site-title);
-  color: #fff;
-  font-weight: 600;
-  font-size: 1.1rem; /* reduced to match earlier banner scale */
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
   line-height: 1;
   white-space: nowrap;
 }
+.md-header__title, .md-header__title * { display: none !important; }
 
-/* Center the header options (palette + search) on desktop */
+/* Palette + search, centred on desktop. */
 .md-header__inner { position: relative; }
 @media (min-width: 768px) {
   .md-header__options {
@@ -96,95 +116,202 @@
     height: 100%;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    z-index: 5; /* above gradient divider */
+    gap: .75rem;
+    z-index: 5;
   }
-  /* Ensure search occupies its natural width while centered */
   .md-header__options .md-search { max-width: none; }
 }
-/* Hide the original (non-clickable) header title to avoid duplicate text */
-.md-header__title { display: none !important; }
-.md-header__title * { display: none !important; }
 
-/* 
-   Table of Contents (Right Sidebar) - Improved Hierarchy
-   Indents h3 headings (and deeper) to visually distinguish them from h2 headings.
-*/
+/* Search: a pill on the sunken surface. */
+.md-search__form {
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  transition: border-color var(--duration-quick) var(--ease-standard), box-shadow var(--duration-quick) var(--ease-standard);
+}
+.md-search__form:hover { background: var(--surface-sunken); border-color: var(--line-strong); }
+.md-search__input, .md-search__input::placeholder, .md-search__icon { color: var(--ink-muted); }
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  background: var(--surface);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  box-shadow: var(--shadow-float);
+}
+.md-search__output { border-radius: 0 0 var(--radius-sm) var(--radius-sm); box-shadow: var(--shadow-pop); }
+.md-search-result__meta { background: var(--surface-sunken); color: var(--ink-muted); }
+
+/* Repository link in the header. */
+.md-source { color: var(--ink); }
+
+/* ── Navigation: quiet links, a pill on hover, ink for where you are ── */
+.md-nav { font-size: .72rem; }
+.md-nav__link { border-radius: var(--radius-sm); transition: background var(--duration-instant), color var(--duration-instant); }
+.md-nav__link:hover, .md-nav__link:focus { color: var(--ink); }
+.md-nav__item .md-nav__link--active, .md-nav__item .md-nav__link--active code { color: var(--ink); font-weight: 700; }
+.md-nav--primary .md-nav__link { padding: .15rem .4rem; margin-left: -.4rem; margin-right: .2rem; }
+.md-nav--primary .md-nav__link:hover { background: var(--surface-sunken); }
+.md-nav__item--section > .md-nav__link {
+  color: var(--ink-subtle);
+  font-weight: 700;
+  font-size: .62rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.md-nav--primary > .md-nav__title { display: none !important; }
+
+/* Nested levels (both sidebars) hang from a hairline, like the depth trail's stem. */
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list,
 .md-nav--secondary .md-nav__list .md-nav__list {
-  padding-left: 0.6rem;
-  margin-left: 0.2rem;
-  border-left: 1px solid var(--md-default-fg-color--lightest);
+  padding-left: .6rem;
+  margin-left: .2rem;
+  border-left: 1px solid var(--line);
+}
+.md-nav--primary .md-nav__item > .md-nav > .md-nav__list > .md-nav__item,
+.md-nav--secondary .md-nav__list .md-nav__list .md-nav__item { padding-left: .3rem; }
+.md-nav--secondary .md-nav__title { color: var(--ink-subtle); background: transparent; box-shadow: none; }
+
+/* Mobile drawer. */
+.md-nav--primary .md-nav__title[for="__drawer"] { background: var(--surface); color: var(--ink); }
+
+/* ── Content ── */
+.md-main__inner, .md-content, .md-sidebar { padding-top: 0 !important; margin-top: 0 !important; }
+@media screen and (min-width: 76.25em) { .md-content__inner { max-width: 60rem; } }
+
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.md-typeset h1 { font-weight: 800; margin-top: 0 !important; }
+.md-typeset h2 { font-weight: 700; }
+.md-typeset h3 { font-weight: 700; }
+.md-typeset a { text-underline-offset: 3px; }
+.md-typeset a:hover { color: var(--focus); }
+.md-typeset hr { border-bottom-color: var(--line); }
+.md-typeset blockquote { border-left: 3px solid var(--line-strong); color: var(--ink-muted); }
+
+/* Inline code. */
+.md-typeset code {
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font-size: .82em;
+  padding: .1em .35em;
 }
 
-.md-nav--secondary .md-nav__list .md-nav__list .md-nav__item {
-  padding-left: 0.3rem;
+/* Code blocks: a sunken panel with soft corners. */
+.md-typeset .highlight, .md-typeset pre {
+  position: relative;
+  margin: 1.5em 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.md-typeset pre > code { background: transparent; padding: 1rem 1.15rem; font-size: .78em; }
+.md-typeset .highlight pre { margin: 0; border: none; border-radius: 0; }
+.md-typeset .highlight .md-clipboard, .md-typeset pre .md-clipboard {
+  top: .45rem;
+  right: .5rem;
+  color: var(--ink-muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  opacity: .85;
+  transition: opacity var(--duration-quick), color var(--duration-quick), border-color var(--duration-quick);
+  z-index: 2;
+}
+.md-typeset .highlight:hover .md-clipboard, .md-typeset pre:hover .md-clipboard { opacity: 1; color: var(--ink); }
+.md-typeset .highlight .md-clipboard:hover, .md-typeset pre .md-clipboard:hover { color: var(--ink); border-color: var(--line-strong); }
+
+/* Tables: a surface card with a sunken header. */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: none;
+  font-size: .72rem;
+}
+.md-typeset table:not([class]) th { background: var(--surface-sunken); color: var(--ink); font-weight: 700; }
+.md-typeset table:not([class]) td, .md-typeset table:not([class]) th { border-color: var(--line); }
+.md-typeset table:not([class]) tr:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
+.md-typeset table:not([class]) th:first-child, .md-typeset table:not([class]) td:first-child { white-space: nowrap; }
+
+/* Tabs. */
+.md-typeset .tabbed-labels > label { color: var(--ink-muted); }
+.md-typeset .tabbed-labels > label:hover, .md-typeset .tabbed-set > input:checked + label { color: var(--ink); }
+.md-typeset .tabbed-labels::before { background: var(--ink); }
+
+/* Buttons: the design system's pill — ink action, or a quiet outline. */
+.md-typeset .md-button {
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line-strong);
+  color: var(--ink);
+  font-weight: 700;
+  transition: background var(--duration-quick) var(--ease-standard), color var(--duration-quick) var(--ease-standard);
+}
+.md-typeset .md-button--primary, .md-typeset .md-button:hover {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
 }
 
-/* 
-   Primary Navigation (Left Sidebar) - Match Hierarchy Style
-   Apply indentation lines to Level 2 items AND deeper nested levels (Level 3+).
-   Changed to generalized selector to support infinite nesting depth.
-*/
-.md-nav--primary .md-nav__item > .md-nav > .md-nav__list {
-  padding-left: 0.6rem;
-  margin-left: 0.2rem;
-  border-left: 1px solid var(--md-default-fg-color--lightest);
+/* Callouts (admonitions): a surface card edged and tinted in a topic's colours. */
+.md-typeset .admonition, .md-typeset details {
+  --vi-callout: var(--topic-harbor);
+  --vi-callout-ring: var(--topic-harbor-ring);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--vi-callout-ring);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: none;
+  font-size: .72rem;
 }
-
-.md-nav--primary .md-nav__item > .md-nav > .md-nav__list > .md-nav__item {
-  padding-left: 0.3rem;
+.md-typeset .admonition > .admonition-title, .md-typeset details > summary {
+  background: color-mix(in srgb, var(--vi-callout) 45%, var(--surface));
+  border-radius: 0 calc(var(--radius-md) - 2px) 0 0;
+  color: var(--ink);
+  font-weight: 700;
 }
+.md-typeset .admonition > .admonition-title::before, .md-typeset details > summary::before { background-color: var(--ink); }
+/* Material colours each type's whole border; keep the hairline, with only the left edge in the topic ring. */
+.md-typeset .admonition[class], .md-typeset details[class] { border-color: var(--line); border-left-color: var(--vi-callout-ring); }
+.md-typeset .admonition.tip, .md-typeset .admonition.success, .md-typeset .admonition.hint, .md-typeset details.tip, .md-typeset details.success { --vi-callout: var(--topic-teal); --vi-callout-ring: var(--topic-teal-ring); }
+.md-typeset .admonition.info, .md-typeset .admonition.abstract, .md-typeset .admonition.todo, .md-typeset details.info, .md-typeset details.abstract { --vi-callout: var(--topic-iris); --vi-callout-ring: var(--topic-iris-ring); }
+.md-typeset .admonition.warning, .md-typeset .admonition.caution, .md-typeset .admonition.attention, .md-typeset .admonition.question, .md-typeset details.warning, .md-typeset details.question { --vi-callout: var(--topic-amber); --vi-callout-ring: var(--topic-amber-ring); }
+.md-typeset .admonition.danger, .md-typeset .admonition.error, .md-typeset .admonition.failure, .md-typeset .admonition.bug, .md-typeset details.danger, .md-typeset details.failure { --vi-callout: var(--topic-berry); --vi-callout-ring: var(--topic-berry-ring); }
+.md-typeset .admonition.example, .md-typeset details.example { --vi-callout: var(--topic-sun); --vi-callout-ring: var(--topic-sun-ring); }
+.md-typeset .admonition.quote, .md-typeset details.quote { --vi-callout: var(--topic-stone); --vi-callout-ring: var(--topic-stone-ring); }
 
-/* Hide site title in left sidebar (primary nav) */
-.md-nav--primary > .md-nav__title {
-  display: none !important;
+/* Footer. */
+.md-footer { border-top: 1px solid var(--line); }
+.md-footer__link { color: var(--ink); }
+.md-footer-meta { background: var(--surface-sunken); }
+.md-footer-meta, .md-footer-meta a { color: var(--ink-muted); }
+
+/* ── Home page: hero, “why” cards, the getting-started paths ── */
+.hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1.25rem;
+  margin: .5rem 0 1.5rem;
 }
-
-/* Reduce vertical gap between header and content */
-.md-main__inner {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
+@media (max-width: 48rem) {
+  .hero { grid-template-columns: 1fr; gap: 1rem; }
+  .hero__logo { justify-self: center; }
 }
-
-/* Ensure content and sidebar start higher up */
-.md-content, .md-sidebar {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-/* Reduce top margin of the first heading if needed to pull text up further */
-.md-typeset h1 {
-  margin-top: 0 !important;
-}
-
-/* --- Spec docs additions --- */
-
-/* Keep prop/type columns readable — prevent wrapping into two lines */
-.md-typeset table:not([class]) th:first-child,
-.md-typeset table:not([class]) td:first-child {
-  white-space: nowrap;
-}
-
-/* Give tables more breathing room on wide screens */
-@media screen and (min-width: 76.25em) {
-  .md-content__inner {
-    max-width: 60rem;
-  }
-}
-
-/* --- Why Visualli? 2x2 feature grid (responsive, self-fit to content width) --- */
+.hero__logo { width: 6.25rem; height: 6.25rem; display: block; object-fit: contain; max-width: 100%; }
+.hero__lead { margin: 0; color: var(--ink); }
 
 .why-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 1rem 0 1.5rem;
 }
-@media (max-width: 48rem) {
-  .why-grid {
-    grid-template-columns: 1fr;
-  }
-}
+@media (max-width: 48rem) { .why-grid { grid-template-columns: 1fr; } }
 
 .why-card {
   position: relative;
@@ -193,384 +320,129 @@
   align-items: center;
   text-align: center;
   padding: 1rem;
-  border-radius: 0.5rem;
-  background: var(--md-code-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--line);
   box-sizing: border-box;
   min-height: 100%;
   overflow: hidden;
+  transition: box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-bloom);
 }
-
+.why-card:hover { box-shadow: var(--shadow-float); transform: translateY(-2px); }
 .why-card__banner {
   position: absolute;
   top: 1.25rem;
   right: -2.75rem;
   width: 10rem;
   transform: rotate(45deg);
-  transform-origin: center center;
-  font-size: 0.55rem;
+  font-size: .55rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: .04em;
   line-height: 1.15;
   text-align: center;
   text-transform: uppercase;
-  padding: 0.28rem 0;
-  background: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
-  opacity: 0.95;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  padding: .28rem 0;
+  background: var(--action);
+  color: var(--on-action);
 }
+.why-card__emoji { font-size: 3.25rem; line-height: 1; margin: .1rem 0 .6rem; }
+/* Titles in the idea face (Kalam), as on the map. */
+.why-card__title { font-family: var(--font-hand); font-weight: 700; font-size: 1.05rem; margin: 0 0 .5rem; color: var(--ink); }
+.why-card__body { margin: 0; color: var(--ink-muted); line-height: 1.45; }
+.why-card__body strong, .why-card__body b { color: var(--ink); }
 
-.why-card__emoji {
-  font-size: 3.25rem;
-  line-height: 1;
-  margin: 0.1rem 0 0.6rem;
-}
-
-.why-card__title {
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-  color: var(--md-typeset-color);
-}
-
-.why-card__body {
-  margin: 0;
-  color: var(--md-typeset-color);
-  line-height: 1.45;
-}
-
-.why-card__body strong,
-.why-card__body b {
-  color: var(--md-accent-fg-color);
-}
-
-/* --- Intention / Getting Started path cards --- */
-
-.get-started {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin: 1rem 0 1.5rem;
-}
-
+.get-started { display: flex; flex-direction: column; gap: var(--space-2); margin: 1rem 0 1.5rem; }
 .get-started__card {
+  --vi-path: var(--topic-stone-ring);
   position: relative;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-left-width: 4px;
-  border-radius: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  background: var(--md-code-bg-color);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--vi-path);
+  border-radius: var(--radius-md);
+  padding: .5rem .75rem;
+  background: var(--surface);
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 2.25rem 1fr;
-  gap: 0.5rem;
+  gap: .5rem;
   align-items: start;
 }
-.get-started__card > :last-child {
-  margin-bottom: 0;
-}
-
-.get-started__card--learn   { border-left-color: #12C7D3; }
-.get-started__card--build   { border-left-color: #F28C16; }
-.get-started__card--contrib { border-left-color: #8A70A6; }
-
-.get-started__body {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
+.get-started__card > :last-child { margin-bottom: 0; }
+.get-started__card--learn   { --vi-path: var(--topic-teal-ring); }
+.get-started__card--build   { --vi-path: var(--topic-amber-ring); }
+.get-started__card--contrib { --vi-path: var(--topic-iris-ring); }
+.get-started__body { display: flex; flex-direction: column; min-width: 0; }
 .get-started__badge {
   position: absolute;
-  top: 0.4rem;
-  right: 0.6rem;
-  font-size: 0.6rem;
+  top: .4rem;
+  right: .6rem;
+  font-size: .6rem;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: .03em;
   text-transform: uppercase;
-  padding: 0.1rem 0.35rem;
-  border-radius: 999px;
-  background: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
+  padding: .12rem .45rem;
+  border-radius: var(--radius-pill);
+  background: var(--action);
+  color: var(--on-action);
   line-height: 1;
 }
-
-.get-started__icon {
-  font-size: 2rem;
-  line-height: 1;
-  margin: 0;
-  display: block;
-  text-align: center;
-}
-
-.get-started__audience {
-  margin: 0 0 0.02rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--md-typeset-a-color);
-}
-
-.get-started__title {
-  margin: 0 0 0.15rem;
-  font-weight: 700;
-  color: var(--md-typeset-color);
-}
-
-.get-started__path {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+.get-started__icon { font-size: 2rem; line-height: 1; margin: 0; display: block; text-align: center; }
+.get-started__audience { margin: 0; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-subtle); }
+.get-started__title { margin: 0 0 .15rem; font-family: var(--font-hand); font-weight: 700; font-size: 1rem; color: var(--ink); }
+.get-started__path { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
 .get-started__path li {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 0.4rem;
-  transition: background 0.15s ease;
+  gap: .45rem;
+  padding: .12rem .45rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-instant);
   min-width: 0;
 }
-.get-started__path li:hover {
-  background: color-mix(in srgb, var(--md-accent-fg-color) 8%, var(--md-code-bg-color));
-}
-
-.gs-ico {
-  font-size: 1rem;
-  flex: 0 0 1.25rem;
-  text-align: center;
-}
-
-.gs-main {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
-}
-
+.get-started__path li:hover { background: var(--surface-sunken); }
+.gs-ico { font-size: 1rem; flex: 0 0 1.25rem; text-align: center; }
+.gs-main { display: flex; align-items: baseline; gap: .5rem; flex: 1; min-width: 0; }
 .get-started__path li a {
   font-weight: 700;
   text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--md-typeset-a-color) 35%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--link) 35%, transparent);
   flex: 0 0 auto;
-  color: var(--md-typeset-a-color);
+  color: var(--link);
 }
-.get-started__path li a:hover {
-  border-bottom-color: var(--md-typeset-a-color);
-}
-
-.gs-desc {
-  opacity: 0.8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.gs-time {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  opacity: 0.6;
-  white-space: nowrap;
-  flex: 0 0 auto;
-}
-
+.get-started__path li a:hover { border-bottom-color: var(--link); }
+.gs-desc { color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+/* Time estimates as a margin note (Caveat). */
+.gs-time { font-family: var(--font-note); font-size: .95rem; color: var(--ink-subtle); white-space: nowrap; flex: 0 0 auto; }
+.get-started__path li code { padding: .05rem .3rem; font-size: .85em; }
 @media (max-width: 48rem) {
-  .get-started__card {
-    grid-template-columns: 1fr;
-    padding: 1.25rem;
-    gap: 0.75rem;
-  }
-  .get-started__icon {
-    font-size: 2.5rem;
-    text-align: left;
-  }
-  .gs-main {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.1rem;
-  }
-  .gs-desc {
-    white-space: normal;
-  }
+  .get-started__card { grid-template-columns: 1fr; padding: 1.25rem; gap: .75rem; }
+  .get-started__icon { font-size: 2.5rem; text-align: left; }
+  .gs-main { flex-direction: column; align-items: flex-start; gap: .1rem; }
+  .gs-desc { white-space: normal; }
 }
 
-.get-started__path li code {
-  padding: 0.05rem 0.3rem;
-  border-radius: 0.25rem;
-  font-size: 0.85em;
-}
-
-
-.hero {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: 1fr;
-  align-items: center;
-  gap: 1.25rem;
-  margin: 0.5rem 0 1.5rem;
-}
-@media (max-width: 48rem) {
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  .hero__logo {
-    justify-self: center;
-  }
-}
-
-.hero__logo {
-  width: 6.25rem;
-  height: 6.25rem;
-  flex: 0 0 auto;
-  max-width: 100%;
-  display: block;
-  object-fit: contain;
-}
-
-.hero__lead {
-  margin: 0;
-  color: var(--md-typeset-color);
-}
-
-/* --- Visualli Renderer tooltip fix --- */
-/* 
- * The SDK uses position:fixed for tooltips with canvas-relative coordinates.
- * We use transform on the container to create a containing block, making
- * position:fixed relative to the canvas container instead of the viewport.
- * This is set via inline style in visualli-embed.tsx: transform: translate(0, 0)
- */
-
-/* Ensure the content areas allow overflow for tooltips */
-.md-content,
-.md-content__inner {
-  overflow: visible !important;
-}
-
-/* Ensure tooltips appear above all MkDocs content */
-#visualli-renderer-root [data-node-tooltip="true"],
-#visualli-renderer-root [data-semantic-tooltip="true"] {
-  z-index: 9999 !important;
-}
-
-/*
- * Visualli Renderer Custom Styling
- */
+/* ── The live map (the SDK, embedded) ── */
+.md-content, .md-content__inner { overflow: visible !important; }
+#visualli-renderer-root [data-node-tooltip="true"], #visualli-renderer-root [data-semantic-tooltip="true"] { z-index: 9999 !important; }
 #visualli-renderer-root {
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-float);
+  margin: 1.5rem 0;
 }
 
-/* --- Premium Terminal Code Blocks --- */
-
-/* Give all code blocks a sleek, elevated card look */
-.md-typeset pre > code {
-  background: transparent;
-}
-
-.md-typeset .highlight,
-.md-typeset pre {
-  position: relative;
-  margin: 1.5em 0;
-  border-radius: 0.5rem;
-  background: var(--md-code-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.03), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
-  overflow: hidden;
-}
-
-/* Mac-like terminal header buttons for an IDE feel */
-.md-typeset .highlight::before,
-.md-typeset pre::before {
-  content: "";
-  display: block;
-  height: 2.25rem;
-  background: color-mix(in srgb, var(--md-default-fg-color) 3%, var(--md-default-bg-color));
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
-}
-
-.md-typeset .highlight::after,
-.md-typeset pre::after {
-  content: "";
-  position: absolute;
-  top: 0.8rem;
-  left: 1rem;
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
-  background: #ff5f56;
-  box-shadow: 1.15rem 0 0 #ffbd2e, 2.3rem 0 0 #27c93f;
-  z-index: 1;
-}
-
-.md-typeset .highlight pre {
-  margin: 0;
-  padding: 1.15rem 1.25rem;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-.md-typeset .highlight pre::before,
-.md-typeset .highlight pre::after {
-  display: none;
-}
-
-/* Make the copy button highly discoverable */
-.md-typeset .highlight .md-clipboard,
-.md-typeset pre .md-clipboard {
-  top: 0.3rem;
-  right: 0.5rem;
-  background-color: var(--md-default-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  color: var(--md-default-fg-color--light);
-  border-radius: 0.35rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  opacity: 0.8;
-  transition: all 0.2s ease;
-  z-index: 2;
-}
-
-.md-typeset .highlight:hover .md-clipboard,
-.md-typeset pre:hover .md-clipboard {
-  opacity: 1;
-  color: var(--md-typeset-color);
-}
-
-.md-typeset .highlight .md-clipboard:hover,
-.md-typeset pre .md-clipboard:hover {
-  color: var(--md-primary-fg-color);
-  border-color: var(--md-primary-fg-color);
-  background-color: color-mix(in srgb, var(--md-primary-fg-color) 8%, var(--md-default-bg-color));
-}
-
-/* --- GitHub version badge --- */
-.gh-version-wrapper {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 0.1rem;
-}
-
+/* ── GitHub version badge ── */
+.gh-version-wrapper { display: inline-flex; align-items: flex-start; gap: .1rem; }
 .version-tag {
   display: inline-block;
-  font-size: 0.52rem;
+  font-size: .52rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.32rem;
-  border-radius: 999px;
-  border: 1px solid var(--md-primary-fg-color);
-  color: var(--md-primary-fg-color);
+  letter-spacing: .04em;
+  padding: .1rem .38rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-muted);
   line-height: 1.2;
   white-space: nowrap;
-  margin-top: 0.25rem;
+  margin-top: .25rem;
 }

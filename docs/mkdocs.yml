@@ -36,25 +36,29 @@ theme:
     - content.tooltips
     - search.suggest
     - search.highlight
-  font:
-    text: Inter
+  # Type and colour come from the Visualli design system (design-system/, copied to assets/design-system by
+  # `make build-loader`): Atkinson Hyperlegible, the light / dark themes. The palette follows the reader by default.
+  font: false
   palette:
-    - scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: custom
       accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 use_directory_urls: false
 
 extra_css:
+  - assets/design-system/index.css
   - stylesheets/brand.css
 
 extra_javascript:
