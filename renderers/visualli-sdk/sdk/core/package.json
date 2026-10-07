@@ -70,7 +70,7 @@
   "scripts": {
     "build": "node ../../../../scripts/gen-design-system.mjs && tsup",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -80,6 +80,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/rbush": "^3.0.3",
+    "@visualli/eslint-config": "*",
     "typescript": "^5.5.4"
   },
   "engines": {

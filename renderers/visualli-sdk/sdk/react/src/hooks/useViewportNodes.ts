@@ -54,6 +54,5 @@ export function useViewportNodes(
       spatialIndex: indexRef.current,
       spatialIndexThreshold: SPATIAL_INDEX_THRESHOLD,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, levelFilter, skipCulling, isDragging, centerX, centerY, zoomLevel, canvasWidth, canvasHeight]);
 }

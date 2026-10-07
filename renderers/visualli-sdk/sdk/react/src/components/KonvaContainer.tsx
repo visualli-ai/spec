@@ -8,7 +8,6 @@
 
 import React, { memo, useMemo } from 'react';
 import { KShape as Shape } from '../konvaCompat';
-import type Konva from 'konva';
 import type { FlatNode } from '@visualli/core';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { drawHull, drawPill, layoutContainers } from '../design/containers';
@@ -36,7 +35,7 @@ const KonvaContainer = memo(function KonvaContainer({ nodes, label = '', zoomLev
     <Shape
       listening={false}
       perfectDrawEnabled={false}
-      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }, _shape: Konva.Shape) => {
+      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }) => {
         drawHull(ctx._context, placed.hull, design);
         if (placed.pill) drawPill(ctx._context, placed.pill, design, zoomLevel);
       }}

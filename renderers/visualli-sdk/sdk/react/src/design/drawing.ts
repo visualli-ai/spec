@@ -13,7 +13,6 @@ import {
   CANVAS_STYLE,
   IDEA,
   ideaDetail,
-  RINGS,
   TYPE_STYLES,
   blobPath,
   ideaStyle,

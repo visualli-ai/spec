@@ -100,7 +100,7 @@ function stop() {
 
 // ── Mount ────────────────────────────────────────────────────────────────────
 
-let layerResolvers: Array<(v: number) => void> = [];
+const layerResolvers: Array<(v: number) => void> = [];
 let resolveReady: () => void = () => {};
 const ready = new Promise<void>(r => { resolveReady = r; });
 
@@ -108,7 +108,7 @@ const t0 = performance.now();
 const doc = parseVisualliFile(USE_EXAMPLE ? exampleString : NO_PARENT ? buildNoParentDoc() : buildDoc(N));
 const buildMs = performance.now() - t0;
 
-(window as any).__bench = {
+(window as unknown as { __bench: unknown }).__bench = {
   n: N, buildMs, ready,
   start, stop,
   hubScreen() {
@@ -139,7 +139,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     controlsPosition={CONTROLS}
     app
     // `theme` is the new prop; older SDK builds only know `isDark`.
-    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark' } as any)}
+    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark' } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
     style={{ width: '100vw', height: '100vh' }}
     onLayerChange={() => { const t = performance.now(); layerResolvers.splice(0).forEach(r => r(t)); }}
   />,

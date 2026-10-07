@@ -18,4 +18,4 @@ Implementation, not design: parsing; the radial / linear layouts and container f
 4. **A shipped module doesn't compile or is wrong** → fix it upstream too (never patch `generated/`); the design system's build type-checks shipped modules the way `@visualli/core` compiles them, so this should not recur.
 
 ## Checks before pushing
-`npm run check:design`, `npm run build`, the package tests (`vitest run` in `sdk/core` and `sdk/react`), and the browser smoke tests (`npm run smoke`, `smoke:mobile`, `smoke:motion`; they need Playwright's Chromium — `npx playwright install chromium` — or temporarily `chromium.launch({ channel: 'chrome' })`).
+`npm run check:design`, `npm run lint` (ESLint 9 with the shared `@visualli/eslint-config`; any finding fails, generated files are ignored), `npm run build`, the package tests (`vitest run` in `sdk/core` and `sdk/react`), and the browser smoke tests (`npm run smoke`, `smoke:mobile`, `smoke:motion`; they need Playwright's Chromium — `npx playwright install chromium` — or temporarily `chromium.launch({ channel: 'chrome' })`).

@@ -34,13 +34,10 @@ export interface UseKonvaRendererReturn {
 
 export function useKonvaRenderer({
   containerRef,
-  stageRef,
   enabled = true,
 }: UseKonvaRendererOptions): UseKonvaRendererReturn {
   const pan              = useViewportStore(s => s.pan);
   const zoom             = useViewportStore(s => s.zoom);
-  const setZoom          = useViewportStore(s => s.setZoom);
-  const setCenter        = useViewportStore(s => s.setCenter);
   const updateCanvasSize = useViewportStore(s => s.updateCanvasSize);
   const autoAdjust       = useRenderConfigStore(s => s.autoAdjustQuality);
 
@@ -115,7 +112,7 @@ export function useKonvaRenderer({
     }
 
     return () => {
-      ro ? ro.disconnect() : window.removeEventListener('resize', updateSize);
+      if (ro) ro.disconnect(); else window.removeEventListener('resize', updateSize);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [enabled, containerRef, updateCanvasSize]);
@@ -161,7 +158,7 @@ export function useKonvaRenderer({
     lastPanPointRef.current = { x: e.evt.clientX, y: e.evt.clientY };
   }, []); // No Zustand dep — pan flushed on mouseUp
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent>): void => {
+  const handleMouseUp = useCallback((): void => {
     if (isPanningRef.current) {
       isPanningRef.current = false;
       const { x, y } = panAccumRef.current;

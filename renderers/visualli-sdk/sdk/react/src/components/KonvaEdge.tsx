@@ -7,7 +7,6 @@
 
 import React, { memo, useMemo } from 'react';
 import { KShape as Shape } from '../konvaCompat';
-import type Konva from 'konva';
 import { connectorGeometry, type FlatNode, type MindMapConnection } from '@visualli/core';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { drawConnector, prepareConnector } from '../design/drawing';
@@ -34,7 +33,7 @@ const KonvaEdge = memo(function KonvaEdge({ sourceNode: from, targetNode: to, co
     <Shape
       listening={false}
       perfectDrawEnabled={false}
-      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }, _shape: Konva.Shape) => {
+      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }) => {
         drawConnector(ctx._context, g, design, zoomLevel, connection?.style === 'dashed', connection?.label);
       }}
     />

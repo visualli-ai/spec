@@ -6,7 +6,6 @@
 
 import React from 'react';
 import { KShape as Shape } from '../konvaCompat';
-import type Konva from 'konva';
 import { type FlatNode } from '@visualli/core';
 import { DEFAULT_DESIGN, type Design } from '../design/design';
 import { IDLE, drawIdea } from '../design/drawing';
@@ -31,7 +30,7 @@ const KonvaNode = React.memo(function KonvaNode({
     <Shape
       listening={false}
       perfectDrawEnabled={false}
-      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }, _shape: Konva.Shape) => {
+      sceneFunc={(ctx: { _context: CanvasRenderingContext2D }) => {
         drawIdea(ctx._context, node, design, zoomLevel, { ...IDLE, hovered: isExternallyHovered, pressed: isExternallyPressed, selected: isSelected }, {
           shadows: !isDragging,
         });

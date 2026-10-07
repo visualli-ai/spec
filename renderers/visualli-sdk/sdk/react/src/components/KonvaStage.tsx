@@ -47,7 +47,8 @@ const KonvaStage = forwardRef<Konva.Stage, KonvaStageProps>(function KonvaStage(
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return () => { internalRef.current?.destroy(); };
+    const stage = internalRef.current; // the stage this mount created
+    return () => { stage?.destroy(); };
   }, []);
 
   // Konva reads the global pixelRatio when a layer creates its canvases, so set it

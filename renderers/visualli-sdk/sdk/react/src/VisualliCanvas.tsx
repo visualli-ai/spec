@@ -12,7 +12,7 @@
 //
 // NOT included (read-only viewer): editing, generation, chat, sources, export.
 
-import React, { useRef, useState, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import type Konva from 'konva';
 import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection, Comfort, ThemeInput } from '@visualli/core';
 import {
@@ -54,7 +54,6 @@ import { A11yLayer } from './components/A11yLayer';
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './hooks/useLayerChoreography';
-import { useVisualli } from './context/VisualliContext';
 import { useDesign } from './design/useDesign';
 import { ideaMeasure } from './design/measure';
 import { paintVars, type IdeaPaint } from './components/Overlays';
@@ -181,6 +180,9 @@ export interface VisualliCanvasProps {
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
   const { chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
+  // The host's hover callback, read through a ref so the stage's pointer handlers stay stable when it changes.
+  const onNodeHoverRef = useRef(onNodeHover);
+  onNodeHoverRef.current = onNodeHover;
 
   // Design system: resolve theme + comfort, inject its CSS once, and hold the first draw until its fonts are loaded.
   const design = useDesign({ theme: props.theme ?? (props.isDark === undefined ? 'light' : undefined), isDark: props.isDark, comfort: props.comfort, respectForcedColors: props.respectForcedColors });
@@ -506,7 +508,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     isTransitioningRef.current = true;
 
     diveInto(node, childLayerId, childNodes);
-  }, [doc, currentLayerId, nodes, design, isAnimating, diveInto, sizing, flatNodes, containers]);
+  }, [doc, currentLayerId, nodes, isAnimating, diveInto, sizing, flatNodes, containers]);
 
   const handleNavigateBack = useCallback((targetIndex: number) => {
     if (targetIndex >= navStack.length - 1) return;
@@ -660,7 +662,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     emptyTapRef.current = clientOf(e.evt);
     isCanvasPanningRef.current = true;
     rendererHandleMouseDown(e);
-  }, [hitTestNode, toWorldCoords, nodes, select, rendererHandleMouseDown]);
+  }, [hitTestNode, toWorldCoords, nodes, select, rendererHandleMouseDown, props.layout]);
 
   const handleStageMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     if (isEmulatedMouse(e.evt)) return;
@@ -703,7 +705,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (hovered !== pointerNodeIdRef.current) {
         pointerNodeIdRef.current = hovered;
         setPointerNodeId(hovered);
-        onNodeHover?.(hovered);
+        onNodeHoverRef.current?.(hovered);
       }
       // Cursors as the design system's: an idea is a button (pointer); the canvas keeps the default.
       stage.container().style.cursor = hovered ? 'pointer' : '';
@@ -830,15 +832,15 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const handleStageTouchStart = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (inPinch() || e.evt.touches.length > 1) return;
     handleStageMouseDown(e as unknown as Konva.KonvaEventObject<MouseEvent>);
-  }, [handleStageMouseDown]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [handleStageMouseDown]);
   const handleStageTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (inPinch() || e.evt.touches.length > 1) return;
     handleStageMouseMove(e as unknown as Konva.KonvaEventObject<MouseEvent>);
-  }, [handleStageMouseMove]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [handleStageMouseMove]);
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
     if (inPinch()) { isCanvasPanningRef.current = false; return; }
     handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>);
-  }, [handleStageMouseUp]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [handleStageMouseUp]);
 
   // Wheel / trackpad: zoom within VIEW's limits. It never navigates — stepping inside and backing out are
   // the design system's explicit actions (the idea, its peek, the depth trail, Escape / Backspace).
@@ -904,12 +906,11 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       keepTooltipOpenRef.current = event.detail.keep;
     };
     
-    // @ts-ignore - custom event
-    window.addEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+    // A custom event: its listener takes a CustomEvent, so it is cast to the DOM's EventListener.
+    window.addEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen as EventListener);
     
     return () => {
-      // @ts-ignore - custom event
-      window.removeEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen);
+      window.removeEventListener('keepNodeTooltipOpen', handleKeepTooltipOpen as EventListener);
     };
   }, []);
 
@@ -929,7 +930,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     else if (touchModeRef.current && (node.description || childLayer)) openSheet(node);
     else if (childLayer) handleNavigate(node.id);
     onNodeClick?.(node);
-  }, [doc, currentLayerId, handleNavigate, onNodeClick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [doc, currentLayerId, handleNavigate, onNodeClick]);
 
   const stepInside = useCallback((nodeId: string) => { setHoveredNode(null); handleNavigate(nodeId); }, [handleNavigate]);
 

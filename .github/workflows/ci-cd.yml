@@ -53,6 +53,9 @@ jobs:
           node scripts/gen-design-system.mjs --check
           node scripts/check-design-literals.mjs
 
+      - name: Lint (ESLint, shared @visualli/eslint-config; any finding fails)
+        run: npx turbo run lint
+
       - name: Unit tests
         run: npx turbo run test
 
