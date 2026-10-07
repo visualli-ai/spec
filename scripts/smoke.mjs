@@ -75,15 +75,17 @@ try {
   check('depth trail shows the path', trail.length === 2 && trail[0].trim() === '' && /The Water Cycle/.test(trail[1]), trail.join(' › '));
   check('the map entry is the home glyph, named by the map title', await home.getAttribute('aria-label') === 'The Water Cycle' && await home.getAttribute('title') === 'The Water Cycle' && (await home.locator('svg').count()) === 2);
   const dots = await page.$$eval('.vi-trail li > button > svg > path', (ps) => ps.map((p) => p.getAttribute('fill')));
-  check('trail dots: the map in stone, then the clicked idea in its own colour', dots[0] === 'var(--topic-stone)' && dots[1] === '#a6f5d8', dots.join(', '));
+  // The example has no colours: each idea takes the topics in sibling order (the design system's topicFor); the
+  // root is the first idea of its layer, so teal.
+  check('trail dots: the map in stone, then the clicked idea in its own colour', dots[0] === 'var(--topic-stone)' && dots[1] === 'var(--topic-teal)', dots.join(', '));
   check('mirror lists the new layer', (await page.locator('.vi-sr button[data-node-id]').count()) >= 5);
 
   // ── peek on hover, with Step inside ──
   await hover('Evaporation');
   check('hover opens the peek card', /Evaporation/.test(await page.textContent('.vi-peek .vi-fact__title') ?? ''));
   check('peek has Step inside for ideas with a layer', (await page.locator('.vi-peek .vi-fact__step').count()) === 1);
-  // Evaporation's colour in the file is #b7e7f3: a custom colour, drawn as given (the design system's customColor).
-  check('peek takes the idea\'s own colour', /--vi-fact-fill:\s*#b7e7f3/.test(await page.getAttribute('.vi-peek', 'style') ?? ''), await page.getAttribute('.vi-peek', 'style') ?? '');
+  // Evaporation has no colour in the file and is the first idea of its layer: the first topic in sibling order, teal.
+  check('peek takes the idea\'s own colour', /--vi-fact-fill:\s*var\(--topic-teal\)/.test(await page.getAttribute('.vi-peek', 'style') ?? ''), await page.getAttribute('.vi-peek', 'style') ?? '');
 
   // ── step inside via the peek button, find a term ──
   await hover('Condensation');

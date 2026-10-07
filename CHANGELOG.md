@@ -68,7 +68,7 @@
   - **Cursors**: an idea shows the pointer; the canvas keeps the default cursor (was grab / grabbing).
   - The touch sheet's height is `SHEET` (42% of the map, at most 300px) when it scrolls the map to keep the idea in view (that step still used half the map).
   - Loading, empty and error screens are a still note: an idea's blob in a topic colour, a title and a line of text (the loading screen had its own pulsing animation).
-- `examples/example.visualli` is re-spaced for full-size ideas (its positions were set for the old 200 × 80 boxes and overlapped once ideas fit their labels): the water cycle runs around its ring with every connector and label visible, and a few connections show how water moves between the stores (*melts into*, *flow into*, *springs feed*) and what drives evaporation (*heats*).
+- `examples/example.visualli` is re-spaced for full-size ideas (its positions were set for the old 200 × 80 boxes and overlapped once ideas fit their labels): the water cycle runs around its ring with every connector and label visible, and a few connections show how water moves between the stores (*melts into*, *flow into*, *springs feed*) and what drives evaporation (*heats*). It carries no colours, so every idea takes the design system's default: the topics in sibling order.
 
 - `npm run lint` works again: `@visualli/core`, `@visualli/react` and the playground use the shared ESLint 9 flat config (`@visualli/eslint-config`), any finding fails (`--max-warnings 0`), CI runs it, and the existing findings are fixed (unused code, stale suppressions; the stage's hover handler reads `onNodeHover` through a ref, so it stays stable and always calls the latest callback). The generated design-system files are not linted.
 
