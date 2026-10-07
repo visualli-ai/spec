@@ -140,9 +140,9 @@ try {
     const rect = async (q) => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
       const page = await ctx.newPage(); await page.goto(`http://localhost:${port}/bench.html?doc=example${q}`); await page.waitForSelector('.vi-ctrls'); await page.waitForTimeout(500);
       const r = await page.evaluate(() => { const c = document.querySelector('.vi-ctrls').getBoundingClientRect(); return { top: c.top, bottom: c.bottom, right: c.right }; }); await ctx.close(); return r; };
-    const def = await rect(''), bottom = await rect('&controls=bottom-right');
-    check('controls: default is top-right', def.top < 40 && def.right > 350, JSON.stringify(def));
-    check('controls: controlsPosition="bottom-right" gives the design system placement', bottom.bottom > 700 && bottom.right > 350, JSON.stringify(bottom));
+    const def = await rect(''), top = await rect('&controls=top-right');
+    check('controls: default is the design system placement (bottom-right)', def.bottom > 700 && def.right > 350, JSON.stringify(def));
+    check('controls: controlsPosition="top-right" keeps the pre-0.2 placement', top.top < 40 && top.right > 350, JSON.stringify(top));
   }
   // ── depth trail dot matches the clicked idea ──
   {

@@ -137,6 +137,7 @@ export interface IdeaOptions {
  * show ideas as specks: below LOD_TINY_PX a filled box is drawn, below
  * LOD_DETAIL_PX only the body (no rings, shadow or label). Both are invisible
  * differences at those sizes and keep 10k-idea maps interactive.
+ * Pending upstream: an SDK performance adaptation, not yet a design-system rule.
  */
 export const LOD_TINY_PX = 12;
 export const LOD_DETAIL_PX = 24;

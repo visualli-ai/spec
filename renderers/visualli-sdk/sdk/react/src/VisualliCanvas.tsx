@@ -23,9 +23,6 @@ import {
   motionVars,
   nodeRadii,
   RBushSpatialIndex,
-  TEXT_LABEL_HIDE_BELOW_ZOOM,
-  ZOOM_NAV_IN_THRESHOLD,
-  ZOOM_NAV_OUT_THRESHOLD,
   VIEW,
   PEEK,
   SHEET,
@@ -138,8 +135,8 @@ export interface VisualliCanvasProps {
    */
   layout?: 'auto' | 'touch' | 'pointer';
   /**
-   * Where the zoom / fit controls sit. Default 'top-right' (SDK placement, as before 0.2);
-   * 'bottom-right' is the design system's placement (`.vi-map__ctrls`).
+   * Where the zoom / fit controls sit. Default 'bottom-right', the design system's placement
+   * (`.vi-map__ctrls`); 'top-right' keeps the pre-0.2 SDK placement for hosts that need it.
    */
   controlsPosition?: 'bottom-right' | 'top-right';
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
@@ -389,17 +386,11 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     // relative to the renderer's actual bounding box.
     const cw = canvasSizeRef.current.width  || containerRef.current?.getBoundingClientRect().width  || 800;
     const ch = canvasSizeRef.current.height || containerRef.current?.getBoundingClientRect().height || 600;
-    const { centerX, centerY } = calculateFitView(flatNodes, cw, ch);
-    // Root layer: always use 1.0 zoom to match visualli.ai reference behaviour.
-    // calculateFitZoom for a single node or dense layout on a 1920-default canvas
-    // produces zoom > 2 which triggers the auto-zoom-in threshold immediately.
-    const isRootLayer = navStack.length <= 1;
-    // Root layer: use 1.0 zoom to match visualli.ai reference behaviour.
-    // Child layers use the bounding-box fit zoom (already clamped to [0.4, 5]).
-    const zoomLevel = isRootLayer ? 1.0 : calculateFitView(flatNodes, cw, ch).zoomLevel;
+    // Every layer, the root included, fits the same way (the design system's fit; never beyond VIEW.fitMax).
+    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch);
     setCenter(centerX, centerY);
     setZoom(zoomLevel);
-  }, [flatNodes, navStack.length, setCenter, setZoom]);
+  }, [flatNodes, setCenter, setZoom]);
 
   // Keep ref in sync after every render so async callbacks always use latest closure
   fitToScreenRef.current = fitToScreen;
@@ -487,8 +478,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const cw = canvasSizeRef.current.width  || 800;
     const ch = canvasSizeRef.current.height || 600;
     const fitVp = calculateFitView(flatNodes, cw, ch);
-    const isRootNow = navStack.length <= 1;
-    parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: isRootNow ? 0.85 : fitVp.zoomLevel });
+    parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: fitVp.zoomLevel });
 
     stepTargetRef.current = { topic: topicOf(node), label: node.title };
     setIsTransitioning(true);
@@ -507,45 +497,6 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     isTransitioningRef.current = true;
     backOut(savedVp);
   }, [navStack.length, isAnimating, backOut]);
-
-  // ── Auto-zoom navigation (Google Maps style) ──────────────────────────────
-  const baseZoomRef           = useRef(1.0);
-  const lastZoomTransitionRef = useRef(0);
-  const ZOOM_COOLDOWN         = 1000;
-
-  useEffect(() => { baseZoomRef.current = 1.0; }, [currentLayerId]);
-
-  useEffect(() => {
-    if (isTransitioningRef.current || isAnimating()) return;
-    const now = Date.now();
-    if (now - lastZoomTransitionRef.current < ZOOM_COOLDOWN) return;
-    const relative = viewport.zoomLevel / baseZoomRef.current;
-
-    if (relative >= ZOOM_NAV_IN_THRESHOLD) {
-      // Zoom in threshold — drill into closest node
-      let closest: FlatNode | null = null;
-      let minDist = Infinity;
-      for (const node of nodes.values()) {
-        const dx = node.x - viewport.centerX;
-        const dy = node.y - viewport.centerY;
-        const d  = dx * dx + dy * dy;
-        if (d < minDist) { minDist = d; closest = node; }
-      }
-      if (closest) {
-        const childLayer = doc ? getChildLayerForNode(doc, closest.id, currentLayerId ?? '') : null;
-        if (childLayer) {
-          lastZoomTransitionRef.current = now;
-          handleNavigate(closest.id);
-          baseZoomRef.current = 1.0;
-        }
-      }
-    } else if (relative < ZOOM_NAV_OUT_THRESHOLD && navStack.length > 1) {
-      // Zoom out threshold — go back to parent
-      lastZoomTransitionRef.current = now;
-      handleNavigateBack(navStack.length - 2);
-      baseZoomRef.current = 1.0;
-    }
-  }, [viewport.zoomLevel, viewport.centerX, viewport.centerY, nodes, doc, currentLayerId, navStack, isAnimating, handleNavigate, handleNavigateBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Stage-level hit detection ─────────────────────────────────────────────
   const toWorldCoords = useCallback((stage: Konva.Stage, pointer: { x: number; y: number }) => {
@@ -813,29 +764,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const handleStageTouchEnd = useCallback((e: Konva.KonvaEventObject<TouchEvent>) =>
     handleStageMouseUp(e as unknown as Konva.KonvaEventObject<MouseEvent>), [handleStageMouseUp]);
 
-  // Wheel with auto-nav guard on non-root layers
-  const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
-    const isZoomOut = e.evt.deltaY > 0;
-    if (!isZoomOut) { rendererHandleWheel(e); return; }
-
-    const liveZoom = useViewportStore.getState().zoomLevel;
-    const projected = Math.max(ZOOM_MIN, liveZoom * (1 - e.evt.deltaY / 1000));
-
-    // Root layer: no parent to navigate to — let the user zoom freely down to ZOOM_MIN
-    // (do NOT clamp at ZOOM_NAV_OUT_THRESHOLD; content may require lower zoom to fit)
-
-    if (navStack.length > 1 && projected <= ZOOM_NAV_OUT_THRESHOLD && !isTransitioningRef.current && !isAnimating()) {
-      e.evt.preventDefault();
-      const now = Date.now();
-      if (now - lastZoomTransitionRef.current >= ZOOM_COOLDOWN) {
-        lastZoomTransitionRef.current = now;
-        handleNavigateBack(navStack.length - 2);
-        baseZoomRef.current = 1.0;
-      }
-      return;
-    }
-    rendererHandleWheel(e);
-  }, [rendererHandleWheel, navStack, setZoom, isAnimating, handleNavigateBack]);
+  // Wheel / trackpad: zoom within VIEW's limits. It never navigates — stepping inside and backing out are
+  // the design system's explicit actions (the idea, its peek, the depth trail, Escape / Backspace).
+  const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => { rendererHandleWheel(e); }, [rendererHandleWheel]);
 
   // Canvas mouse move for description tooltip
   const lastHoverCheckRef = useRef(0);
@@ -930,14 +861,20 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // fires then, so clear the "pointer is on the peek" flag whenever it closes.
   useEffect(() => { if (!hoveredNode) tooltipHoverRef.current = false; }, [hoveredNode]);
 
-  // Keyboard: Esc steps back out, + / - zoom, 0 fits.
+  // Keyboard, as the design system's canvas language: Escape or Backspace steps back out (Escape first closes a
+  // pinned peek); ⌘ / Ctrl + + / − / 0 zoom in, zoom out and fit (by VIEW.zoomStep, within VIEW's limits).
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return;
+    const cmd = e.metaKey || e.ctrlKey;
+    if (cmd && !e.altKey) {
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * VIEW.zoomStep, ZOOM_MAX)); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / VIEW.zoomStep, ZOOM_MIN)); }
+      else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
+      return;
+    }
+    if (e.altKey || e.shiftKey) return;
     if (e.key === 'Escape' && pinnedIdRef.current) { e.preventDefault(); setPinnedId(null); }
-    else if (e.key === 'Escape' && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
-    else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(Math.min(viewport.zoomLevel * VIEW.zoomStep, ZOOM_MAX)); }
-    else if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(Math.max(viewport.zoomLevel / VIEW.zoomStep, ZOOM_MIN)); }
-    else if (e.key === '0') { e.preventDefault(); fitToScreen(); }
+    else if ((e.key === 'Escape' || e.key === 'Backspace') && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
   }, [navStack.length, handleNavigateBack, setZoom, viewport.zoomLevel, fitToScreen]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1057,7 +994,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       {/* Canvas controls (bottom-right) */}
       <div
         className="vi-map__ctrls"
-        style={props.controlsPosition === 'bottom-right'
+        style={props.controlsPosition !== 'top-right'
           ? (pinnedNode && touchMode ? { bottom: `calc(var(--space-4) + ${sheetHeight}px)` } : undefined)
           : { top: 'var(--space-4)', bottom: 'auto' }}
       >
@@ -1083,7 +1020,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       )}
 
       {/* Pointer: the peek floats over the hovered idea — the design system's card */}
-      {!touchMode && hoveredNode && hoveredNodePosition && peekNode && viewport.zoomLevel < 3 && viewport.zoomLevel >= TEXT_LABEL_HIDE_BELOW_ZOOM && (() => {
+      {!touchMode && hoveredNode && hoveredNodePosition && peekNode && (() => {
         const VP_PAD = 8;
         const HALF_W = 160;
         const APPROX_H = 90;

@@ -76,7 +76,7 @@ export interface VisualliRendererProps {
    */
   layout?: 'auto' | 'touch' | 'pointer';
 
-  /** Where the zoom / fit controls sit: 'top-right' (default) or the design system's 'bottom-right'. */
+  /** Where the zoom / fit controls sit: the design system's 'bottom-right' (default) or the pre-0.2 'top-right'. */
   controlsPosition?: 'bottom-right' | 'top-right';
 
   /**

@@ -16,6 +16,8 @@ import { MOTION, easeBezier, revealDelay, connectorDelay, revealTotal, bloomOffs
  * system staggers one idea per `reveal.stagger`, which is right for a layer of a
  * dozen ideas and would take minutes for a layer of thousands. Ideas past the
  * cap share slots, so a layer never takes longer to arrive than this many ideas would.
+ * Pending upstream: this is an SDK performance adaptation, not yet a design-system rule; it belongs
+ * in the design system's geometry/motion.ts (a large-layer rule) so every renderer behaves alike.
  */
 export const REVEAL_STAGGER_CAP = 30;
 
@@ -23,6 +25,8 @@ export const REVEAL_STAGGER_CAP = 30;
  * Layers with more ideas than this fade in together instead of blooming: every frame of the
  * bloom repaints the whole layer, which is fine for the dozen ideas the design system's
  * choreography is written for and too heavy for a layer of hundreds.
+ * Pending upstream: this is an SDK performance adaptation, not yet a design-system rule; it belongs
+ * in the design system's geometry/motion.ts (a large-layer rule) so every renderer behaves alike.
  */
 export const REVEAL_MAX_NODES = 150;
 

@@ -126,6 +126,31 @@ try {
   const pctFit = parseInt(await page.textContent('.vi-ctrls__pct'));
   check('fit changes the zoom', pctFit !== pct2, `${pct2}% -> ${pctFit}%`);
 
+  // ── zooming never navigates (the design system has no zoom-to-step rule) ──
+  const depth = () => page.locator('.vi-trail li').count();
+  const before = await depth();
+  await page.mouse.move(640, 420);
+  for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 600); await sleep(40); }
+  await sleep(1200);
+  check('zooming far out stays on the layer', (await depth()) === before, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
+  check('…and stops at the design system\'s zoom floor', parseInt(await page.textContent('.vi-ctrls__pct')) >= 30);
+  for (let i = 0; i < 16; i++) { await page.mouse.wheel(0, -600); await sleep(40); }
+  await sleep(1200);
+  check('zooming far in stays on the layer', (await depth()) === before, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
+  await page.click('button[aria-label="Fit to screen"]');
+  await sleep(300);
+
+  // ⌘ / Ctrl + = zooms in, ⌘ / Ctrl + 0 fits (the design system's keyboard zoom)
+  await page.mouse.click(30, 400);
+  const pk0 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  await page.keyboard.press('ControlOrMeta+=');
+  await sleep(250);
+  const pk1 = parseInt(await page.textContent('.vi-ctrls__pct'));
+  check('⌘/Ctrl + = zooms in', pk1 > pk0, `${pk0}% -> ${pk1}%`);
+  await page.keyboard.press('ControlOrMeta+0');
+  await sleep(300);
+  check('⌘/Ctrl + 0 fits', parseInt(await page.textContent('.vi-ctrls__pct')) === pk0, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
+
   // ── go back up: trail click and Escape ──
   await layerChange();
   await page.click('.vi-trail li:nth-child(2) button');
@@ -136,6 +161,15 @@ try {
   await page.keyboard.press('Escape');
   await awaitLayer();
   check('Escape steps back out', (await page.locator('.vi-trail li').count()) === 1);
+  await layerChange();
+  await page.locator('.vi-sr button[data-node-id]').first().focus();
+  await page.keyboard.press('Enter'); // back into The Water Cycle
+  await awaitLayer();
+  await layerChange();
+  await page.mouse.click(30, 400);
+  await page.keyboard.press('Backspace');
+  await awaitLayer();
+  check('Backspace steps back out', (await page.locator('.vi-trail li').count()) === 1);
 
   // ── read-only: none of the product features exist ──
   const text = (await page.textContent('body')) ?? '';

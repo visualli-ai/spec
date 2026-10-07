@@ -16,7 +16,8 @@ import { IDLE, drawIdea, type IdeaState } from '../design/drawing';
 import { HoverTweens, type RevealClock, type Arrival } from '../design/choreography';
 import { useFrames } from './useFrames';
 
-/** Above this many visible ideas the idea drop shadow is skipped (it is the costliest canvas effect). */
+/** Above this many visible ideas the idea drop shadow is skipped (it is the costliest canvas effect).
+ *  Pending upstream: an SDK performance adaptation, not yet a design-system rule. */
 const SHADOW_MAX_VISIBLE = 150;
 const SPATIAL_INDEX_THRESHOLD = 200;
 /** Hover lifts are tweened for layers up to this many ideas; denser layers snap (every tween frame repaints the whole layer, and in a dense layer the pointer changes idea constantly). */

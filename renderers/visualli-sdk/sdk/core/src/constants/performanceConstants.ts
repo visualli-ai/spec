@@ -76,7 +76,9 @@ export const ZOOM_DEFAULT          = 1.0;
 export const ZOOM_STEP             = 0.1;
 export const ZOOM_WHEEL_SENSITIVITY = 0.001;
 
+/** @deprecated Unused since 0.2: zooming no longer steps into or out of layers (the design system has no such rule). Kept for one release. */
 export const ZOOM_NAV_IN_THRESHOLD  = 2.7;
+/** @deprecated Unused since 0.2: zooming no longer steps out of a layer. Kept for one release. */
 export const ZOOM_NAV_OUT_THRESHOLD = 0.4;
 export const TEXT_LABEL_HIDE_BELOW_ZOOM = 0.3;
 

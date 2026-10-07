@@ -21,7 +21,7 @@ const params = new URLSearchParams(location.search);
 const N = Number(params.get('n') ?? 500);
 const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
-const CONTROLS = (params.get('controls') ?? undefined) as 'bottom-right' | undefined;
+const CONTROLS = (params.get('controls') ?? undefined) as 'bottom-right' | 'top-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
 // ?doc=noparent: a root with two differently coloured ideas, each with a child layer (the trail dot must match the clicked idea).
 const NO_PARENT = params.get('doc') === 'noparent';

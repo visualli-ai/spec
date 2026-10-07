@@ -1,5 +1,4 @@
 import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '../types/index.js';
-import { ZOOM_MAX, ZOOM_NAV_OUT_THRESHOLD } from '../constants/performanceConstants.js';
 import { VIEW } from '../generated/geometry/interaction.js';
 
 // ── Connection helpers ────────────────────────────────────────────────────────
@@ -98,10 +97,9 @@ export function calculateFitZoom(
 
   const z = Math.min(zoomX, zoomY);
 
-  // Scale back 20% so nodes aren't edge-to-edge; never enlarge a layer beyond the
-  // design system's fit cap (VIEW.fitMax); clamp to at least ZOOM_NAV_OUT_THRESHOLD
-  // so arriving at the layer never immediately re-triggers the zoom-out transition.
-  return Math.max(Math.min(z * 0.80, VIEW.fitMax), ZOOM_NAV_OUT_THRESHOLD);
+  // Scale back 20% so nodes aren't edge-to-edge; within the design system's zoom
+  // limits and never enlarging a layer beyond its fit cap (VIEW.fitMax).
+  return Math.max(Math.min(z * 0.80, VIEW.fitMax), VIEW.zoomMin);
 }
 
 /**
