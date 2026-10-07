@@ -16,11 +16,19 @@ export const HULL = { padX: 150, padY: 125, radius: 48 };
 /** Penalties: an idea or another name under the pill is never fine; a connector through it is bad; order breaks ties. */
 const WEIGHT = { idea: 1000, label: 1000, connector: 60, preference: 1 };
 
-/** The hull around a group's idea centers. */
-export function containerHull(centers: Pt[]): Hull | null {
-  if (!centers.length) return null;
-  const xs = centers.map((p) => p.x), ys = centers.map((p) => p.y);
-  return { x0: Math.min(...xs) - HULL.padX, x1: Math.max(...xs) + HULL.padX, y0: Math.min(...ys) - HULL.padY, y1: Math.max(...ys) + HULL.padY, radius: HULL.radius };
+/** Room kept between a member's outline and the hull, for ideas larger than the base size. */
+export const HULL_CLEAR = { x: 50, y: 51 } as const;
+
+/** The hull around a group's ideas: `padX` / `padY` beyond their centres, or more for an idea that has grown to show
+ *  its label (`rx` / `ry`, its half size: then its outline plus HULL_CLEAR). */
+export function containerHull(members: ReadonlyArray<Pt & { rx?: number; ry?: number }>): Hull | null {
+  if (!members.length) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const m of members) {
+    const px = Math.max(HULL.padX, (m.rx ?? 0) + HULL_CLEAR.x), py = Math.max(HULL.padY, (m.ry ?? 0) + HULL_CLEAR.y);
+    x0 = Math.min(x0, m.x - px); x1 = Math.max(x1, m.x + px); y0 = Math.min(y0, m.y - py); y1 = Math.max(y1, m.y + py);
+  }
+  return { x0, x1, y0, y1, radius: HULL.radius };
 }
 
 /** Candidate spots for a w × h pill, in preference order: bottom center (the default look), top center, the thirds of

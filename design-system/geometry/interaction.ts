@@ -62,6 +62,53 @@ export function zoomAround(t0: { x: number; y: number }, s0: number, s1: number,
   return { x: to.x - wx * s1, y: to.y - wy * s1 };
 }
 
+/** Framing a layer (fit to view): its ideas with room around them, and its container hulls with room for the name pill. */
+export const FRAME = {
+  /** Room beyond each idea's outline (at least `minPadX` / `minPadY` from its centre). */ clearX: 50, clearY: 46, minPadX: 150, minPadY: 120,
+  /** Room beyond each container hull for its dashed line and the name pill straddling it. */ hullX: 24, hullY: 40,
+} as const;
+export type FrameBox = { x0: number; y0: number; x1: number; y1: number };
+
+/** The box a layer is framed by: every idea (`rx` / `ry` its half size) and every container hull. */
+export function layerBounds(ideas: ReadonlyArray<{ x: number; y: number; rx: number; ry: number }>, hulls: ReadonlyArray<FrameBox> = []): FrameBox {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of ideas) {
+    const px = Math.max(FRAME.minPadX, n.rx + FRAME.clearX), py = Math.max(FRAME.minPadY, n.ry + FRAME.clearY);
+    x0 = Math.min(x0, n.x - px); x1 = Math.max(x1, n.x + px); y0 = Math.min(y0, n.y - py); y1 = Math.max(y1, n.y + py);
+  }
+  for (const h of hulls) { x0 = Math.min(x0, h.x0 - FRAME.hullX); x1 = Math.max(x1, h.x1 + FRAME.hullX); y0 = Math.min(y0, h.y0 - FRAME.hullY); y1 = Math.max(y1, h.y1 + FRAME.hullY); }
+  if (!Number.isFinite(x0)) return { x0: -FRAME.minPadX, y0: -FRAME.minPadY, x1: FRAME.minPadX, y1: FRAME.minPadY };
+  return { x0, y0, x1, y1 };
+}
+
+/** Fit to view: the scale that shows `bounds` in an area of `width` × `height` (never beyond VIEW.fitMax), and the
+ *  world point to centre. */
+export function fitView(bounds: FrameBox, width: number, height: number): { scale: number; center: { x: number; y: number } } {
+  const scale = Math.min(width / Math.max(1, bounds.x1 - bounds.x0), height / Math.max(1, bounds.y1 - bounds.y0), VIEW.fitMax);
+  return { scale, center: { x: (bounds.x0 + bounds.x1) / 2, y: (bounds.y0 + bounds.y1) / 2 } };
+}
+
+/** Where the peek card sits (pointer): beside the idea — right of it if it fits, else left — and level with it. */
+export const PEEK_PLACEMENT = {
+  /** Gap between the idea's outermost ring and the card. */ gap: 16,
+  /** The card's width and the height kept clear below it. */ cardWidth: 300, cardHeight: 220,
+  /** The card is raised this much above the idea's centre. */ raise: 70,
+  /** Kept this far inside the map's edges. */ margin: 12,
+} as const;
+
+/** The peek card's top-left, in map (screen) pixels. `idea`: the idea's centre on screen and its on-screen half
+ *  width with its outermost ring (`half`); `box`: the map's size. */
+export function peekPosition(idea: { x: number; y: number; half: number }, box: { w: number; h: number }, card: { w: number; h: number } = { w: PEEK_PLACEMENT.cardWidth, h: PEEK_PLACEMENT.cardHeight }) {
+  const P = PEEK_PLACEMENT, half = idea.half + P.gap;
+  const right = idea.x + half + card.w < box.w - P.margin;
+  return { left: right ? idea.x + half : Math.max(P.margin, idea.x - half - card.w), top: Math.min(Math.max(P.margin, idea.y - P.raise), box.h - card.h), side: right ? 'right' as const : 'left' as const };
+}
+
+/** The depth trail: each entry shows the idea that was stepped into — its title and a dot in its color (the same
+ *  topic or custom color the idea is drawn in, including the sibling-order topic of an uncolored idea); the first
+ *  entry is the map's title in `stone`. The dot is that level's blob shape. */
+export const TRAIL = { rootTopic: 'stone', dotBox: 16, dotRadius: 6.4, stroke: 1.25, currentStroke: 1.75 } as const;
+
 /** How an input answers: a mouse hovers (peeks and terms open on hover); touch and pen tap. Null for unknown pointers. */
 export function pointerModeFor(pointerType: string): 'hover' | 'touch' | null {
   return pointerType === 'mouse' ? 'hover' : pointerType === 'touch' || pointerType === 'pen' ? 'touch' : null;
