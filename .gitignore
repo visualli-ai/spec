@@ -20,6 +20,7 @@ bench/results/*.json
 bench/screenshots/
 renderers/visualli-sdk/apps/react/dist-bench/
 docs/assets/fonts/
+docs/assets/design-system/
 
 # TypeScript incremental build caches (rewritten on every build)
 *.tsbuildinfo

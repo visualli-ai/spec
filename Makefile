@@ -67,9 +67,11 @@ build-loader:
 	@mv renderers/visualli-sdk/apps/react/dist-loader/visualli-loader.bundle.js docs/js/
 	@cp examples/example.visualli docs/assets/example.visualli
 	@mkdir -p docs/assets/fonts && cp design-system/fonts/Caveat-Variable.ttf docs/assets/fonts/
+	@rm -rf docs/assets/design-system && mkdir -p docs/assets/design-system && cp -R design-system/index.css design-system/fonts design-system/tokens design-system/css docs/assets/design-system/
 	@echo "✅ Loader bundle moved to docs/js/visualli-loader.bundle.js"
 	@echo "✅ Master example.visualli copied to docs/assets/"
 	@echo "✅ Design-system fonts copied to docs/assets/fonts/"
+	@echo "✅ Design system (tokens, fonts, spec CSS) copied to docs/assets/design-system/ for the docs' look"
 
 docs-serve: build-loader
 	@cd docs && ../$(VENV)/bin/mkdocs serve -f mkdocs.yml
