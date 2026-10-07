@@ -1,4 +1,4 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.1.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.1.5). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; color-scheme: light; }
 [data-theme$="dark"] { color-scheme: dark; }
 [data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
@@ -147,6 +147,14 @@ button.vi-node { cursor: pointer; }
 .vi-map__group-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
 .vi-map__group.is-selected rect:not(.vi-map__group-hit) { stroke: var(--focus); stroke-width: 2.5; stroke-dasharray: none; }
 .vi-map__group-label.is-selected { border-color: var(--focus); color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+.vi-map { touch-action: pan-x pan-y; }
+.vi-map.is-app { touch-action: none; }
+.vi-map.is-pinching .vi-map__world { transition: none; }
+.vi-map.is-instant.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
+.vi-map.is-instant.is-reveal .vi-edge, .vi-map.is-instant.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
+.vi-map.is-instant .vi-node, .vi-map.is-instant .vi-node__rings { transition: none; }
+.vi-map.is-detail-body .vi-node:not(.is-selected):not(:focus-visible):not(:hover) :is(.vi-node__rings, .vi-node__label), .vi-map.is-detail-speck .vi-node:not(.is-selected):not(:focus-visible):not(:hover) :is(.vi-node__rings, .vi-node__label) { display: none; }
+.vi-map.is-detail-body .vi-node:not(.is-selected):not(:focus-visible):not(:hover) .vi-node__body, .vi-map.is-detail-speck .vi-node:not(.is-selected):not(:focus-visible):not(:hover) .vi-node__body, .vi-map.no-shadows .vi-node__body { filter: none; }
 @keyframes vi-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes vi-fade { from { opacity: 0; } }
 @keyframes vi-bloom { from { opacity: 0; transform: translate(calc(-50% + var(--vi-dx)), calc(-50% + var(--vi-dy))) scale(var(--vi-bloom-from, .55)); } }
