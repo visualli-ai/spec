@@ -1,4 +1,4 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.1.9). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; color-scheme: light; }
 [data-theme$="dark"] { color-scheme: dark; }
 [data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
@@ -109,7 +109,7 @@ button.vi-node { cursor: pointer; }
   .vi-map.is-idle .vi-map__world { transition: none; }
 }
 .vi-map__trail { position: absolute; top: var(--space-4); left: var(--space-4); z-index: var(--z-chrome); }
-.vi-map__ctrls { position: absolute; bottom: var(--space-4); right: var(--space-4); z-index: var(--z-chrome); }
+.vi-map__ctrls { position: absolute; top: var(--space-4); right: var(--space-4); z-index: var(--z-chrome); }
 [data-reveal="instant"] .vi-map.is-reveal .vi-map__slot, [data-motion="reduced"] .vi-map.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
 [data-reveal="instant"] .vi-map.is-reveal .vi-edge, [data-reveal="instant"] .vi-map.is-reveal .vi-edge__line, [data-motion="reduced"] .vi-map.is-reveal .vi-edge, [data-motion="reduced"] .vi-map.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
 @media (prefers-reduced-motion: reduce) {
