@@ -23,7 +23,7 @@ const FitIcon = () => <Icon><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a
 const ChevronLeftIcon = () => <Icon size={14}><polyline points="15 6 9 12 15 18" /></Icon>;
 const ChevronIcon = () => <Icon size={14}><polyline points="9 6 15 12 9 18" /></Icon>;
 const ExternalIcon = () => <Icon size={14}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></Icon>;
-const HomeIcon = () => <Icon size={12}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>;
+const HomeIcon = () => <Icon size={TRAIL.homeIconSize}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>;
 const CloseIcon = () => <Icon size={18}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></Icon>;
 
 // ── Canvas controls ───────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ export function paintVars(p: IdeaPaint): { fill: string; ring: string } {
   return { fill: `var(--topic-${t})`, ring: `var(--topic-${t}-ring)` };
 }
 
-/** A depth trail entry: the idea stepped into (its title and colour); the first is the map's title. */
+/** A depth trail entry: the idea stepped into (its title and colour); the first is the map (home glyph, its title as the accessible name). */
 export interface TrailEntry { layerId: string; label: string; level: number; paint: IdeaPaint }
 
 /** The trail dot: the level's blob shape in the idea's colour (the design system's TRAIL). */
@@ -91,14 +91,17 @@ export interface DepthTrailProps { stack: TrailEntry[]; onNavigateBack: (index: 
 export const DepthTrail = memo(function DepthTrail({ stack, onNavigateBack }: DepthTrailProps) {
   if (stack.length === 0) return null;
   const current = stack.length - 1;
+  // The map's own entry: the home glyph only, its title as the accessible name and tooltip (the design system's TRAIL.rootLabel).
+  const iconOnly = TRAIL.rootLabel === 'icon';
   return (
     <nav className="vi-trail" aria-label="Depth trail" data-help="navigation-stack">
       <ol>
         {stack.map((e, i) => (
           <li key={`${e.layerId}-${i}`} className={i === current ? 'is-current' : undefined}>
-            <button type="button" disabled={i === current} aria-current={i === current ? 'location' : undefined} onClick={() => onNavigateBack(i)}>
+            <button type="button" disabled={i === current} aria-current={i === current ? 'location' : undefined} onClick={() => onNavigateBack(i)}
+              {...(i === 0 && iconOnly ? { 'aria-label': e.label, title: e.label } : {})}>
               <TrailDot level={e.level} paint={e.paint} current={i === current} />
-              <span>{i === 0 ? <><HomeIcon /> {e.label}</> : e.label}</span>
+              <span>{i === 0 ? (iconOnly ? <HomeIcon /> : <><HomeIcon /> {e.label}</>) : e.label}</span>
             </button>
           </li>
         ))}

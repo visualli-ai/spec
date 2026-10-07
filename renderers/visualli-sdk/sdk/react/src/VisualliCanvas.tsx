@@ -6,8 +6,8 @@
 //     term cards, depth trail and controls (the design system's own CSS)
 //   • Stage-level hit detection via RBush spatial index (no Konva hit-canvas)
 //   • 8 themes + comfort settings (readable type, larger text, reduced motion)
-//   • Auto-zoom navigation (zoom in → child layer, zoom out → parent layer)
-//   • Layer transitions (CSS-transform driven, no canvas redraws while animating)
+//   • Step inside / back out by idea, peek, depth trail, Escape or Backspace — zoom and pinch never navigate
+//   • Layer transitions with the design system's motion (CSS-transform driven, no canvas redraws while animating)
 //   • A visually hidden DOM mirror of the visible ideas for screen readers / Tab
 //
 // NOT included (read-only viewer): editing, generation, chat, sources, export.

@@ -3,7 +3,7 @@
 ## 0.2.0 — Visualli design system rendering
 
 `@visualli/core` and `@visualli/react` 0.2.0 render a `.visualli` map exactly like the Visualli design system.
-**Conforms to design system 0.1.7** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
+**Conforms to design system 0.1.8** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
 
 ### Added
 - All 8 design-system themes (`light`, `dark`, `focus-*`, `colorsafe-*`, `contrast-*`) via the `theme` prop; family names (`focus`, `colorsafe`, `contrast`) and `'auto'` follow the reader. Forced-colors switches to the high-contrast theme (`respectForcedColors`).
@@ -62,7 +62,7 @@
   - **Fit to view** (`interaction.ts` → `layerBounds`, `fitView`): every idea at its real size with room around it and every container hull with room for its name, never beyond 110%. Was the ideas' boxes with 15% padding, then × 0.8, and a 600 × 400 box for a single idea. `calculateFitView(nodes, w, h, containers?)`.
   - **Zoom relative to the fit**, as in the design system's map: the controls read 100% at fit, zoom stays within 30%–500% of the fit (buttons, keys, wheel and pinch), and Fit is disabled while the layer is already fitted. A layer whose fit is below 30% (a very large map) can now be fitted. The controls' labels are the design system's (*Fit map to view*, toolbar *Canvas*); − / + are no longer disabled at the limits.
   - **Peek placement** (`peekPosition`): beside the idea — right of it if it fits, else left — raised 70px, inside the map. Was centred above the idea.
-  - **Depth trail** (`TRAIL`): the first entry is the map's title (with the home icon) in stone; each next entry is the idea stepped into — its title and a dot in its own colour (its topic, its sibling-order topic, or its custom colour), the dot on the trail's dashed line. The canvas tint (`chromaticImmersion`) takes the same colour. Was 'Home' and a colour derived from a hash of the layer id when the idea had none.
+  - **Depth trail** (`TRAIL`): the first entry is the map itself — its stone dot and the home glyph only, with the map's title as its accessible name and tooltip (design system 0.1.8, `TRAIL.rootLabel: 'icon'`; a map's title usually repeats its centre idea's, which read *⌂ The Water Cycle › The Water Cycle*); each next entry is the idea stepped into — its title and a dot in its own colour (its topic, its sibling-order topic, or its custom colour), the dot on the trail's dashed line. The canvas tint (`chromaticImmersion`) takes the same colour. Was 'Home' and a colour derived from a hash of the layer id when the idea had none.
   - **Container hulls** grow for large ideas (`containerHull` with each member's half size, `HULL_CLEAR`); containers with `style: "none"` draw no hull or name.
   - **Dimming**: while an idea is peeked the others fade only in the focus themes (.4) and on touch (.6), as the design system's `.vi-node.is-dimmed`; elsewhere they stay as they are (was focus themes only).
   - **Cursors**: an idea shows the pointer; the canvas keeps the default cursor (was grab / grabbing).

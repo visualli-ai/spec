@@ -68,9 +68,12 @@ try {
   await page.keyboard.press('Enter');
   await awaitLayer();
   check('Enter steps inside', (await page.locator('.vi-trail li').count()) === 2);
-  // The trail starts with the map's title; each entry is the idea stepped into, its dot in that idea's own colour.
+  // The trail starts with the map (TRAIL.rootLabel 'icon': the home glyph only, the map's title as its accessible name
+  // and tooltip); each next entry is the idea stepped into — its title, its dot in that idea's own colour.
   const trail = await page.locator('.vi-trail li').allTextContents();
-  check('depth trail shows the path', trail.length === 2 && /The Water Cycle/.test(trail[0]) && /The Water Cycle/.test(trail[1]), trail.join(' › '));
+  const home = page.locator('.vi-trail li:first-child button');
+  check('depth trail shows the path', trail.length === 2 && trail[0].trim() === '' && /The Water Cycle/.test(trail[1]), trail.join(' › '));
+  check('the map entry is the home glyph, named by the map title', await home.getAttribute('aria-label') === 'The Water Cycle' && await home.getAttribute('title') === 'The Water Cycle' && (await home.locator('svg').count()) === 2);
   const dots = await page.$$eval('.vi-trail li > button > svg > path', (ps) => ps.map((p) => p.getAttribute('fill')));
   check('trail dots: the map in stone, then the clicked idea in its own colour', dots[0] === 'var(--topic-stone)' && dots[1] === '#a6f5d8', dots.join(', '));
   check('mirror lists the new layer', (await page.locator('.vi-sr button[data-node-id]').count()) >= 5);
