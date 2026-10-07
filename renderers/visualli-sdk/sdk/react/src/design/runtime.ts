@@ -24,7 +24,7 @@ const STYLE_ID = 'visualli-design-system';
  * `is-medium` < 900px). Only design-system custom properties are used.
  */
 const LAYOUT_CSS = `
-.vi-map__ctrls { transition: bottom var(--duration-quick) var(--ease-standard); }
+.vi-map__ctrls { transition: bottom var(--duration-quick) var(--ease-standard); } /* controlsPosition 'bottom-right': rising above the sheet */
 .vi-map.is-compact .vi-trail li:not(:first-child):not(.is-current):not(:nth-last-child(2)) { display: none; }
 .vi-map.is-compact .vi-trail button span { max-width: 40vw; max-width: 40cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vi-map.is-compact .vi-fact:not(.vi-fact--sheet) { width: min(300px, calc(100cqw - 2 * var(--space-4))); }

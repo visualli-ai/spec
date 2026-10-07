@@ -3,14 +3,14 @@
 ## 0.2.0 — Visualli design system rendering
 
 `@visualli/core` and `@visualli/react` 0.2.0 render a `.visualli` map exactly like the Visualli design system.
-**Conforms to design system 0.1.9** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
+**Conforms to design system 0.2.0** (`design-system/manifest.json`; the version is exported as `DESIGN_SYSTEM_VERSION`).
 
 ### Added
 - All 8 design-system themes (`light`, `dark`, `focus-*`, `colorsafe-*`, `contrast-*`) via the `theme` prop; family names (`focus`, `colorsafe`, `contrast`) and `'auto'` follow the reader. Forced-colors switches to the high-contrast theme (`respectForcedColors`).
 - Comfort settings: `comfort={{ readableType, largerText, reducedMotion }}` (`reducedMotion: 'system'` follows the OS).
 - Ideas are drawn with their topic's fill and ring colour, 3px stroke and the design system's rings (1.1 / 1.2 / 1.3); connectors use the design system's cubic curve, open arrowhead and `edge-gap`, with endpoints outside the real outline.
 - Kalam (ideas), Caveat (connector labels) and Atkinson Hyperlegible Next (UI); the first draw waits for `document.fonts`.
-- `controlsPosition` (`'bottom-right'` default, the design system's `.vi-map__ctrls` placement; `'top-right'` keeps the pre-0.2 SDK placement).
+- `controlsPosition` (`'top-right'` default, the design system's `.vi-map__ctrls` placement, opposite the depth trail; `'bottom-right'` moves the controls to the bottom corner, above the touch sheet while it's open).
 - Peek, term definitions (the `semantic-anchors` extension), depth trail and canvas controls as DOM styled with the design system's CSS.
 - Accessible DOM mirror of the visible ideas (Tab, Enter / Space), `Esc` to step out, `+` / `-` / `0` to zoom and fit.
 - `@visualli/core`: `theme`, `rendering/nodeGeometry` and the design system's geometry (`blobPath`, `blobRadius`, `RINGS`, `edgePath`, `arrowPath`, `shapeForLevel`), `getSemanticAnchors`, `FlatNode.topic`, `MindMapConnection.style`.
@@ -50,7 +50,7 @@
   - Every layer fits the same way, the root included (was a fixed 100% on the root, and 85% when coming back to it), with the design system's fit (see *Design system 0.1.6* below).
   - The peek shows at any zoom (it was hidden beyond 3× and below 0.3×).
   - Keyboard as the design system's canvas language: Escape or **Backspace** steps back out; **⌘ / Ctrl + = / − / 0** zoom in, out and fit (were plain + / − / 0).
-  - `controlsPosition` defaults to the design system's **'bottom-right'** (was 'top-right'; pass `'top-right'` to keep the old placement).
+  - The zoom / fit controls follow the design system's `.vi-map__ctrls`: **top-right**, opposite the depth trail (design system 0.2.0 settled its placement; the SDK has no placement rule of its own). `controlsPosition="bottom-right"` moves them to the bottom corner.
 - Large layers and level of detail follow the design system (0.1.5): `geometry/motion.ts` → `largeLayer` / `layerReveal` (above 30 ideas the stagger shares 30 slots; above 150 the layer fades in together and hover lifts snap) and `geometry/detail.ts` (`ideaDetail`: body only under 24px on screen, a speck under 12px; `shadowsShown`: no shadows above 150 visible ideas). These were the SDK's own constants; they now come from the design system, with the same results.
 - **Pinch to zoom** (the design system's `GESTURE`, `pinchZoom`, `zoomAround`): on any touch input, two fingers zoom the map's contents around the point between them, within `VIEW` (0.3–5), and pan as they move together; the depth trail, controls, peek and sheet never scale. A pinch never navigates and never ends as a tap, a pan or an idea drag. New prop `app` (on `VisualliRenderer` and `VisualliCanvas`): the map is the page and takes every touch gesture (the design system's `.vi-map.is-app`, `touch-action: none`); without it the map is embedded and one finger still scrolls the page. The Visualli web app should pass `app`. `npm run smoke:mobile` checks the pinch against `VIEW`.
 

@@ -142,16 +142,17 @@ export interface VisualliCanvasProps {
    */
   layout?: 'auto' | 'touch' | 'pointer';
   /**
-   * Where the zoom / fit controls sit. Default 'bottom-right', the design system's placement
-   * (`.vi-map__ctrls`); 'top-right' keeps the pre-0.2 SDK placement for hosts that need it.
-   */
-  /**
    * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
    * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
    * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
    */
   app?: boolean;
-  controlsPosition?: 'bottom-right' | 'top-right';
+  /**
+   * Where the zoom / fit controls sit. Default 'top-right', the design system's placement (`.vi-map__ctrls`,
+   * opposite the depth trail). 'bottom-right' moves them to the bottom corner for hosts that need the top edge;
+   * there they rise above the touch peek sheet while it's open.
+   */
+  controlsPosition?: 'top-right' | 'bottom-right';
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
   fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
   /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
@@ -1073,12 +1074,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       {/* Depth trail (top-left) */}
       <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Canvas controls (bottom-right) */}
+      {/* Canvas controls: the design system's placement (top-right); 'bottom-right' only on request */}
       <div
         className="vi-map__ctrls"
-        style={props.controlsPosition !== 'top-right'
-          ? (pinnedNode && touchMode ? { bottom: `calc(var(--space-4) + ${sheetHeight}px)` } : undefined)
-          : { top: 'var(--space-4)', bottom: 'auto' }}
+        style={props.controlsPosition === 'bottom-right'
+          ? { top: 'auto', bottom: pinnedNode && touchMode ? `calc(var(--space-4) + ${sheetHeight}px)` : 'var(--space-4)' }
+          : undefined}
       >
         <ZoomControls onFit={fitToScreen} touch={touchMode} />
       </div>

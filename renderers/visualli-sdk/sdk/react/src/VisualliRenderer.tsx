@@ -83,7 +83,8 @@ export interface VisualliRendererProps {
    * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
    */
   app?: boolean;
-  controlsPosition?: 'bottom-right' | 'top-right';
+  /** Where the zoom / fit controls sit: 'top-right' (default, the design system's placement) or 'bottom-right'. */
+  controlsPosition?: 'top-right' | 'bottom-right';
 
   /**
    * Enable chromatic immersion background effect.

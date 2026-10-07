@@ -2,7 +2,7 @@
 // Change the design system instead; the next `npm run build` regenerates this file.
 
 /** Version of the design system these modules were generated from. */
-export const DESIGN_SYSTEM_VERSION = "0.1.9" as const;
+export const DESIGN_SYSTEM_VERSION = "0.2.0" as const;
 
 export const THEME_NAMES = [
   "light",
