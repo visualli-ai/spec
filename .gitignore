@@ -19,3 +19,6 @@ dist-loader/
 bench/screenshots/
 renderers/visualli-sdk/apps/react/dist-bench/
 docs/assets/fonts/
+
+# TypeScript incremental build caches (rewritten on every build)
+*.tsbuildinfo

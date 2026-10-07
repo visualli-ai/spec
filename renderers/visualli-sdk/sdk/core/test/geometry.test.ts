@@ -41,11 +41,11 @@ describe('outlines', () => {
       expect(blobPath(shape, rx, ry)).toBe(DS.blobPath(shape, rx, ry));
     }
   });
-  it('level -> shape follows the design system rule (and never repeats consecutively)', () => {
+  it('level -> shape follows the design system rule: one shape for every idea (SHAPE.idea)', () => {
     for (let level = 0; level < 40; level++) {
       expect(shapeOfLevel(level)).toBe(DS.shapeForLevel(level));
       expect(shapeForLevel(level)).toBe(DS.shapeForLevel(level));
-      if (level > 0) expect(shapeOfLevel(level)).not.toBe(shapeOfLevel(level - 1));
+      expect(shapeOfLevel(level)).toBe(DS.SHAPE.idea);
     }
   });
   it('idea radii are half the idea size', () => {

@@ -4,12 +4,12 @@
 // it chooses the radii, shapes, rings and endpoints for a FlatNode and never
 // re-implements outline or curve math. Pure functions, no DOM.
 
-import { BLOB_SHAPES, RINGS, arrowPath, blobPath, blobRadius, edgePath, shapeForLevel } from '../generated/geometry/blob.js';
+import { BLOB_SHAPES, RINGS, SHAPE, arrowPath, blobPath, blobRadius, edgePath, shapeForLevel } from '../generated/geometry/blob.js';
 import { METRICS } from '../generated/designSystem.js';
 import type { FlatNode } from '../types/mindmap.js';
 
 // The design system's geometry is part of the public API (single source of truth).
-export { BLOB_SHAPES, RINGS, arrowPath, blobPath, blobRadius, edgePath, shapeForLevel };
+export { BLOB_SHAPES, RINGS, SHAPE, arrowPath, blobPath, blobRadius, edgePath, shapeForLevel };
 export { drawBlob } from '../generated/geometry/blob.js';
 
 /** Minimum a node needs to be drawn / connected. */

@@ -2,10 +2,17 @@
 import { BLOB_SHAPES } from './blobShapes';
 export { BLOB_SHAPES };
 
-/** Shape for a layer level: level 0 is always shape 0; consecutive levels never repeat (same rule as the renderer). */
+/** Which outline ideas take. Every idea, at every depth, has the same shape (`idea`, the shape of the map's centre);
+ *  depth shows through the depth trail, rings, the layer tint and the step-inside motion. The other authored shapes
+ *  stay in BLOB_SHAPES for explicit use (`Node shape`); `varyByLevel: true` brings back one shape per level. */
+export const SHAPE: { idea: number; varyByLevel: boolean } = { idea: 0, varyByLevel: false };
+
+/** Shape for a layer level: SHAPE.idea for every level. With SHAPE.varyByLevel, level 0 is SHAPE.idea and consecutive
+ *  levels never repeat. */
 export function shapeForLevel(level: number): number {
+  if (!SHAPE.varyByLevel) return SHAPE.idea;
   const n = BLOB_SHAPES.length;
-  let cur = 0;
+  let cur = SHAPE.idea;
   for (let i = 1; i <= level; i++) {
     const r = Math.floor(Math.abs(Math.sin((i + 1) * 12.9898) * 43758.5453));
     cur = (cur + (r % (n - 1)) + 1) % n;
