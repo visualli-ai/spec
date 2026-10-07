@@ -9,7 +9,7 @@
 `npm run check:design` fails on stale generated files and on colour, font or blob literals outside `src/generated/`.
 
 ## What stays in the SDK
-Implementation, not design: parsing; the radial / linear layouts and container formations for layers whose ideas carry no positions (a file's own positions and colours always win); text measurement for the design system's sizing; and all performance work (culling, spatial index, caches, level-of-detail plumbing, the bench) — keep it in `@visualli/core`, and refactor it only to be equally fast or faster (`npm run bench`). Anything a reader can see or feel — size, colour, type, motion, choreography, gestures, framing, placement — comes from the design system.
+Implementation, not design: parsing; the radial / linear layouts and container formations for layers whose ideas carry no positions (a file's own positions and colours always win); text measurement for the design system's sizing; and all performance work (culling, spatial index, caches, level-of-detail plumbing, the bench) — keep it in `@visualli/core`, and refactor it only to be equally fast or faster (`npm run bench:compare`). Anything a reader can see or feel — size, colour, type, motion, choreography, gestures, framing, placement — comes from the design system.
 
 ## When the SDK looks or behaves differently from the design system
 1. Find the rule in `design-system/` (tokens, `css/spec.css`, `geometry/*.ts`, `README.md`).
@@ -19,3 +19,5 @@ Implementation, not design: parsing; the radial / linear layouts and container f
 
 ## Checks before pushing
 `npm run check:design`, `npm run lint` (ESLint 9 with the shared `@visualli/eslint-config`; any finding fails, generated files are ignored), `npm run build`, the package tests (`vitest run` in `sdk/core` and `sdk/react`), and the browser smoke tests (`npm run smoke`, `smoke:mobile`, `smoke:motion`; they need Playwright's Chromium — `npx playwright install chromium` — or temporarily `chromium.launch({ channel: 'chrome' })`).
+
+**Performance changes** — anything touching rendering, culling, the spatial index, layout, caches, level of detail or the canvas's event handling: run `npm run bench:compare` (this branch against `origin/main`, measured back to back on the same machine) and paste its table into the PR. Changes within ±5% are noise; a row flagged *worse* must be explained or fixed before merging. Never quote numbers from separate sessions or machines as a comparison (`bench/results/README.md`).

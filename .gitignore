@@ -15,7 +15,8 @@ dist-loader/
 .turbo
 .turbo/
 
-# Benchmark / screenshot artefacts (results JSON under bench/results is committed)
+# Benchmark / screenshot artefacts (results only mean something as a before/after pair: see bench/results/README.md)
+bench/results/*.json
 bench/screenshots/
 renderers/visualli-sdk/apps/react/dist-bench/
 docs/assets/fonts/

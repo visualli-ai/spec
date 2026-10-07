@@ -3,6 +3,7 @@
 //
 //   node scripts/smoke-mobile.mjs [--no-build]
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,11 +13,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
 const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const port = 4181;
 if (!process.argv.includes('--no-build')) await run('npm', ['run', 'build'], { cwd: root });
 await run('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir, stdio: 'ignore' });
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await sleep(2500);
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 
 let failures = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`); if (!ok) failures++; };
@@ -27,7 +28,7 @@ async function open(viewport, { touch }, query = '') {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  await page.goto(`http://localhost:${port}/bench.html?doc=${query ? query.replace('&doc=', '') : 'example'}&theme=light`);
+  await page.goto(`http://127.0.0.1:${port}/bench.html?doc=${query ? query.replace('&doc=', '') : 'example'}&theme=light`);
   await page.evaluate(() => window.__bench.ready);
   await page.waitForSelector('canvas', { timeout: 8000 });
   await page.waitForTimeout(800);
@@ -166,7 +167,7 @@ try {
   // ── controls position ──
   {
     const rect = async (q) => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-      const page = await ctx.newPage(); await page.goto(`http://localhost:${port}/bench.html?doc=example${q}`); await page.waitForSelector('.vi-ctrls'); await page.waitForTimeout(500);
+      const page = await ctx.newPage(); await page.goto(`http://127.0.0.1:${port}/bench.html?doc=example${q}`); await page.waitForSelector('.vi-ctrls'); await page.waitForTimeout(500);
       const r = await page.evaluate(() => { const c = document.querySelector('.vi-ctrls').getBoundingClientRect(); return { top: c.top, bottom: c.bottom, right: c.right }; }); await ctx.close(); return r; };
     const def = await rect(''), top = await rect('&controls=top-right');
     check('controls: default is the design system placement (bottom-right)', def.bottom > 700 && def.right > 350, JSON.stringify(def));
@@ -209,6 +210,6 @@ try {
     check('resize: and back', await page.evaluate(() => !document.querySelector('.vi-map').classList.contains('is-compact')));
     await ctx.close();
   }
-} finally { await browser.close(); server.kill(); }
+} finally { await browser.close(); await server.stop(); }
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 process.exit(failures ? 1 : 0);

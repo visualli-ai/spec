@@ -12,6 +12,7 @@
     "check:design": "node scripts/gen-design-system.mjs --check && node scripts/check-design-literals.mjs",
     "test": "turbo run test",
     "bench": "node scripts/bench.mjs",
+    "bench:compare": "node scripts/bench-compare.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "smoke": "node scripts/smoke.mjs",
     "smoke:mobile": "node scripts/smoke-mobile.mjs",

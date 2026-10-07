@@ -1,15 +1,19 @@
 // Benchmark driver for the Visualli SDK.
 //
-//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--dpr 1] [--runs 1] [--no-build]
+//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--dpr 1] [--no-build] [--channel chrome] [--out file.json]
 //
-// For each node count it opens /bench.html in headless Chromium and records
+// To compare a change with main, use scripts/bench-compare.mjs (npm run bench:compare): numbers are only meaningful as
+// a before/after pair measured in the same session on the same machine (see bench/results/README.md).
+//
+// For each node count it opens /bench.html in headless Chromium (or the installed Chrome with --channel chrome) and records
 // requestAnimationFrame frame times during:
 //   pan        real mouse drag on the canvas
 //   zoom       real wheel events (in / out)
 //   transition clicking the root node (layer zoom-in) -- also reports the
 //              click -> layer-ready latency
-// Results are written to bench/results/<label>.json and printed as a table.
+// Results are written to bench/results/<label>.json (or --out) and printed as a table.
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -26,7 +30,6 @@ const label = args.label ?? 'run';
 const sizes = String(args.sizes ?? '500,2000,10000').split(',').map(Number);
 const dpr = Number(args.dpr ?? 1);
 const theme = args.theme ?? 'light';
-const port = 4173;
 
 const sh = (cmd, a, opts = {}) => new Promise((res, rej) => {
   const p = spawn(cmd, a, { stdio: 'inherit', ...opts });
@@ -36,12 +39,20 @@ const sh = (cmd, a, opts = {}) => new Promise((res, rej) => {
 if (!args['no-build']) await sh('npm', ['run', 'build'], { cwd: root });
 await sh('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir });
 
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await new Promise(r => setTimeout(r, 2500));
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// The arrival animation is not part of the pan / zoom numbers: wait until it's over (data-vi-reveal="idle"). Renderers
+// without that attribute (the 0.1.x SDK, when bench:compare measures an older base) get a fixed settle time instead.
+const settled = async (page) => {
+  const hasReveal = await page.evaluate(() => document.querySelector('.vi-map')?.dataset.viReveal !== undefined);
+  if (hasReveal) await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 });
+  else await sleep(1500);
+};
 const results = [];
-const browser = await chromium.launch({ args: ['--enable-precise-memory-info'] });
+const browser = await chromium.launch({ ...(args.channel ? { channel: String(args.channel) } : {}), args: ['--enable-precise-memory-info'] });
 
 try {
   for (const n of sizes) {
@@ -49,10 +60,10 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(String(e)));
-    await page.goto(`http://localhost:${port}/bench.html?n=${n}&theme=${theme}`);
+    await page.goto(`http://127.0.0.1:${port}/bench.html?n=${n}&theme=${theme}`);
     await page.evaluate(() => window.__bench.ready);
     await page.waitForSelector('canvas');
-    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 }); // the arrival animation is not part of the pan/zoom numbers
+    await settled(page);
     const row = { n, dpr, buildMs: await page.evaluate(() => window.__bench.buildMs) };
 
     // ── layer transition (root -> N-node layer) ──
@@ -66,7 +77,7 @@ try {
     row.layerReadyMs = Math.round(tChange - t0);
     await sleep(1800);
     row.transition = await page.evaluate(() => window.__bench.stop());
-    await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 });
+    await settled(page);
     await sleep(500);
 
     // ── pan: drag in a sinusoid for 3 s ──
@@ -101,12 +112,12 @@ try {
   }
 } finally {
   await browser.close();
-  server.kill();
+  await server.stop();
 }
 
-const out = resolve(root, 'bench/results');
-mkdirSync(out, { recursive: true });
-writeFileSync(resolve(out, `${label}.json`), JSON.stringify({ label, dpr, theme, date: new Date().toISOString(), chromium: browser.version?.() ?? '', results }, null, 2));
+const outFile = args.out ? resolve(String(args.out)) : resolve(root, 'bench/results', `${label}.json`);
+mkdirSync(dirname(outFile), { recursive: true });
+writeFileSync(outFile, JSON.stringify({ label, dpr, theme, date: new Date().toISOString(), chromium: browser.version?.() ?? '', results }, null, 2));
 
 const f = x => (x ? `${x.fps.toFixed(1)} fps / p95 ${x.p95.toFixed(1)}ms` : 'n/a');
 console.log(`\n${label} (dpr ${dpr}, ${theme})\n| nodes | layer ready | transition | pan | zoom |\n|---|---|---|---|---|`);

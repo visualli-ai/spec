@@ -2,6 +2,7 @@
 //   node scripts/screenshots-responsive.mjs [--theme dark] [--no-build]
 // Output: bench/screenshots/responsive/<theme>-<phone|tablet|desktop>.png
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -12,10 +13,10 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
 const theme = process.argv.includes('--theme') ? process.argv[process.argv.indexOf('--theme') + 1] : 'light';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const port = 4184;
 await new Promise((res, rej) => spawn('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir, stdio: 'ignore' }).on('exit', c => (c ? rej() : res())));
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await sleep(2500);
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 const out = resolve(root, 'bench/screenshots/responsive');
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
@@ -23,7 +24,7 @@ try {
   for (const [name, vp, touch] of [['phone', { width: 390, height: 844 }, true], ['tablet', { width: 820, height: 1180 }, true], ['desktop', { width: 1280, height: 800 }, false]]) {
     const ctx = await browser.newContext({ viewport: vp, hasTouch: touch, isMobile: touch, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
-    await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=${theme}`);
+    await page.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=${theme}`);
     await page.evaluate(() => window.__bench.ready); await page.waitForSelector('canvas'); await page.waitForFunction(() => document.querySelector('.vi-map')?.dataset.viReveal === 'idle', null, { timeout: 15000 }); await page.waitForTimeout(300);
     const pos = t => page.evaluate(x => window.__bench.nodeScreen(x), t);
     const go = async (t) => {
@@ -42,4 +43,4 @@ try {
     await ctx.close();
     console.error(name, 'done');
   }
-} finally { await browser.close(); server.kill(); }
+} finally { await browser.close(); await server.stop(); }

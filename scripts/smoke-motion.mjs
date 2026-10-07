@@ -4,6 +4,7 @@
 //
 //   node scripts/smoke-motion.mjs     (builds the playground first unless --no-build)
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +15,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
 const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const port = 4179;
 
 // The motion constants straight from the design system, parsed from its source.
 const src = readFileSync(resolve(root, 'design-system/geometry/motion.ts'), 'utf8');
@@ -28,8 +28,9 @@ const M = {
 
 if (!process.argv.includes('--no-build')) await run('npm', ['run', 'build'], { cwd: root });
 await run('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir, stdio: 'ignore' });
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await sleep(2500);
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 
 let failures = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`); if (!ok) failures++; };
@@ -49,7 +50,7 @@ const anims = (page) => page.evaluate(() => document.querySelector('.vi-map > di
   return { dur: t.duration, delay: t.delay, easing: t.easing, from: kf[0].transform ?? kf[0].opacity, to: kf[kf.length - 1].transform ?? kf[kf.length - 1].opacity };
 }));
 const reveal = (page) => page.evaluate(() => document.querySelector('.vi-map').dataset.viReveal);
-const open = async (page, q) => { await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=light${q}`); await page.evaluate(() => window.__bench.ready); await page.waitForSelector('canvas'); };
+const open = async (page, q) => { await page.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=light${q}`); await page.evaluate(() => window.__bench.ready); await page.waitForSelector('canvas'); };
 
 const browser = await chromium.launch();
 try {
@@ -131,5 +132,5 @@ try {
   check('reveal="instant": ideas arrive together', Date.now() - t1 < 1500 && (await ip.getAttribute('.vi-map', 'data-reveal')) === 'instant');
 
   check('no page errors', errors.length === 0, errors.join(' | '));
-} finally { await browser.close(); server.kill(); }
+} finally { await browser.close(); await server.stop(); }
 process.exit(failures ? 1 : 0);

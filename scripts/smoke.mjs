@@ -4,6 +4,7 @@
 //
 //   node scripts/smoke.mjs            (builds the playground first unless --no-build)
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,12 +16,12 @@ const { TERM } = await import(pathToFileURL(resolve(root, 'design-system/geometr
 const appDir = resolve(root, 'renderers/visualli-sdk/apps/react');
 const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const port = 4178;
 
 if (!process.argv.includes('--no-build')) { await run('npm', ['run', 'build'], { cwd: root }); }
 await run('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir, stdio: 'ignore' });
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await sleep(2500);
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 
 let failures = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`); if (!ok) failures++; };
@@ -32,7 +33,7 @@ try {
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error' && !/favicon|404/.test(m.text())) errors.push(m.text()); });
-  await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=light`);
+  await page.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=light`);
   await page.evaluate(() => window.__bench.ready);
   await page.waitForSelector('canvas', { timeout: 8000 }); // the first draw waits for the fonts
   await page.waitForTimeout(800);
@@ -190,7 +191,7 @@ try {
   check('no console / page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
 } finally {
   await browser.close();
-  server.kill();
+  await server.stop();
 }
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 process.exit(failures ? 1 : 0);

@@ -6,6 +6,7 @@
 //
 // Output: bench/screenshots/<label>/<theme>-<root|layer>.png
 
+import { startPreview } from './lib/preview.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -22,14 +23,14 @@ const label = args.label ?? 'run';
 const themes = String(args.themes ?? 'light,dark,focus-light,focus-dark,colorsafe-light,colorsafe-dark,contrast-light,contrast-dark').split(',');
 const dpr = Number(args.dpr ?? 2);
 const comfort = args.comfort ? `&comfort=${args.comfort}` : '';
-const port = 4174;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const run = (cmd, a, o = {}) => new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit', ...o }).on('exit', c => (c ? rej(new Error(`${cmd} ${c}`)) : res())));
 
 if (!args['no-build']) { await run('npm', ['run', 'build'], { cwd: root }); }
 await run('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir });
-const server = spawn('npx', ['vite', 'preview', '--outDir', 'dist-bench', '--port', String(port), '--strictPort'], { cwd: appDir, stdio: 'ignore' });
-await sleep(2500);
+// A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
+const server = await startPreview(appDir);
+const { port } = server;
 
 const out = resolve(root, 'bench/screenshots', label);
 mkdirSync(out, { recursive: true });
@@ -38,7 +39,7 @@ try {
   for (const theme of themes) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: dpr });
     const page = await ctx.newPage();
-    await page.goto(`http://localhost:${port}/bench.html?doc=example&theme=${theme}${comfort}`);
+    await page.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=${theme}${comfort}`);
     await page.evaluate(() => window.__bench.ready);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.move(4, 4); // park the pointer on empty canvas so no idea is hovered
@@ -57,4 +58,4 @@ try {
     await ctx.close();
     console.error(`${theme} done`);
   }
-} finally { await browser.close(); server.kill(); }
+} finally { await browser.close(); await server.stop(); }
