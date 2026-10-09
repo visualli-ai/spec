@@ -1,0 +1,10 @@
+/* Page defaults for a full-page viewer (optional: embedded renderers leave it out) — generated from the Visualli design system (v0.2.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Native controls and scrollbars follow the theme. */
+:root { color-scheme: light; }
+[data-theme$="dark"] { color-scheme: dark; }
+[data-type="readable"] { letter-spacing: 0.01em; }
+body { font-family: var(--font-ui); color: var(--ink); background: var(--canvas); font-size: var(--vi-fs-body); line-height: var(--vi-lh-body); -webkit-font-smoothing: antialiased; }
+/* One focus ring for every control on the page. */
+:where(button, a, input, textarea, select, summary, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Reduced motion for everything on the page (bundle.css already does it for .vi-* elements). */
+[data-motion="reduced"] *, [data-motion="reduced"] *::before, [data-motion="reduced"] *::after { transition-duration: 1ms !important; }

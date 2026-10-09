@@ -1,4 +1,6 @@
-/* Load once: fonts, tokens, then the spec components. */
+/* Load once in a full-page viewer: fonts, tokens, the spec components, then the page defaults.
+   Embedding a map in another page? Load tokens/tokens.css and css/spec.css only: they style .vi-* elements and nothing else. */
 @import url("./fonts/fonts.css");
 @import url("./tokens/tokens.css");
 @import url("./css/spec.css");
+@import url("./css/base.css");
