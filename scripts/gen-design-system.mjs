@@ -63,10 +63,10 @@ for (const [k, v] of Object.entries(motionReduced)) { const n = num(v); if (n !=
 
 const topics = [...new Set(Object.keys(base).filter((k) => /^topic-[a-z]+$/.test(k)).map((k) => k.slice(6)))];
 
-// Canvas type styles live in tokens.css under "/* Type styles */".
+// Canvas type styles live in tokens.css under "/* Type styles */", as .vi-text-<name> classes (unprefixed .<name> before design system 0.2.1); TYPE_STYLES is keyed by <name>.
 const css = readFileSync(resolve(ds, 'tokens/tokens.css'), 'utf8');
 const typeStyles = {};
-for (const m of css.slice(css.indexOf('/* Type styles */')).matchAll(/\.([a-z-]+)\s*\{([^}]*)\}/g)) {
+for (const m of css.slice(css.indexOf('/* Type styles */')).matchAll(/\.(?:vi-text-)?([a-z-]+)\s*\{([^}]*)\}/g)) {
   const body = m[2];
   const family = /font-family:\s*var\(--([a-z-]+)\)/.exec(body)?.[1];
   const size = /font-size:\s*([\d.]+)px/.exec(body)?.[1];

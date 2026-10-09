@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **The SDK no longer restyles the page around a map.** The design-system CSS it injects (`tokens.css` + `css/spec.css`) now styles `.vi-*` elements only: the focus ring, reduced motion and the dark `color-scheme` apply to the map's own elements, not to every element on the host page, and the type styles are prefixed (`.vi-text-body-sm`, `.vi-text-label`, …) so they can't collide with the host's class names. The SDK's empty-state and error messages use the prefixed classes. `TYPE_STYLES` keys are unchanged (`node-label`, `edge-label`, …).
+
 ## 0.2.0 — Visualli design system rendering
 
 `@visualli/core` and `@visualli/react` 0.2.0 render a `.visualli` map exactly like the Visualli design system.

@@ -135,8 +135,8 @@ function StateNote({ topic, title, children, role }: { topic: TopicName; title: 
       <svg width="64" height="52" viewBox="-32 -26 64 52" aria-hidden="true">
         <path d={blobPath(shapeForLevel(0), 26, 20)} fill={`var(--topic-${topic})`} stroke={`var(--topic-${topic}-ring)`} strokeWidth="2" />
       </svg>
-      <p className="label" style={{ margin: 0, color: 'var(--ink)' }}>{title}</p>
-      {children && <div className="body-sm" style={{ margin: 0, maxWidth: 480, overflowWrap: 'anywhere' }}>{children}</div>}
+      <p className="vi-text-label" style={{ margin: 0, color: 'var(--ink)' }}>{title}</p>
+      {children && <div className="vi-text-body-sm" style={{ margin: 0, maxWidth: 480, overflowWrap: 'anywhere' }}>{children}</div>}
     </div>
   );
 }
