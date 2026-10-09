@@ -42,5 +42,5 @@
     "renderers/visualli-sdk/sdk/*",
     "renderers/visualli-sdk/tooling/*"
   ],
-  "version": "0.2.0"
+  "version": "0.2.1"
 }
