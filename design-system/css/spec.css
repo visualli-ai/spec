@@ -1,13 +1,12 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
-:root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; color-scheme: light; }
-[data-theme$="dark"] { color-scheme: dark; }
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+:root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; }
+[data-theme$="dark"] :where([class^="vi-"], [class*=" vi-"]) { color-scheme: dark; }
 [data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
-[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; letter-spacing: 0.01em; }
+[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 [data-type="readable"] .vi-node__label, [data-type="readable"] .vi-edge__label, [data-type="readable"] .vi-map__group-label { font-family: var(--font-ui) !important; font-weight: 700; letter-spacing: 0.02em; font-style: normal; }
-body { font-family: var(--font-ui); color: var(--ink); background: var(--canvas); font-size: var(--vi-fs-body); line-height: var(--vi-lh-body); -webkit-font-smoothing: antialiased; }
 .vi-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .vi-icon { flex: none; display: block; }
-:where(button, a, input, textarea, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:where([class^="vi-"], [class*=" vi-"]):where(button, a, input, textarea, [tabindex]):focus-visible, :where([class^="vi-"], [class*=" vi-"]) :where(button, a, input, textarea, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .vi-iconbtn { display: inline-grid; place-items: center; border-radius: var(--radius-sm); border: 1.5px solid transparent; background: transparent; color: var(--ink); cursor: pointer; transition: background var(--duration-instant); flex: none; }
 .vi-iconbtn--sm { width: 32px; height: 32px; }
 .vi-iconbtn--md { width: 40px; height: 40px; }
@@ -116,7 +115,7 @@ button.vi-node { cursor: pointer; }
   .vi-map.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
   .vi-map.is-reveal .vi-edge, .vi-map.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
 }
-[data-motion="reduced"] *, [data-motion="reduced"] *::before, [data-motion="reduced"] *::after { transition-duration: 1ms !important; }
+[data-motion="reduced"] :where([class^="vi-"], [class*=" vi-"]), [data-motion="reduced"] :where([class^="vi-"], [class*=" vi-"])::before, [data-motion="reduced"] :where([class^="vi-"], [class*=" vi-"])::after { transition-duration: 1ms !important; }
 .vi-fact__acts { flex-wrap: wrap; justify-content: flex-end; }
 .vi-fact__link { display: inline-flex; align-items: center; gap: 2px; }
 .vi-anchor { position: relative; display: inline; }

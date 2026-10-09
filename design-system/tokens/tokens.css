@@ -1,4 +1,4 @@
-/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.2.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.2.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root, [data-theme="light"] {
   --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-ui: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -279,12 +279,12 @@
 }
 
 /* Type styles */
-.heading { font-family: var(--font-ui); font-size: 17px; line-height: 24px; font-weight: 700; }
-.body { font-family: var(--font-ui); font-size: 15px; line-height: 22px; font-weight: 400; }
-.body-sm { font-family: var(--font-ui); font-size: 13px; line-height: 18px; font-weight: 400; }
-.label { font-family: var(--font-ui); font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 0.01em; }
-.caption { font-family: var(--font-ui); font-size: 12px; line-height: 16px; font-weight: 400; }
-.node-root { font-family: var(--font-hand); font-size: 30px; line-height: 34px; font-weight: 700; }
-.node-label { font-family: var(--font-hand); font-size: 22px; line-height: 26px; font-weight: 700; }
-.edge-label { font-family: var(--font-note); font-size: 18px; line-height: 20px; font-weight: 500; }
-.annotation { font-family: var(--font-note); font-size: 24px; line-height: 26px; font-weight: 600; }
+.vi-text-heading { font-family: var(--font-ui); font-size: 17px; line-height: 24px; font-weight: 700; }
+.vi-text-body { font-family: var(--font-ui); font-size: 15px; line-height: 22px; font-weight: 400; }
+.vi-text-body-sm { font-family: var(--font-ui); font-size: 13px; line-height: 18px; font-weight: 400; }
+.vi-text-label { font-family: var(--font-ui); font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.vi-text-caption { font-family: var(--font-ui); font-size: 12px; line-height: 16px; font-weight: 400; }
+.vi-text-node-root { font-family: var(--font-hand); font-size: 30px; line-height: 34px; font-weight: 700; }
+.vi-text-node-label { font-family: var(--font-hand); font-size: 22px; line-height: 26px; font-weight: 700; }
+.vi-text-edge-label { font-family: var(--font-note); font-size: 18px; line-height: 20px; font-weight: 500; }
+.vi-text-annotation { font-family: var(--font-note); font-size: 24px; line-height: 26px; font-weight: 600; }
