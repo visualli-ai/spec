@@ -959,7 +959,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   if (!doc) {
     return (
       <div className={`vi-map ${className}`} {...design.attrs} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
-        <span className="body-sm" style={{ color: 'var(--ink-muted)' }}>No document</span>
+        <span className="vi-text-body-sm" style={{ color: 'var(--ink-muted)' }}>No document</span>
       </div>
     );
   }
