@@ -10,8 +10,11 @@
 //     Zustand store on mouseUp (no per-frame state updates)
 //   - Zoom targets the cursor position (same math as visualli.ai)
 
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, useRef, useState } from 'react';
 import type Konva from 'konva';
+
+// useLayoutEffect in the browser; useEffect on the server, where layout effects don't run (and React would warn).
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import { useViewportStore } from '../stores/useViewportStore';
 import { useRenderConfigStore } from '../stores/stores';
 
@@ -69,52 +72,33 @@ export function useKonvaRenderer({
   }, [enabled, autoAdjust]);
 
   // ── Resize ────────────────────────────────────────────────────────────────────
-  // Observes the container element (not window) so the canvas always fills
-  // its parent, regardless of how the renderer is sized by the consuming app.
-  useEffect(() => {
+  // Observes the container element (not window) so the canvas always fills its parent, however the consuming app
+  // sizes the renderer. It measures right after layout when the container appears (useLayoutEffect) and in the
+  // ResizeObserver callback itself — no requestAnimationFrame in between, so a skipped or delayed frame can never
+  // leave the stage at its 1920 × 1080 default.
+  useIsoLayoutEffect(() => {
     if (!enabled) return;
-
-    let rafId: number | null = null;
-
-    const measure = () => {
-      const el = containerRef.current;
-      const w = el ? Math.round(el.getBoundingClientRect().width)  : 800;
-      const h = el ? Math.round(el.getBoundingClientRect().height) : 600;
-      return { w, h };
+    const el = containerRef.current;
+    const apply = () => {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const w = Math.round(r.width), h = Math.round(r.height);
+      if (w > 0 && h > 0 && (cachedSizeRef.current.width !== w || cachedSizeRef.current.height !== h)) {
+        cachedSizeRef.current = { width: w, height: h };
+        setCanvasWidth(w);
+        setCanvasHeight(h);
+        updateCanvasSize(w, h);
+      }
     };
-
-    const updateSize = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        const { w, h } = measure();
-        if (w > 0 && h > 0 &&
-            (cachedSizeRef.current.width !== w || cachedSizeRef.current.height !== h)) {
-          cachedSizeRef.current = { width: w, height: h };
-          setCanvasWidth(w);
-          setCanvasHeight(h);
-          updateCanvasSize(w, h);
-        }
-      });
-    };
-
-    // Initial measurement
-    updateSize();
-
-    // ResizeObserver tracks the container itself (handles % / flex / grid sizing)
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
-      ro = new ResizeObserver(updateSize);
-      ro.observe(containerRef.current);
-    } else {
-      // Fallback: window resize only
-      window.addEventListener('resize', updateSize);
+    apply();
+    if (typeof ResizeObserver !== 'undefined' && el) {
+      const ro = new ResizeObserver(apply);
+      ro.observe(el);
+      return () => ro.disconnect();
     }
-
-    return () => {
-      if (ro) ro.disconnect(); else window.removeEventListener('resize', updateSize);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
+    // Fallback: window resize only
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
   }, [enabled, containerRef, updateCanvasSize]);
 
   // ── Wheel zoom ────────────────────────────────────────────────────────────────
