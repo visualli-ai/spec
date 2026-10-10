@@ -1,4 +1,4 @@
-# Visualli™
+# Visualli®
 
 <div class="hero" markdown="0">
   <img class="hero__logo" src="assets/V-spec-logo.png" alt="Visualli logo"/>
@@ -12,7 +12,7 @@
 **Build your own.** Create your visual vault at [visualli.ai](https://visualli.ai) 🚀
 
 
-## Why Visualli™?
+## Why Visualli®?
 
 Four design choices that set Visualli apart from every other mind-map format out there.
 
