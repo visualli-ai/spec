@@ -1,4 +1,4 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.2). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; }
 [data-theme$="dark"] :where([class^="vi-"], [class*=" vi-"]) { color-scheme: dark; }
 [data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
@@ -128,6 +128,7 @@ button.vi-node { cursor: pointer; }
 .vi-anchor-card__word { font: 700 20px/24px var(--font-hand); color: var(--ink); margin: 2px 0 var(--space-1); }
 .vi-fact--sheet .vi-anchor-card__word { font-size: calc(24px * var(--vi-label-scale)); line-height: 1.15; }
 .vi-anchor-card__desc { margin: 0; color: var(--ink); }
+.vi-anchor-card__note { margin: var(--space-2) 0 0; font: 400 var(--vi-fs-cap)/16px var(--font-ui); color: var(--ink-muted); }
 .vi-anchor-card__acts { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px dashed var(--line); }
 .vi-fact--sheet .vi-anchor-card__acts .vi-fact__link { min-height: 44px; }
 [data-type="readable"] .vi-anchor-card__word { font-family: var(--font-ui); }
