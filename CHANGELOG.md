@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+**Conforms to design system 0.3.0.**
+
 ### Changed
 - **`konva` and `react-konva` are peer dependencies of `@visualli/react`** (`^9.3.6`, `^18.2.10`), like React. The app and the SDK now share one Konva: before, an app with its own Konva at another version got two copies, and Konva warned ("Several Konva instances detected") or drew wrongly. Install them with the SDK: `npm install @visualli/react konva react-konva` (npm 7+ adds missing peers by itself).
 - **The SDK packages require each other at exactly their own version** (`@visualli/core`, `@visualli/bindings` were `"*"`, which could pair a react package with a different core). `scripts/update_version.py` keeps them in step on every release.
+- **The SDK's tokens no longer reach the page either.** It injected `tokens.css`, whose variables sit on `:root` and bare `[data-theme]`, so on a host page that uses the same names (or its own `data-theme`) the SDK overrode them - on visualli.ai, the display font. It now injects `tokens/tokens.embed.css` from the design system: every rule on `.vi-map`, with the theme from `data-theme` on the map or any ancestor (the map's own wins). A test fails if anything injected selects outside `.vi-*`.
+- **Chromatic immersion is on by default**, from the design system's `IMMERSION.defaultOn` (`chromaticImmersion` was `false`). Pass `chromaticImmersion={false}` to turn it off.
+- **Gesture thresholds come from the design system**: tap vs pan uses `GESTURE.panSlop` (6px, unchanged); moving an idea starts at `GESTURE.ideaDragSlop` (4px mouse, 10px touch; was 5px for both).
 - **The SDK no longer restyles the page around a map.** The design-system CSS it injects (`tokens.css` + `css/spec.css`) now styles `.vi-*` elements only: the focus ring, reduced motion and the dark `color-scheme` apply to the map's own elements, not to every element on the host page, and the type styles are prefixed (`.vi-text-body-sm`, `.vi-text-label`, …) so they can't collide with the host's class names. The SDK's empty-state and error messages use the prefixed classes. `TYPE_STYLES` keys are unchanged (`node-label`, `edge-label`, …).
 
 ## 0.2.0 — Visualli design system rendering

@@ -173,12 +173,13 @@ for (const f of readdirSync(resolve(ds, 'geometry')).filter((f) => f.endsWith('.
 // ── spec CSS for the DOM overlays ────────────────────────────────────────────
 // The page must keep its own <body> styles, so the spec's global `body{}` rule
 // is dropped; `@import` lines are dropped too (fonts are loaded by the SDK).
-// The spec's global :focus-visible rule is scoped to the map so embedding the SDK never restyles the host page's links/buttons.
+// css/spec.css arrives scoped to the map (the design system's build fails otherwise), so it is used as is.
 const specCss = readFileSync(resolve(ds, 'css/spec.css'), 'utf8')
   .replace(/^body\s*\{[^}]*\}\s*$/m, '')
-  .replace(/^@import[^\n]*\n/gm, '')
-  .replace(/^:where\(button, a, input, textarea, \[tabindex\]\):focus-visible/m, '.vi-map :where(button, a, input, textarea, [tabindex]):focus-visible');
-const tokensCss = css.replace(/^@import[^\n]*\n/gm, '');
+  .replace(/^@import[^\n]*\n/gm, '');
+// The SDK draws a map inside someone else's page, so it injects the map-scoped tokens (tokens.embed.css: every rule on
+// .vi-map, theme from data-theme on the map or an ancestor), never the page-wide tokens.css.
+const tokensCss = readFileSync(resolve(ds, 'tokens/tokens.embed.css'), 'utf8').replace(/^@import[^\n]*\n/gm, '');
 // Bundled font files declared in fonts/fonts.css (@font-face with a local url()).
 const fontsCss = readFileSync(resolve(ds, 'fonts/fonts.css'), 'utf8');
 const bundledFonts = [...fontsCss.matchAll(/@font-face\s*\{([^}]*)\}/g)].flatMap((m) => {
@@ -189,7 +190,7 @@ const bundledFonts = [...fontsCss.matchAll(/@font-face\s*\{([^}]*)\}/g)].flatMap
 });
 if (!bundledFonts.length) throw new Error('design-system/fonts/fonts.css: no bundled @font-face found');
 
-out(resolve(react, 'src/generated/specCss.ts'), `${HEADER('tokens/tokens.css, css/spec.css')}
+out(resolve(react, 'src/generated/specCss.ts'), `${HEADER('tokens/tokens.embed.css, css/spec.css')}
 export const SPEC_TOKENS_CSS = ${JSON.stringify(tokensCss)};
 export const SPEC_COMPONENT_CSS = ${JSON.stringify(specCss)};
 export const SPEC_FONTS_URL = ${JSON.stringify(/@import url\("([^"]+)"\)/.exec(readFileSync(resolve(ds, 'fonts/fonts.css'), 'utf8'))?.[1] ?? '')};
