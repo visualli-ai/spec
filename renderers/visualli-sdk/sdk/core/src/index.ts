@@ -31,4 +31,4 @@ export type { FrameBox } from './generated/geometry/interaction.js';
 // Level of detail: what an idea draws at the size it's seen, and when shadows are skipped (geometry/detail.ts, verbatim).
 export { DETAIL, ideaDetail, shadowsShown } from './generated/geometry/detail.js';
 export type { IdeaDetail } from './generated/geometry/detail.js';
-export { TOPIC_ORDER, CUSTOM, topicFor } from './generated/geometry/color.js';
+export { TOPIC_ORDER, CUSTOM, IMMERSION, topicFor } from './generated/geometry/color.js';

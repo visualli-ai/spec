@@ -17,7 +17,7 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import type { VisualliDocument, Comfort, ThemeInput, TopicName } from '@visualli/core';
-import { blobPath, parseVisualliFile, shapeForLevel } from '@visualli/core';
+import { blobPath, parseVisualliFile, shapeForLevel, IMMERSION } from '@visualli/core';
 import VisualliCanvas from './VisualliCanvas';
 import { useDesign } from './design/useDesign';
 import { ensureDesignSystemStyles, type DesignSystemAssets } from './design/runtime';
@@ -339,7 +339,7 @@ export default function VisualliRenderer({
   width = '100%',
   height = '100%',
   useWorker = true,
-  chromaticImmersion = false,
+  chromaticImmersion = IMMERSION.defaultOn,
   fontBaseUrl,
   loadWebFonts,
   className,

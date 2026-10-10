@@ -1,6 +1,6 @@
 {
   "name": "@visualli/core",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Framework-agnostic core logic, types, and engines for Visualli",
   "repository": {
     "type": "git",
@@ -74,7 +74,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@visualli/bindings": "0.2.3",
+    "@visualli/bindings": "0.2.4",
     "rbush": "^3.0.1"
   },
   "devDependencies": {

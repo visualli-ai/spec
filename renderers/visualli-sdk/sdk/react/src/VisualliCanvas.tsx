@@ -32,6 +32,8 @@ import {
   VIEW,
   PEEK,
   SHEET,
+  IMMERSION,
+  pointerModeFor,
 } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
@@ -180,7 +182,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { chromaticImmersion = false, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
+  const { chromaticImmersion = IMMERSION.defaultOn, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
   // The host's hover callback, read through a ref so the stage's pointer handlers stay stable when it changes.
   const onNodeHoverRef = useRef(onNodeHover);
   onNodeHoverRef.current = onNodeHover;
@@ -612,6 +614,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const t = ('touches' in evt && (evt.touches[0] ?? evt.changedTouches[0])) || (evt as MouseEvent);
     return { x: t.clientX, y: t.clientY };
   };
+  /** The pointer type behind a mouse or touch event (touches pass through the mouse handlers), for pointerModeFor. */
+  const pointerTypeOf = (evt: MouseEvent | TouchEvent) => ('touches' in evt ? 'touch' : 'mouse');
   const pinnedIdRef = useRef<string | null>(null);
   pinnedIdRef.current = pinnedId;
   /** Collapsed sheet height: the design system's SHEET — a share of the map, at most SHEET.maxHeight. */
@@ -676,7 +680,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (stageActiveNodeIdRef.current && stageMouseDownPosRef.current) {
       const cur = clientOf(e.evt);
       const moved = Math.hypot(cur.x - stageMouseDownPosRef.current.x, cur.y - stageMouseDownPosRef.current.y);
-      if (!stageDragCommittedRef.current && moved >= 5) {
+      if (!stageDragCommittedRef.current && moved >= (pointerModeFor(pointerTypeOf(e.evt)) === 'hover' ? GESTURE.ideaDragSlop.hover : GESTURE.ideaDragSlop.touch)) {
         stageDragCommittedRef.current = true;
         isDraggingRef.current = true;
         setIsDraggingState(true);
@@ -761,7 +765,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     emptyTapRef.current = null;
     if (tap && pinnedIdRef.current) {
       const end = clientOf(e.evt);
-      if (!Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < 6) setPinnedId(null);
+      if (!Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < GESTURE.panSlop) setPinnedId(null);
     }
     isCanvasPanningRef.current = false;
     rendererHandleMouseUp(e);
