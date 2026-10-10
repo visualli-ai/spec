@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="visualli-bindings",
-    version="0.2.2",
+    version="0.2.3",
     description="Official Visualli Pydantic Models",
     py_modules=["visualli"],
     install_requires=[

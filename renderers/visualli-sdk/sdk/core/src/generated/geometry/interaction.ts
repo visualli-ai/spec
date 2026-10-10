@@ -45,6 +45,12 @@ export const GESTURE = {
   /** Where the map is the page (an app: AppShell, the mobile app), it takes every touch gesture (touch-action: none),
    *  so the browser never zooms the page. Embedded on a scrolling page (website, docs), one finger still scrolls the
    *  page (touch-action: pan-x pan-y); two fingers that land together pinch the map. */ appTouchAction: 'none', embeddedTouchAction: 'pan-x pan-y',
+  /** Press and move on the empty canvas to pan the contents (mouse and pen; touch pans with two fingers, so one finger
+   *  still scrolls an embedded page). A press that moves less than `panSlop` px is a click. */ dragPan: true,
+  panPointers: ['mouse', 'pen'] as readonly string[], panSlop: 6,
+  /** Moving an idea starts once the press has moved this far (px), by pointerModeFor: a mouse ('hover') sooner, a finger
+   *  or pen ('touch') later, so taps still work. */
+  ideaDragSlop: { hover: 4, touch: 10 },
   /** Zoom never navigates: stepping inside and backing out stay explicit (tap an idea / Step inside, the depth trail,
    *  Escape or Backspace). */ zoomNavigates: false,
 } as const;

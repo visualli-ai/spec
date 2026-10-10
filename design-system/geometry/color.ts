@@ -24,6 +24,10 @@ export function topicFor(color: string | null | undefined, siblingIndex: number)
   return topicFromName(color);
 }
 
+/** Chromatic immersion: inside a layer, the canvas takes the fill of the idea you stepped into (at the `immersion-alpha`
+ *  token), so you always know whose inside you are in. Part of the spec, so it is on unless a host turns it off. */
+export const IMMERSION = { /** Renderers draw it by default. */ defaultOn: true } as const;
+
 /** A custom (non-topic) color: drawn as given, with a darker ring. */
 export const CUSTOM = { /** The ring is the fill with each RGB channel multiplied by this. */ ringShade: 0.78 } as const;
 
