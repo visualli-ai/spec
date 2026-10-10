@@ -189,6 +189,24 @@ try {
   const text = (await page.textContent('body')) ?? '';
   check('no product features in the UI', !/Go deeper|Map it|Export|Sources|Chat/i.test(text));
   check('no console / page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
+
+  // A map loaded from a URL (visualliFile) renders a placeholder until the file arrives; its canvas must still follow
+  // its container afterwards (it used to stay at the 1920 × 1080 default), including the compact phone layout.
+  const phone = await (await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage();
+  await phone.goto(`http://127.0.0.1:${port}/bench.html?doc=file&theme=light`);
+  await phone.waitForSelector('.konvajs-content', { timeout: 8000 });
+  await phone.waitForTimeout(1200);
+  const fitOf = () => phone.evaluate(() => {
+    const map = document.querySelector('.vi-map'), stage = document.querySelector('.konvajs-content');
+    return { map: map.clientWidth, stage: parseFloat(stage.style.width), compact: map.classList.contains('is-compact') };
+  });
+  const fit = await fitOf();
+  check('a map loaded from a file sizes its canvas to its container', Math.abs(fit.stage - fit.map) <= 1 && fit.compact, JSON.stringify(fit));
+  // Its container (not the window) changes size: the canvas follows (the container is observed once the map is there).
+  await phone.evaluate(() => { document.querySelector('.vi-map').style.width = '300px'; });
+  await phone.waitForTimeout(400);
+  const narrower = await fitOf();
+  check('…and follows its container when the container resizes', narrower.map === 300 && Math.abs(narrower.stage - 300) <= 1, JSON.stringify(narrower));
 } finally {
   await browser.close();
   await server.stop();

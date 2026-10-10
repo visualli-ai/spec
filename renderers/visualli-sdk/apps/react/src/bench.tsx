@@ -16,6 +16,7 @@ import ReactDOM from 'react-dom/client';
 import { VisualliCanvas, useViewportStore, useNodeStore } from '@visualli/react';
 import { parseVisualliFile } from '@visualli/core';
 import exampleString from '../../../../../examples/example.visualli?raw';
+import exampleUrl from '../../../../../examples/example.visualli?url';
 
 const params = new URLSearchParams(location.search);
 const N = Number(params.get('n') ?? 500);
@@ -23,6 +24,8 @@ const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
 const CONTROLS = (params.get('controls') ?? undefined) as 'top-right' | 'bottom-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
+// ?doc=file: the example loaded from its URL (visualliFile), as an embed does — the canvas renders before the file arrives.
+const FROM_FILE = params.get('doc') === 'file';
 // ?doc=noparent: a root with two differently coloured ideas, each with a child layer (the trail dot must match the clicked idea).
 const NO_PARENT = params.get('doc') === 'noparent';
 const COMFORT_FLAGS = (params.get('comfort') ?? '').split(',').filter(Boolean);
@@ -134,7 +137,7 @@ const buildMs = performance.now() - t0;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <VisualliCanvas
-    preParsedVisualli={doc}
+    {...(FROM_FILE ? { visualliFile: exampleUrl } : { preParsedVisualli: doc })}
     fontBaseUrl="/fonts"
     controlsPosition={CONTROLS}
     app

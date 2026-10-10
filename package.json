@@ -16,11 +16,15 @@
     "screenshots": "node scripts/screenshots.mjs",
     "smoke": "node scripts/smoke.mjs",
     "smoke:mobile": "node scripts/smoke-mobile.mjs",
-    "smoke:motion": "node scripts/smoke-motion.mjs"
+    "smoke:motion": "node scripts/smoke-motion.mjs",
+    "check:browsers": "node scripts/check-browsers.mjs"
   },
   "devDependencies": {
+    "doiuse": "6.0.6",
+    "es-check": "7.2.1",
     "husky": "^9.1.7",
     "playwright": "^1.63.0",
+    "postcss": "8.5.29",
     "prettier": "^3.7.4",
     "tsup": "^8.5.1",
     "turbo": "^2.10.3",
@@ -42,5 +46,14 @@
     "renderers/visualli-sdk/sdk/*",
     "renderers/visualli-sdk/tooling/*"
   ],
-  "version": "0.2.4"
+  "version": "0.2.4",
+  "browserslist": [
+    "chrome >= 88",
+    "edge >= 88",
+    "firefox >= 85",
+    "safari >= 16",
+    "ios_saf >= 16",
+    "opera >= 75",
+    "samsung >= 15"
+  ]
 }

@@ -21,13 +21,14 @@ const STYLE_ID = 'visualli-design-system';
  * Responsive rules the SDK adds on top of the spec CSS. The design system defines the
  * touch variant (`.is-touch`, bottom sheet); phone / tablet / desktop widths are
  * handled with the container-width classes the canvas sets (`is-compact` < 560px,
- * `is-medium` < 900px). Only design-system custom properties are used.
+ * `is-medium` < 900px); `--vi-map-w` is the map's width, set by the canvas (no container-query units, so older browsers
+ * lay it out the same). Only design-system custom properties are used.
  */
 const LAYOUT_CSS = `
 .vi-map__ctrls { transition: bottom var(--duration-quick) var(--ease-standard); } /* controlsPosition 'bottom-right': rising above the sheet */
 .vi-map.is-compact .vi-trail li:not(:first-child):not(.is-current):not(:nth-last-child(2)) { display: none; }
-.vi-map.is-compact .vi-trail button span { max-width: 40vw; max-width: 40cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vi-map.is-compact .vi-fact:not(.vi-fact--sheet) { width: min(300px, calc(100cqw - 2 * var(--space-4))); }
+.vi-map.is-compact .vi-trail button span { max-width: calc(var(--vi-map-w, 100vw) * .4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vi-map.is-compact .vi-fact:not(.vi-fact--sheet) { width: min(300px, calc(var(--vi-map-w, 100vw) - 2 * var(--space-4))); }
 .vi-map.is-touch .vi-trail button { min-height: 32px; }
 `;
 const FONTS_ID = 'visualli-design-system-fonts';
