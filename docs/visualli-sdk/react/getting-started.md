@@ -109,15 +109,23 @@ The renderer handles errors and shows built-in states so you don't have to:
 
 ## 🌐 Browser Support
 
-The renderer is designed to work with almost any browser that supports ES2020, Canvas API, and CSS Grid/Flexbox. Web Workers and `prefers-color-scheme` are optional (used by `useWorker` and `theme="auto"`).
+The oldest browsers that run the renderer with its **full experience** — every look, interaction, theme and comfort setting, with no feature missing or degraded:
 
-| Browser | Version | Release Date |
+| Browser | Version | Released |
 |---|---|---|
-| Chrome | ≥ 80 | Feb 2020 |
-| Firefox | ≥ 74 | Mar 2020 |
-| Safari | ≥ 13.1 | Mar 2020 |
-| Edge | ≥ 80 | Mar 2020 |
-| Opera | ≥ 67 | Feb 2020 |
+| Chrome | 88 | Jan 2021 |
+| Edge | 88 | Jan 2021 |
+| Firefox | 85 | Jan 2021 |
+| Safari | 16 | Sep 2022 |
+| Safari on iOS | 16 | Sep 2022 |
+| Opera | 75 | Mar 2021 |
+| Samsung Internet | 15 | Aug 2021 |
+
+What sets the floor: `:focus-visible` (keyboard focus and the zoomed-out level of detail; Chrome 86, Firefox 85, Safari 15.4), `:is()` / `:where()` (Chrome 88, Opera 75) and, on Safari, `overscroll-behavior` (the touch sheet keeps its scroll to itself; Safari 16). The JavaScript is ES2020, with the Canvas 2D API, `Path2D`, `ResizeObserver`, Pointer Events and the CSS Font Loading API. Web Workers and `prefers-color-scheme` are optional (used by `useWorker` and `theme="auto"`).
+
+One refinement needs newer browsers: in **readable type** (`comfort.readableType`), idea labels on the canvas get the design system's extra 2% letter spacing only where canvas `letterSpacing` exists (Chrome 99, Firefox 115, Safari 18.4); older browsers draw those labels without it.
+
+This list is `package.json` → `browserslist`; `npm run check:browsers` fails if the CSS the SDK injects or its JavaScript needs more, or if this table disagrees.
 
 ## ➡️ Next steps
 

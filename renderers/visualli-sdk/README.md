@@ -536,22 +536,23 @@ function TypedViewer() {
 
 ## Browser Support
 
-The Visualli SDK supports all modern browsers:
+The oldest browsers that run the renderer with its **full experience** — every look, interaction, theme and comfort setting, with no feature missing or degraded:
 
-| Browser | Version |
-|---------|---------|
-| Chrome | ≥90 |
-| Firefox | ≥88 |
-| Safari | ≥14 |
-| Edge | ≥90 |
+| Browser | Version | Released |
+|---|---|---|
+| Chrome | 88 | Jan 2021 |
+| Edge | 88 | Jan 2021 |
+| Firefox | 85 | Jan 2021 |
+| Safari | 16 | Sep 2022 |
+| Safari on iOS | 16 | Sep 2022 |
+| Opera | 75 | Mar 2021 |
+| Samsung Internet | 15 | Aug 2021 |
 
-### Required Features
+What sets the floor: `:focus-visible` (keyboard focus and the zoomed-out level of detail; Chrome 86, Firefox 85, Safari 15.4), `:is()` / `:where()` (Chrome 88, Opera 75) and, on Safari, `overscroll-behavior` (the touch sheet keeps its scroll to itself; Safari 16). The JavaScript is ES2020, with the Canvas 2D API, `Path2D`, `ResizeObserver`, Pointer Events and the CSS Font Loading API. Web Workers and `prefers-color-scheme` are optional (used by `useWorker` and `theme="auto"`).
 
-- ES2020 JavaScript
-- CSS Grid & Flexbox
-- Canvas API
-- Web Workers (optional, for `useWorker` prop)
-- `prefers-color-scheme` media query (optional, for `theme="auto"`)
+One refinement needs newer browsers: in **readable type** (`comfort.readableType`), idea labels on the canvas get the design system's extra 2% letter spacing only where canvas `letterSpacing` exists (Chrome 99, Firefox 115, Safari 18.4); older browsers draw those labels without it.
+
+This list is `package.json` → `browserslist`; `npm run check:browsers` fails if the CSS the SDK injects or its JavaScript needs more, or if this table disagrees.
 
 ---
 

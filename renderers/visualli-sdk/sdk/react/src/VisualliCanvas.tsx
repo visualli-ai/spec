@@ -344,7 +344,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     cancelPan:       rendererCancelPan,
     canvasWidth,
     canvasHeight,
-  } = useKonvaRenderer({ containerRef, stageRef });
+  // Enabled once the document is there: until then the canvas renders a placeholder without the container, and the
+  // size observer must attach to the real container when it appears (a file loading from visualliFile).
+  } = useKonvaRenderer({ containerRef, stageRef, enabled: !!doc });
 
   // Keep canvasSizeRef in sync with the measured container size.
   // The fallback to containerRef.getBoundingClientRect covers the period before
@@ -975,6 +977,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const pinnedHasChild = !!(pinnedNode && getChildLayerForNode(doc, pinnedNode.id, currentLayerId ?? ''));
   const compact = (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 560;
   const medium = !compact && (viewport.canvasWidth || canvasSizeRef.current.width || 1024) < 900;
+  // The map's width for the layout rules (runtime.ts LAYOUT_CSS), instead of container-query units (Chrome 105, Safari 16).
+  const mapWidth = viewport.canvasWidth || canvasSizeRef.current.width || 0;
   const peekHasChild = !!(peekNode && doc && getChildLayerForNode(doc, peekNode.id, currentLayerId ?? ''));
 
   return (
@@ -992,7 +996,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       onPointerMoveCapture={onPinchMove}
       onPointerUpCapture={onPinchUp}
       onPointerCancelCapture={onPinchUp}
-      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...style }}
+      style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...(mapWidth ? { ['--vi-map-w' as string]: `${mapWidth}px` } : {}), ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
         // Only close the peek on mouse leave if not keeping it open
