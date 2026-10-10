@@ -93,6 +93,12 @@ def update_version():
                     workspace_key = pkg_path.replace("/package.json", "")
                     if workspace_key in lock["packages"] and "version" in lock["packages"][workspace_key]:
                         lock["packages"][workspace_key]["version"] = version
+                    # ...and the exact pins between the SDK packages (step 3), so the lockfile matches package.json.
+                    entry = lock["packages"].get(workspace_key, {})
+                    for section in ("dependencies", "peerDependencies"):
+                        for name in entry.get(section, {}):
+                            if name.startswith("@visualli/") and name != "@visualli/eslint-config":
+                                entry[section][name] = version
                 
             with open(p, "w") as f:
                 json.dump(lock, f, indent=2)
