@@ -14,7 +14,9 @@
     "@visualli/react": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@visualli/core": "*"
+    "@visualli/core": "*",
+    "konva": "^9.3.6",
+    "react-konva": "^18.2.10"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

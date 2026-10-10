@@ -9,7 +9,7 @@ A powerful React SDK for rendering interactive hierarchical visualizations from 
 ## 🚀 Quick Start
 
 ```bash
-npm install @visualli/react
+npm install @visualli/react konva react-konva
 ```
 
 ```tsx
@@ -64,27 +64,27 @@ The Visualli SDK provides a complete solution for rendering interactive, hierarc
 ### npm
 
 ```bash
-npm install @visualli/react
+npm install @visualli/react konva react-konva
 ```
 
 ### yarn
 
 ```bash
-yarn add @visualli/react
+yarn add @visualli/react konva react-konva
 ```
 
 ### pnpm
 
 ```bash
-pnpm add @visualli/react
+pnpm add @visualli/react konva react-konva
 ```
 
 ### Peer Dependencies
 
-The SDK requires React 18.3 or higher:
+The SDK draws with [Konva](https://konvajs.org) and needs React 18.3 or higher. These are peer dependencies: your app installs them once and the SDK uses that copy, so a page never ends up with two Konvas (which makes Konva warn and can break drawing). npm 7+ installs missing peers for you; listing them keeps the versions under your control.
 
 ```bash
-npm install react@^18.3.1 react-dom@^18.3.1
+npm install react@^18.3.1 react-dom@^18.3.1 konva@^9.3.6 react-konva@^18.2.10
 ```
 
 ---

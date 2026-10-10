@@ -51,6 +51,12 @@ def update_version():
                 raw = f.read()
             pkg = json.loads(raw)
             pkg["version"] = version
+            # The SDK packages depend on each other at exactly the release's version (never "*"), so an install can't
+            # mix a react package with a different core.
+            for section in ("dependencies", "peerDependencies"):
+                for name in pkg.get(section, {}):
+                    if name.startswith("@visualli/") and name != "@visualli/eslint-config":
+                        pkg[section][name] = version
             with open(p, "w") as f:
                 json.dump(pkg, f, indent=2)
                 # Keep the file's own ending (npm writes a trailing newline), so an unchanged version leaves no diff.

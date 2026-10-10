@@ -7,25 +7,25 @@
 === "npm"
 
     ```bash
-    npm install @visualli/react
+    npm install @visualli/react konva react-konva
     ```
 
 === "yarn"
 
     ```bash
-    yarn add @visualli/react
+    yarn add @visualli/react konva react-konva
     ```
 
 === "pnpm"
 
     ```bash
-    pnpm add @visualli/react
+    pnpm add @visualli/react konva react-konva
     ```
 
-That's the only install command you need. It automatically pulls in the major dependencies:
+That's the only install command you need. `@visualli/core` (the parsing engine and document model) comes with it, at the same version. Your app provides the peer dependencies, one copy each, shared with the SDK:
 
-- 🧱 **`@visualli/core`** — the parsing engine and document model
-- ⚛️ **`React` & `React DOM`** (≥ 18.3) — peer dependencies for your app
+- ⚛️ **`React` & `React DOM`** (≥ 18.3)
+- 🖌️ **`konva`** (^9.3.6) and **`react-konva`** (^18.2.10) — the canvas the map is drawn on. One shared copy means Konva never warns about two instances.
 
 ## ⚡ Usage
 
