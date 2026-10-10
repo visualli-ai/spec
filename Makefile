@@ -29,14 +29,14 @@ install:
 	fi
 	@# Install dependencies inside venv
 	@echo "Installing dependencies..."
-	@$(VENV)/bin/pip install --upgrade pip
+	@$(VENV)/bin/pip install pip==26.0
 	@$(VENV)/bin/pip install "datamodel-code-generator[http,black]==0.72.3"
-	@echo "Installing MkDocs + Material theme + Mermaid..."
-	@$(VENV)/bin/pip install mkdocs-material mkdocs-mermaid2-plugin
+	@echo "Installing MkDocs + Material theme + Mermaid (exact versions: docs/requirements.txt)..."
+	@$(VENV)/bin/pip install -r docs/requirements.txt
 	@echo "Installing workspace dependencies..."
 	npm install
 	@echo "Installing code generation tools (dev only)..."
-	npm install -g json-schema-to-typescript
+	npm install -g json-schema-to-typescript@16.0.0
 
 clean-venv:
 	rm -rf $(VENV)
