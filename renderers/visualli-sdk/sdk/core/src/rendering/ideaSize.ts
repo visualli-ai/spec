@@ -4,11 +4,11 @@
 // grows to show its whole label, and labels grow a little when zoomed out. The
 // SDK only supplies the text measurement (its font engine) and picks the kind.
 
-import { IDEA, LABEL_GROWTH, ideaSize, labelGrowth, wrapLines, type IdeaKind } from '../generated/geometry/idea.js';
+import { ELLIPSE, IDEA, LABEL_GROWTH, ideaSize, labelGrowth, labelLayout, layoutGrowth, lineWidthsInShape, wrapInShape, wrapLines, type IdeaKind, type ShapeProfile } from '../generated/geometry/idea.js';
 import type { VisualliLayer } from '../types/layer.js';
 
-export { IDEA, LABEL_GROWTH, ideaSize, labelGrowth, wrapLines };
-export type { IdeaKind };
+export { ELLIPSE, IDEA, LABEL_GROWTH, ideaSize, labelGrowth, labelLayout, layoutGrowth, lineWidthsInShape, wrapInShape, wrapLines };
+export type { IdeaKind, ShapeProfile };
 
 /** Width in px of `text` in the idea label's face at `px` (the label's weight; readable type adds its tracking). */
 export type IdeaMeasure = (text: string, px: number) => number;

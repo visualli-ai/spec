@@ -9,6 +9,7 @@ import type { FlatNode, NodeMap } from '../types/mindmap.js';
 import { countLayersBeneath } from './visualliParser.js';
 import { ideaColor } from '../theme/index.js';
 import { approximateMeasure, ideaKindOf, ideaSize, type IdeaMeasure } from '../rendering/ideaSize.js';
+import { blobProfile, shapeOfLevel } from '../rendering/nodeGeometry.js';
 import { applyCircularLayout, calculateOptimalRadiusPercentage } from '../layout/circularLayout.js';
 import { applyLinearHorizontalLayout, applyLinearVerticalLayout } from '../layout/linearLayout.js';
 
@@ -146,7 +147,8 @@ function makeFlatNode(
   const label = Array.isArray(node.data.label) ? (node.data.label as string[]).join(' ') : (node.data.label || 'Untitled');
   const branchCount = countLayersBeneath(doc, node.id);
   const kind = ideaKindOf(layer, siblingIndex);
-  const size = ideaSize(kind, label, opts.measure ?? approximateMeasure, opts.labelScale ?? 1);
+  // Sized so the label wraps inside the idea's own blob (the design system's blobProfile).
+  const size = ideaSize(kind, label, opts.measure ?? approximateMeasure, opts.labelScale ?? 1, blobProfile(shapeOfLevel(layer.level)));
   const { topic, custom } = ideaColor(node.data.color, siblingIndex);
   return {
     id: node.id,

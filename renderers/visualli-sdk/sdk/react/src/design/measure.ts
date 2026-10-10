@@ -10,7 +10,7 @@ import { fontsEpoch } from './runtime';
 
 let ctx: CanvasRenderingContext2D | null | undefined;
 const cache = new Map<string, number>();
-const MAX_CACHED = 8192;
+const MAX_CACHED = 32768; // room for the candidate lines of a 10k-idea map
 
 /** Width of a label in `d`'s idea face (cached per face, size, text and font load). */
 export function ideaMeasure(d: Pick<Design, 'fontHand' | 'comfort'>): IdeaMeasure {

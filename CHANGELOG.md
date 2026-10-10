@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+**Conforms to the design system's shape-aware labels** (geometry/idea.ts `labelLayout`, `wrapInShape`; geometry/blob.ts `blobProfile`).
+
+### Fixed
+- **Idea labels never cross the outline.** The SDK wrapped a label at its normal size and then enlarged it for the zoom-out growth, so lines that just fit spilled past the blob. Labels now follow the design system's `labelLayout`: grown first, then wrapped inside the idea's own outline, each line as wide as the blob is at that line's height (`blobProfile`). Ideas are sized the same way (`ideaSize` with the blob's profile), so the SDK and the design system break every label identically.
+
+## 0.2.4 — 2026-10-10
+
 **Conforms to design system 0.3.0.**
 
 ### Changed

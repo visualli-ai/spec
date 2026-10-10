@@ -17,6 +17,9 @@ import {
   blobPath,
   ideaStyle,
   labelGrowth,
+  labelLayout,
+  layoutGrowth,
+  blobProfile,
   nodeRadii,
   ringsFor,
   shapeOfLevel,
@@ -25,6 +28,7 @@ import {
 } from '@visualli/core';
 import type { Design } from './design';
 import { fontsEpoch } from './runtime';
+import { ideaMeasure } from './measure';
 import type { Arrival, EdgeArrival } from './choreography';
 
 const DEG = Math.PI / 180;
@@ -62,7 +66,7 @@ function dashOf(spec: string): number[] {
 // ── Label layout ──────────────────────────────────────────────────────────────
 
 const lineCache = new Map<string, string[]>();
-const MAX_CACHED_LAYOUTS = 8192;
+const MAX_CACHED_LAYOUTS = 32768; // room for every label of a 10k-idea map, so zooming and arrivals reuse them
 
 /** Greedy word wrap at `maxWidth` (natural px), clamped to `maxLines` with an ellipsis (ideas pass Infinity: they are
  *  sized to hold their whole label). */
@@ -134,6 +138,24 @@ export const ideaColors = (d: Design, n: Pick<FlatNode, 'topic' | 'custom'>) => 
 
 /** An idea's label size in natural px: the design system's size for its kind × the comfort label scale. */
 export const ideaLabelPx = (n: Pick<FlatNode, 'kind'>, d: Design): number => IDEA.labelSize[n.kind ?? 'node'] * d.labelScale;
+
+// An idea's label at a zoom (idea.ts labelLayout), wrapped inside its blob (blob.ts blobProfile). The lines are
+// cached by layoutGrowth, so they're reused while zooming within a step; the drawn size follows labelGrowth exactly.
+// Canvas text width is proportional to its size, so each width is measured once at the label's type size and scaled.
+const labelLines = new Map<string, string[]>();
+export function ideaLabelLayout(node: Pick<FlatNode, 'kind' | 'title' | 'width' | 'height' | 'level'>, d: Design, zoom: number): ReturnType<typeof labelLayout> {
+  const kind = node.kind ?? 'node', shape = shapeOfLevel(node.level), base = ideaLabelPx({ kind }, d);
+  const px = base * labelGrowth(zoom).idea, lineHeight = px * IDEA.labelLineHeight;
+  const key = `${fontsEpoch()}|${d.fontHand}|${+d.comfort.readableType}|${d.labelScale}|${kind}|${shape}|${node.width}|${node.height}|${layoutGrowth(zoom)}|${node.title}`;
+  let lines = labelLines.get(key);
+  if (!lines) {
+    const m = ideaMeasure(d);
+    lines = labelLayout(kind, node.title ?? '', nodeRadii(node), zoom, (t, at) => m(t, base) * (at / base), d.labelScale, blobProfile(shape)).lines;
+    if (labelLines.size >= MAX_CACHED_LAYOUTS) labelLines.clear();
+    labelLines.set(key, lines);
+  }
+  return { px, lineHeight, lines };
+}
 
 /**
  * Paint one idea (rings, body, label) centred on node.x / node.y.
@@ -218,15 +240,12 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
   c.lineWidth = st.selected || st.focused ? CANVAS_STYLE.node.selectedStrokeWidth : d.metrics.nodeStroke;
   c.stroke(body);
 
-  // Label.
-  // Label: the whole label (the idea is sized for it, idea.ts), growing up to LABEL_GROWTH.idea when zoomed out.
+  // Label: the design system's labelLayout (idea.ts) — grown for the zoom first, then wrapped inside the idea's label
+  // box, so a grown label takes more lines instead of crossing the outline.
   if (detailed && node.title) {
-    const px = ideaLabelPx(node, d);
+    const lay = ideaLabelLayout(node, d, zoom);
+    const px = lay.px, lines = lay.lines, lh = lay.lineHeight;
     const font = `${TYPE_STYLES['node-label'].weight} ${px}px ${d.fontHand}`;
-    const lines = layoutLabel(c, node.title, font, node.width - IDEA.labelInset);
-    const s = labelGrowth(zoom).idea;
-    const lh = px * IDEA.labelLineHeight;
-    c.scale(s, s);
     c.font = font;
     c.fillStyle = d.tokens['node-ink']!;
     c.textAlign = 'center';
