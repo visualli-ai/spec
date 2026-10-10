@@ -1,8 +1,8 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.2.3). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
-:root { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; }
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.3.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+.vi-map { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; }
 [data-theme$="dark"] :where([class^="vi-"], [class*=" vi-"]) { color-scheme: dark; }
-[data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
-[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
+:where([data-scale="lg"]) .vi-map, .vi-map[data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
+:where([data-type="readable"]) .vi-map, .vi-map[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 [data-type="readable"] .vi-node__label, [data-type="readable"] .vi-edge__label, [data-type="readable"] .vi-map__group-label { font-family: var(--font-ui) !important; font-weight: 700; letter-spacing: 0.02em; font-style: normal; }
 .vi-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .vi-icon { flex: none; display: block; }
@@ -89,6 +89,7 @@ button.vi-node { cursor: pointer; }
 [data-motion="reduced"] .vi-map__lens { animation: none !important; transform: none !important; }
 .vi-map__fact { position: absolute; }
 .vi-map.is-idle .vi-map__world { transition: transform var(--duration-base) var(--ease-standard); }
+.vi-map.is-panning, .vi-map.is-panning .vi-node { cursor: grabbing; }
 .vi-map__hint { position: absolute; left: var(--space-4); right: var(--space-4); margin: 0; text-align: center; color: var(--ink-muted); pointer-events: none; z-index: var(--z-chrome); animation: vi-fade var(--duration-base) var(--ease-standard); }
 .vi-fact__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
 .vi-fact__back { display: inline-flex; align-items: center; gap: 2px; border: 0; background: none; padding: 2px 0; margin-bottom: var(--space-1); color: var(--link); font: 600 var(--vi-fs-cap)/16px var(--font-ui); cursor: pointer; }
