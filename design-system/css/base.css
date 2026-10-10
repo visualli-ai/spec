@@ -1,4 +1,4 @@
-/* Page defaults for a full-page viewer (optional: embedded renderers leave it out) — generated from the Visualli design system (v0.2.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Page defaults for a full-page viewer (optional: embedded renderers leave it out) — generated from the Visualli design system (v0.2.2). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 /* Native controls and scrollbars follow the theme. */
 :root { color-scheme: light; }
 [data-theme$="dark"] { color-scheme: dark; }
