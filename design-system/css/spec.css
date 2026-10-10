@@ -1,8 +1,10 @@
-/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.3.0). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Styles for the spec components (map, nodes, connectors, peek, terms, depth trail, controls) — generated from the Visualli design system (v0.3.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 .vi-map { --vi-fs-body: 15px; --vi-fs-sm: 13px; --vi-fs-cap: 12px; --vi-lh-body: 22px; --vi-label-scale: 1; }
 [data-theme$="dark"] :where([class^="vi-"], [class*=" vi-"]) { color-scheme: dark; }
-:where([data-scale="lg"]) .vi-map, .vi-map[data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
-:where([data-type="readable"]) .vi-map, .vi-map[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
+.vi-map[data-scale="lg"] { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
+:where([data-scale="lg"]) .vi-map { --vi-fs-body: 17px; --vi-fs-sm: 15px; --vi-fs-cap: 14px; --vi-lh-body: 26px; --vi-label-scale: 1.15; }
+.vi-map[data-type="readable"] { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
+:where([data-type="readable"]) .vi-map { --font-hand: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-note: "Atkinson Hyperlegible Next", system-ui, sans-serif; --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 [data-type="readable"] .vi-node__label, [data-type="readable"] .vi-edge__label, [data-type="readable"] .vi-map__group-label { font-family: var(--font-ui) !important; font-weight: 700; letter-spacing: 0.02em; font-style: normal; }
 .vi-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .vi-icon { flex: none; display: block; }
@@ -19,7 +21,7 @@
 [data-theme^="contrast"] .vi-ctrls { border: 2px solid var(--line-strong); }
 .vi-node { position: relative; display: inline-grid; place-items: center; border: 0; padding: 0; background: none; color: var(--node-ink); cursor: default; transition: transform var(--duration-base) var(--ease-bloom), opacity var(--duration-base); -webkit-tap-highlight-color: transparent; }
 button.vi-node { cursor: pointer; }
-.vi-node__svg { position: absolute; inset: 0; overflow: visible; }
+.vi-node__svg { position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: visible; }
 .vi-node__body { filter: drop-shadow(var(--vi-node-shadow, 0 6px 14px rgba(24, 33, 64, .10))); }
 [data-theme$="dark"] .vi-node__body { --vi-node-shadow: 0 0 22px rgba(255, 255, 255, .10); }
 [data-theme^="contrast"] .vi-node__body { filter: none; }
@@ -35,8 +37,8 @@ button.vi-node { cursor: pointer; }
 .vi-node:focus-visible { outline: none; }
 .vi-node:focus-visible .vi-node__body { stroke: var(--focus); stroke-width: 4; }
 .vi-node.is-selected .vi-node__body { stroke: var(--ink); }
-.vi-node__label { position: relative; text-align: center; color: var(--node-ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: calc(var(--vi-nfs, 22px) * var(--vi-label-scale) * var(--vi-ninv, 1)); line-height: 1.15; padding-top: 2px; }
-.vi-node__label.node-root { --vi-nfs: 30px; }
+.vi-node__label { position: relative; text-align: center; color: var(--node-ink); display: flex; flex-direction: column; align-items: center; font-size: calc(var(--vi-nfs, 22px) * var(--vi-label-scale) * var(--vi-ninv, 1)); line-height: 1.15; padding-top: 2px; }
+.vi-node__line { display: block; white-space: nowrap; }
 .vi-node--mini .vi-node__label { --vi-nfs: 15px; }
 .vi-node.is-dimmed { opacity: 1; }
 [data-theme^="focus"] .vi-node.is-dimmed { opacity: .4; }
@@ -69,7 +71,7 @@ button.vi-node { cursor: pointer; }
 .vi-ctrls__pct { min-width: 44px; text-align: center; font: 600 var(--vi-fs-cap)/16px var(--font-ui); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .vi-ctrls__div { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .vi-map { position: relative; overflow: hidden; background: var(--canvas); border-radius: inherit; isolation: isolate; }
-.vi-map__immersion { position: absolute; inset: 0; opacity: var(--immersion-alpha); transition: background var(--duration-base); z-index: -1; }
+.vi-map__immersion { position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: var(--immersion-alpha); transition: background var(--duration-base); z-index: -1; }
 .vi-map__world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .vi-map__edges { position: absolute; overflow: visible; pointer-events: none; }
 .vi-map__group rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 10 6; }
@@ -82,7 +84,7 @@ button.vi-node { cursor: pointer; }
 .vi-map.is-reveal .vi-edge.is-dashed .vi-edge__line { stroke-dasharray: 7 7; stroke-dashoffset: 0; animation: vi-fade var(--vi-line-draw, .5s) var(--ease-standard) backwards; animation-delay: inherit; }
 .vi-map:not(.is-reveal) .vi-edge__line { stroke-dasharray: none; }
 .vi-map:not(.is-reveal) .vi-edge.is-dashed .vi-edge__line { stroke-dasharray: 7 7; }
-.vi-map__lens { position: absolute; inset: 0; transform-origin: var(--vi-ox) var(--vi-oy); }
+.vi-map__lens { position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform-origin: var(--vi-ox) var(--vi-oy); }
 .vi-map.is-diving .vi-map__lens { transform: scale(var(--vi-dive-scale, 3.2)); opacity: 0; transition: transform var(--duration-zoom) var(--ease-zoom), opacity var(--vi-dive-fade, 160ms) var(--vi-dive-fade-delay, 150ms); }
 .vi-map.is-surfacing .vi-map__lens { transform: scale(var(--vi-surface-scale, .6)); opacity: 0; transform-origin: 50% 50%; transition: transform var(--vi-surface-dur, 220ms) var(--ease-zoom), opacity var(--vi-surface-fade, 200ms); }
 .vi-map.is-reveal .vi-map__lens { animation: vi-settle var(--vi-settle-dur, 260ms) var(--ease-standard); }
