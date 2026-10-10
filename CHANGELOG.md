@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- **`konva` and `react-konva` are peer dependencies of `@visualli/react`** (`^9.3.6`, `^18.2.10`), like React. The app and the SDK now share one Konva: before, an app with its own Konva at another version got two copies, and Konva warned ("Several Konva instances detected") or drew wrongly. Install them with the SDK: `npm install @visualli/react konva react-konva` (npm 7+ adds missing peers by itself).
+- **The SDK packages require each other at exactly their own version** (`@visualli/core`, `@visualli/bindings` were `"*"`, which could pair a react package with a different core). `scripts/update_version.py` keeps them in step on every release.
 - **The SDK no longer restyles the page around a map.** The design-system CSS it injects (`tokens.css` + `css/spec.css`) now styles `.vi-*` elements only: the focus ring, reduced motion and the dark `color-scheme` apply to the map's own elements, not to every element on the host page, and the type styles are prefixed (`.vi-text-body-sm`, `.vi-text-label`, …) so they can't collide with the host's class names. The SDK's empty-state and error messages use the prefixed classes. `TYPE_STYLES` keys are unchanged (`node-label`, `edge-label`, …).
 
 ## 0.2.0 — Visualli design system rendering

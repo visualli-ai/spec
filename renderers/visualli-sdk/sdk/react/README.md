@@ -17,10 +17,10 @@ React canvas rendering for Visualli — powered by Konva. A high-performance com
 ## Installation
 
 ```bash
-npm install @visualli/react @visualli/core konva react-konva zustand
+npm install @visualli/react konva react-konva
 ```
 
-**Peer dependencies:** `react@^18`, `react-dom@^18`
+**Peer dependencies:** `react@^18`, `react-dom@^18`, `konva@^9.3.6`, `react-konva@^18.2.10` - one copy each, shared with your app. `@visualli/core` and `zustand` come with the SDK.
 
 ## Quick Start
 

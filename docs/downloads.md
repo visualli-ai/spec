@@ -14,7 +14,7 @@ Download the official packages for your ecosystem below.
 
 === "npm"
     ```bash
-    npm install @visualli/react @visualli/core @visualli/bindings
+    npm install @visualli/react @visualli/core @visualli/bindings konva react-konva
     ```
 
 === "pip"

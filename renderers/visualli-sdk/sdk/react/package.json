@@ -31,20 +31,22 @@
   },
   "peerDependencies": {
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "konva": "^9.3.6",
+    "react-konva": "^18.2.10"
   },
   "dependencies": {
-    "@visualli/bindings": "*",
-    "@visualli/core": "*",
+    "@visualli/bindings": "0.2.3",
+    "@visualli/core": "0.2.3",
     "zustand": "^4.5.2",
-    "konva": "^9.3.6",
-    "react-konva": "^18.2.10",
     "react-use-measure": "^1.1.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@visualli/eslint-config": "*",
+    "konva": "^9.3.6",
+    "react-konva": "^18.2.10",
     "typescript": "^5.5.4"
   },
   "engines": {
