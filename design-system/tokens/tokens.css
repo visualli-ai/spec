@@ -1,4 +1,4 @@
-/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.3.1). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.3.2). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root, [data-theme="light"] {
   --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-ui: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -23,21 +23,21 @@
   --edge: #2a3048;
   --edge-label: #4f5671;
   --topic-teal: #87f2f8;
-  --topic-teal-ring: #00cdd5;
+  --topic-teal-ring: #00949c;
   --topic-harbor: #bcdbff;
-  --topic-harbor-ring: #76b2f5;
+  --topic-harbor-ring: #4386c5;
   --topic-iris: #e0c8fe;
-  --topic-iris-ring: #bd96ea;
+  --topic-iris-ring: #9570c1;
   --topic-berry: #ffbdc4;
-  --topic-berry-ring: #f47e8f;
+  --topic-berry-ring: #cc5b6d;
   --topic-coral: #ffc7b2;
-  --topic-coral-ring: #f38e65;
+  --topic-coral-ring: #c56741;
   --topic-amber: #ffcf9d;
-  --topic-amber-ring: #eb9c38;
+  --topic-amber-ring: #b97201;
   --topic-sun: #ffea94;
-  --topic-sun-ring: #dfbd04;
+  --topic-sun-ring: #a18600;
   --topic-stone: #e0dacf;
-  --topic-stone-ring: #bab09f;
+  --topic-stone-ring: #8b8272;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -104,19 +104,19 @@
   --edge: #5a6079;
   --edge-label: #5a6079;
   --topic-teal: #bce8ea;
-  --topic-teal-ring: #67c6cb;
+  --topic-teal-ring: #2c9298;
   --topic-harbor: #c9d9ec;
-  --topic-harbor-ring: #8bb2de;
+  --topic-harbor-ring: #5d85af;
   --topic-iris: #d9cfe8;
-  --topic-iris-ring: #b79ed4;
+  --topic-iris-ring: #8e76aa;
   --topic-berry: #edc6c9;
-  --topic-berry-ring: #da9099;
+  --topic-berry-ring: #b26c75;
   --topic-coral: #eecec1;
-  --topic-coral-ring: #db9b82;
+  --topic-coral-ring: #ae725b;
   --topic-amber: #eed4ba;
-  --topic-amber-ring: #d6a570;
+  --topic-amber-ring: #a67947;
   --topic-sun: #f4eac1;
-  --topic-sun-ring: #d2bf73;
+  --topic-sun-ring: #98883f;
   --topic-stone: #dddad5;
   }
 [data-theme="focus-dark"] {
@@ -154,22 +154,22 @@
   --topic-stone-ring: #b4a999;
   }
 [data-theme="colorsafe-light"] {
-  --topic-teal: #b0ecbc;
-  --topic-teal-ring: #6cc982;
-  --topic-harbor: #abdbfe;
-  --topic-harbor-ring: #60b4ec;
-  --topic-iris: #f6bde2;
-  --topic-iris-ring: #dc87c0;
-  --topic-berry: #feb79e;
-  --topic-berry-ring: #ec7f58;
-  --topic-coral: #fece96;
-  --topic-coral-ring: #e49d41;
-  --topic-amber: #b2e8fa;
-  --topic-amber-ring: #5cc4e2;
-  --topic-sun: #f6f097;
-  --topic-sun-ring: #d0c637;
+  --topic-teal: #bbeec1;
+  --topic-teal-ring: #389754;
+  --topic-harbor: #9bc9ef;
+  --topic-harbor-ring: #1d84b9;
+  --topic-iris: #d7a9c7;
+  --topic-iris-ring: #ae5d94;
+  --topic-berry: #e7a692;
+  --topic-berry-ring: #c05a36;
+  --topic-coral: #f5c893;
+  --topic-coral-ring: #b27212;
+  --topic-amber: #a6edff;
+  --topic-amber-ring: #1092af;
+  --topic-sun: #fbf494;
+  --topic-sun-ring: #938e00;
   --topic-stone: #dbdbdb;
-  --topic-stone-ring: #b7afb1;
+  --topic-stone-ring: #898284;
   }
 [data-theme="colorsafe-dark"] {
   --canvas: #0f1220;
@@ -188,19 +188,19 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #c9cddc;
   --edge-label: #b3b8cc;
-  --topic-teal: #b0ecbc;
+  --topic-teal: #bbeec1;
   --topic-teal-ring: #69c27e;
-  --topic-harbor: #abdbfe;
+  --topic-harbor: #9bc9ef;
   --topic-harbor-ring: #5eade2;
-  --topic-iris: #f6bde2;
+  --topic-iris: #d7a9c7;
   --topic-iris-ring: #d383b9;
-  --topic-berry: #feb79e;
+  --topic-berry: #e7a692;
   --topic-berry-ring: #e37a55;
-  --topic-coral: #fece96;
+  --topic-coral: #f5c893;
   --topic-coral-ring: #db9840;
-  --topic-amber: #b2e8fa;
+  --topic-amber: #a6edff;
   --topic-amber-ring: #5bbdda;
-  --topic-sun: #f6f097;
+  --topic-sun: #fbf494;
   --topic-sun-ring: #c9bf37;
   --topic-stone: #dbdbdb;
   --topic-stone-ring: #b1a8aa;

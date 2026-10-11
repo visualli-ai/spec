@@ -105,11 +105,13 @@ export function blobRadius(shape: number, rx: number, ry: number, angle: number)
   return best || Math.max(rx, ry);
 }
 
-/** Ring recipe: index 0 is the innermost ring. A node shows min(childLayers, 3) rings. */
+/** Ring recipe: index 0 is the innermost ring. A node shows min(childLayers, 3) rings. `opacity` is the halo (the ring's
+ *  fill); `strokeOpacity` is its outline, drawn at full strength so the ring — the "there is more inside" cue — reads at
+ *  3:1 against the canvas and the halos (the `topic-*-ring` tokens are chosen for that in every theme). */
 export const RINGS = [
-  { scale: 1.1, opacity: 0.5, rotate: -5, width: 2, dash: '' },
-  { scale: 1.2, opacity: 0.4, rotate: -10, width: 1, dash: '' },
-  { scale: 1.3, opacity: 0.3, rotate: -15, width: 3, dash: '6 4' },
+  { scale: 1.1, opacity: 0.5, strokeOpacity: 1, rotate: -5, width: 2, dash: '' },
+  { scale: 1.2, opacity: 0.4, strokeOpacity: 1, rotate: -10, width: 1, dash: '' },
+  { scale: 1.3, opacity: 0.3, strokeOpacity: 1, rotate: -15, width: 3, dash: '6 4' },
 ];
 
 /** Connector geometry: a cubic that bows perpendicular to the chord, flatter as distance grows. */
