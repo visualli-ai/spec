@@ -73,6 +73,11 @@ jobs:
           # Build Try-It-Out Bundle
           make build-loader
 
+      # Browser support: the CSS the SDK injects and its JavaScript fit package.json → browserslist, and the docs'
+      # Browser support tables agree with it (scripts/check-browsers.mjs). After the build: it checks the built SDK.
+      - name: Verify browser support
+        run: npm run check:browsers
+
       # 4. Build Documentation
       - name: Build MkDocs Site
         run: |
