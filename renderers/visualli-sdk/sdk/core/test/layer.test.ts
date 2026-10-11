@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import * as DS_IDEA from '../../../../../design-system/geometry/idea';
 import * as DS_VIEW from '../../../../../design-system/geometry/interaction';
 import * as DS_HULL from '../../../../../design-system/geometry/container';
-import { approximateMeasure, calculateFitView, convertLayerToFlatNodes, labelGrowth, parseVisualliFile } from '../src/index';
+import { approximateMeasure, blobProfile, calculateFitView, convertLayerToFlatNodes, labelGrowth, parseVisualliFile, shapeOfLevel } from '../src/index';
 
 const meta = JSON.stringify({ type: 'meta', version: '0.1.1', title: 't', created: 'x', lastModified: 'x' });
 const docOf = (nodes: Array<{ id: string; label: string; x?: number; y?: number }>, extra: Record<string, unknown> = {}) =>
@@ -63,5 +63,33 @@ describe('fit to view', () => {
   it('never enlarges a layer beyond VIEW.fitMax', () => {
     const doc = docOf([{ id: 'a', label: 'One' }]);
     expect(calculateFitView(convertLayerToFlatNodes(doc.rootLayer!, doc), 4000, 4000).zoomLevel).toBe(DS_VIEW.VIEW.fitMax);
+  });
+});
+
+describe('fit on a phone-width canvas', () => {
+  // A layer of five ideas (an AI-generated map), its file storing sizes far smaller than its labels need.
+  const honeybee = parseVisualliFile([meta, JSON.stringify({
+    type: 'layer', id: 'l0', level: 0, layout: 'radial', connections: [], containers: [],
+    nodes: [{ id: 'r', position: { x: 0, y: 0 }, data: { label: 'The Honeybee Colony', summary: '' } }],
+  }), JSON.stringify({
+    type: 'layer', id: 'l1', level: 1, layout: 'radial', connections: [], containers: [], parentLayerId: 'l0', parentNodeId: 'r',
+    nodes: [['Castes & Roles', 0, -320], ['Annual Cycle', 304, -99], ['Hive Structure', 188, 259], ['Communication', -188, 259], ['Foraging Economy', -304, -99]]
+      .map(([label, x, y], i) => ({ id: `n${i}`, position: { x, y }, width: 40, height: 30, data: { label, summary: '' } })),
+  })].join('\n'));
+  const nodes = convertLayerToFlatNodes(honeybee.layers.get('l1')!, honeybee);
+  /** Every idea's outline lies inside a `w` × `h` canvas showing `view`. */
+  const allInside = (view: { centerX: number; centerY: number; zoomLevel: number }, w: number, h: number) =>
+    nodes.every((n) => Math.abs(n.x - view.centerX) * view.zoomLevel + (n.width / 2) * view.zoomLevel <= w / 2
+      && Math.abs(n.y - view.centerY) * view.zoomLevel + (n.height / 2) * view.zoomLevel <= h / 2);
+
+  it('ideas are sized for their labels, not by the sizes a file stores', () => {
+    for (const n of nodes) {
+      const want = DS_IDEA.ideaSize('node', n.title, approximateMeasure, 1, blobProfile(shapeOfLevel(1)));
+      expect([n.width, n.height]).toEqual([want.width, want.height]);
+      expect(n.width).toBeGreaterThan(40);
+    }
+  });
+  it('a fitted view shows every idea on a 375px-wide canvas', () => {
+    expect(allInside(calculateFitView(nodes, 375, 812), 375, 812)).toBe(true);
   });
 });

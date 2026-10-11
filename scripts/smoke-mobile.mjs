@@ -210,6 +210,39 @@ try {
     check('resize: and back', await page.evaluate(() => !document.querySelector('.vi-map').classList.contains('is-compact')));
     await ctx.close();
   }
+  // ── the fit follows the canvas size ──
+  // It kept the size the layer was first fitted at: a desktop fit spilled off a phone-width canvas while Fit stayed
+  // disabled. A fitted view must stay fitted: the same view as the layer opened at the new size.
+  {
+    // The bench map (?doc=bench&n=8): a hub whose layer holds eight ideas, wider than a phone at the desktop fit.
+    const stepIn = async (viewport) => {
+      const o = await open(viewport, { touch: false }, 'bench&n=8');
+      const hub = await o.page.evaluate(() => window.__bench.hubScreen());
+      await layerChange(o.page);
+      await o.page.mouse.move(hub.x, hub.y);
+      await o.page.click('.vi-fact__step'); // the peek's Step inside
+      await awaitLayer(o.page);
+      return o;
+    };
+    const view = page => page.evaluate(() => window.__bench.view());
+    const fitted = page => page.evaluate(() => document.querySelector('[aria-label="Fit map to view"]').disabled);
+    const same = (a, b) => Math.abs(a.zoomLevel - b.zoomLevel) < 1e-6 && Math.abs(a.centerX - b.centerX) < 0.5 && Math.abs(a.centerY - b.centerY) < 0.5;
+    const phone = await stepIn({ width: 400, height: 800 });
+    const want = await view(phone.page);
+    await phone.ctx.close();
+    const { ctx, page } = await stepIn({ width: 1280, height: 800 });
+    const desk = await view(page);
+    check('fit: the stepped-into layer opens fitted', await page.evaluate(() => window.__bench.ideasInView()) && await fitted(page));
+    check('fit: …at a different scale than on a phone (the test means something)', !same(desk, want), JSON.stringify({ desk, want }));
+    await page.setViewportSize({ width: 400, height: 800 });
+    await page.waitForTimeout(800);
+    const got = await view(page);
+    check('fit: a fitted view stays fitted when the canvas narrows', same(got, want) && await page.evaluate(() => window.__bench.ideasInView()) && await fitted(page), JSON.stringify({ got, want }));
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(800);
+    check('fit: …and when it widens again', same(await view(page), desk) && await fitted(page));
+    await ctx.close();
+  }
 } finally { await browser.close(); await server.stop(); }
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 process.exit(failures ? 1 : 0);
