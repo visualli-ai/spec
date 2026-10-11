@@ -46,7 +46,7 @@
     "renderers/visualli-sdk/sdk/*",
     "renderers/visualli-sdk/tooling/*"
   ],
-  "version": "0.2.4",
+  "version": "0.2.5",
   "browserslist": [
     "chrome >= 88",
     "edge >= 88",
