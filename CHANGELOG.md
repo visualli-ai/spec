@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.7 — 2026-10-11
+
+**Conforms to design system 0.3.3.**
 
 ### Fixed
 - **Fit to view follows the canvas when it changes size.** The fit was taken only when a layer opened, so after the canvas changed size (a window narrowed to phone width, a phone rotated, the host's layout around the map changing) the view kept the old size's fit. On a phone, ideas spilled off both edges, the zoom read 100% and "Fit map to view" stayed disabled. The view now behaves as the design system's VisualMap keeps it when its canvas resizes: the reader's zoom stays relative to the fit and their pan stays put on screen, so a fitted view stays fitted. SDK viewport plumbing only; nothing new from the design system. Tests: `layer.test.ts`, `refit.test.ts`; smoke test: `smoke:mobile` (a stepped-into layer fitted on desktop has the phone fit after the canvas narrows).
