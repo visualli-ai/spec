@@ -212,9 +212,11 @@ export function drawIdea(c: CanvasRenderingContext2D, node: FlatNode, d: Design,
       const r = rings[i]!;
       const angle = (r.rotate + ringSpin) * DEG;
       c.rotate(angle);
+      // The halo (fill) at the ring's opacity; its outline at strokeOpacity (full strength), so the cue reads at 3:1.
       c.globalAlpha = baseAlpha * r.opacity;
       const path = blobPath2D(shape, rx * r.scale * ringGrow, ry * r.scale * ringGrow);
       c.fill(path);
+      c.globalAlpha = baseAlpha * r.strokeOpacity;
       c.lineWidth = r.width;
       if (r.dash) { c.setLineDash(dashOf(r.dash)); dashed = true; } else if (dashed) { c.setLineDash(NO_DASH); dashed = false; }
       c.stroke(path);

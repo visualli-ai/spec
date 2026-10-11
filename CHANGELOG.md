@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+**Conforms to design system 0.3.2** (inclusive palettes).
+
+### Changed
+- **Depth rings read at 3:1.** Each ring's halo is drawn at `RINGS[i].opacity` and its outline at the new `RINGS[i].strokeOpacity` (full strength); the SDK drew the whole ring at `opacity`, so in the light themes the "there is more inside" cue rendered at 1.1–1.4:1. Test: `rings.test.ts`.
+- **Design-system tokens from 0.3.2**: Color-safe topic fills and Color-safe / High contrast statuses stay distinct for every color vision (7.5+ apart, CIEDE2000, with simulated protanopia, deuteranopia and tritanopia); the light themes' `topic-*-ring` colors are 3:1+ on the canvas.
+
+## 0.2.5 — 2026-10-11
+
 **Conforms to the design system's shape-aware labels** (geometry/idea.ts `labelLayout`, `wrapInShape`; geometry/blob.ts `blobProfile`).
 
 ### Added
