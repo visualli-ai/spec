@@ -53,6 +53,7 @@ export {
   calculateFitZoom,
   calculateFitCenter,
   calculateFitView,
+  refitView,
 } from './utils/layerNavigation';
 export type { FitResult } from './utils/layerNavigation';
 

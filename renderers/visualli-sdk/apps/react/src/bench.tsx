@@ -130,6 +130,15 @@ const buildMs = performance.now() - t0;
     }
     return null;
   },
+  /** Whether every idea of the current layer lies wholly inside the canvas (the view frames the layer). */
+  ideasInView() {
+    const s = useViewportStore.getState();
+    return [...useNodeStore.getState().nodes.values()].every((n) => {
+      const a = s.worldToScreen(n.x - n.width / 2, n.y - n.height / 2), b = s.worldToScreen(n.x + n.width / 2, n.y + n.height / 2);
+      return a.x >= 0 && a.y >= 0 && b.x <= s.canvasWidth && b.y <= s.canvasHeight;
+    });
+  },
+  view() { const s = useViewportStore.getState(); return { centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel }; },
   canvasRect() { const r = document.querySelector('canvas')!.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
   nextLayerChange() { return new Promise<number>(r => layerResolvers.push(r)); },
   now: () => performance.now(),

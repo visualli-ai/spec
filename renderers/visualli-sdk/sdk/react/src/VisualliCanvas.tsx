@@ -53,7 +53,7 @@ import NavigationStack, { type NavStackEntry } from './components/NavigationStac
 import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
 import { A11yLayer } from './components/A11yLayer';
 
-import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
+import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer, refitView } from './utils/layerNavigation';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './hooks/useLayerChoreography';
 import { useDesign } from './design/useDesign';
@@ -425,14 +425,23 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
 
   useEffect(() => { fitToScreen(); }, [currentLayerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fit when the canvas is properly measured for the first time (the RAF in
-  // useKonvaRenderer updates canvasWidth from 0 → container width asynchronously).
+  // Fit once the canvas is measured (useKonvaRenderer updates canvasWidth from 0 → container width), and keep the fit
+  // following the canvas when it changes size (a window or phone rotated, a sidebar opened, split screen) as the design
+  // system's map does: the reader's zoom stays relative to the fit and their pan on screen, so a fitted view stays
+  // fitted. Without it the fit kept the old size, and "Fit map to view" stayed disabled on a view that no longer fit.
   const didFitAfterMeasureRef = useRef(false);
   useEffect(() => {
-    if (!canvasWidth || didFitAfterMeasureRef.current) return;
-    didFitAfterMeasureRef.current = true;
-    fitToScreen();
-  }, [canvasWidth, fitToScreen]);
+    if (!canvasWidth || !canvasHeight) return;
+    if (!didFitAfterMeasureRef.current) { didFitAfterMeasureRef.current = true; fitToScreenRef.current(); return; }
+    if (flatNodes.length === 0 || isTransitioningRef.current) return; // a layer change fits when it completes
+    const s = useViewportStore.getState();
+    const oldFit = { centerX: s.fitCenterX, centerY: s.fitCenterY, zoomLevel: s.fitScale };
+    const newFit = calculateFitView(flatNodes, canvasWidth, canvasHeight, containers);
+    const { centerX, centerY, zoomLevel } = refitView(s, oldFit, newFit);
+    s.setFit(newFit.zoomLevel, newFit.centerX, newFit.centerY);
+    setCenter(centerX, centerY);
+    setZoom(zoomLevel);
+  }, [canvasWidth, canvasHeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Layer transitions ─────────────────────────────────────────────────────
 
