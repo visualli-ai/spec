@@ -89,26 +89,6 @@ export function calculateFitCenter(nodes: FlatNode[], containers: ReadonlyArray<
   return { x: (f.x0 + f.x1) / 2, y: (f.y0 + f.y1) / 2 };
 }
 
-/**
- * The view after the canvas changes size, as the design system's map keeps it: the fit follows the canvas (fitView
- * over the new size), the reader's zoom stays relative to the fit and their pan stays the same on screen. A view that
- * was fitted stays fitted.
- */
-export function refitView(
-  view: { centerX: number; centerY: number; zoomLevel: number },
-  oldFit: FitResult,
-  newFit: FitResult,
-): FitResult {
-  const zoomLevel = newFit.zoomLevel * (view.zoomLevel / oldFit.zoomLevel);
-  // The pan in screen px is (fit centre − view centre) × zoom; kept as it is at the new zoom.
-  const k = view.zoomLevel / zoomLevel;
-  return {
-    centerX: newFit.centerX + (view.centerX - oldFit.centerX) * k,
-    centerY: newFit.centerY + (view.centerY - oldFit.centerY) * k,
-    zoomLevel,
-  };
-}
-
 // ── Container helpers ────────────────────────────────────────────────────────
 
 // Inline the container shape here to avoid a circular import with KonvaContainerLayer.

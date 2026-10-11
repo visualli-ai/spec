@@ -53,7 +53,8 @@ import NavigationStack, { type NavStackEntry } from './components/NavigationStac
 import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
 import { A11yLayer } from './components/A11yLayer';
 
-import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer, refitView } from './utils/layerNavigation';
+import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
+import { refitView } from './utils/refit';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './hooks/useLayerChoreography';
 import { useDesign } from './design/useDesign';
@@ -426,9 +427,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   useEffect(() => { fitToScreen(); }, [currentLayerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fit once the canvas is measured (useKonvaRenderer updates canvasWidth from 0 → container width), and keep the fit
-  // following the canvas when it changes size (a window or phone rotated, a sidebar opened, split screen) as the design
-  // system's map does: the reader's zoom stays relative to the fit and their pan on screen, so a fitted view stays
-  // fitted. Without it the fit kept the old size, and "Fit map to view" stayed disabled on a view that no longer fit.
+  // following the canvas when it changes size (a window narrowed or rotated, the host's layout around the map
+  // changing) the way the design system's VisualMap keeps its view (utils/refit.ts): the reader's zoom stays relative
+  // to the fit and their pan on screen, so a fitted view stays fitted. Without it the fit kept the old size, and
+  // "Fit map to view" stayed disabled on a view that no longer fit.
   const didFitAfterMeasureRef = useRef(false);
   useEffect(() => {
     if (!canvasWidth || !canvasHeight) return;

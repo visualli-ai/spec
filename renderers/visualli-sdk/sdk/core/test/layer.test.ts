@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import * as DS_IDEA from '../../../../../design-system/geometry/idea';
 import * as DS_VIEW from '../../../../../design-system/geometry/interaction';
 import * as DS_HULL from '../../../../../design-system/geometry/container';
-import { approximateMeasure, blobProfile, calculateFitView, convertLayerToFlatNodes, labelGrowth, parseVisualliFile, refitView, shapeOfLevel } from '../src/index';
+import { approximateMeasure, blobProfile, calculateFitView, convertLayerToFlatNodes, labelGrowth, parseVisualliFile, shapeOfLevel } from '../src/index';
 
 const meta = JSON.stringify({ type: 'meta', version: '0.1.1', title: 't', created: 'x', lastModified: 'x' });
 const docOf = (nodes: Array<{ id: string; label: string; x?: number; y?: number }>, extra: Record<string, unknown> = {}) =>
@@ -66,7 +66,7 @@ describe('fit to view', () => {
   });
 });
 
-describe('fit follows the canvas size', () => {
+describe('fit on a phone-width canvas', () => {
   // A layer of five ideas (an AI-generated map), its file storing sizes far smaller than its labels need.
   const honeybee = parseVisualliFile([meta, JSON.stringify({
     type: 'layer', id: 'l0', level: 0, layout: 'radial', connections: [], containers: [],
@@ -91,22 +91,5 @@ describe('fit follows the canvas size', () => {
   });
   it('a fitted view shows every idea on a 375px-wide canvas', () => {
     expect(allInside(calculateFitView(nodes, 375, 812), 375, 812)).toBe(true);
-  });
-  it('a fitted view stays fitted when the canvas changes size (desktop → phone)', () => {
-    const desk = calculateFitView(nodes, 1136, 900), phone = calculateFitView(nodes, 375, 812);
-    expect(allInside(desk, 375, 812)).toBe(false); // the desktop fit spills off a phone
-    const got = refitView(desk, desk, phone);
-    expect(got.zoomLevel).toBeCloseTo(phone.zoomLevel, 12);
-    expect(got.centerX).toBeCloseTo(phone.centerX, 9);
-    expect(got.centerY).toBeCloseTo(phone.centerY, 9);
-    expect(allInside(got, 375, 812)).toBe(true);
-  });
-  it('a zoomed and panned view keeps its zoom relative to the fit and its pan on screen', () => {
-    const desk = calculateFitView(nodes, 1136, 900), phone = calculateFitView(nodes, 375, 812);
-    const view = { centerX: desk.centerX + 40, centerY: desk.centerY - 25, zoomLevel: desk.zoomLevel * 2 };
-    const got = refitView(view, desk, phone);
-    expect(got.zoomLevel / phone.zoomLevel).toBeCloseTo(2, 12);
-    expect((phone.centerX - got.centerX) * got.zoomLevel).toBeCloseTo((desk.centerX - view.centerX) * view.zoomLevel, 9);
-    expect((phone.centerY - got.centerY) * got.zoomLevel).toBeCloseTo((desk.centerY - view.centerY) * view.zoomLevel, 9);
   });
 });
