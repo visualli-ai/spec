@@ -66,6 +66,7 @@ describe('rings', () => {
       expect(r.scale).toBe(DS.RINGS[i]!.scale);
       expect(r.rotate).toBe(DS.RINGS[i]!.rotate);
       expect(r.opacity).toBe(DS.RINGS[i]!.opacity);
+      expect(r.strokeOpacity).toBe(DS.RINGS[i]!.strokeOpacity);
       expect(r.width).toBe(DS.RINGS[i]!.width);
       expect(r.dash).toBe(DS.RINGS[i]!.dash);
     });
