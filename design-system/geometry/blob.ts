@@ -50,15 +50,49 @@ export function drawBlob(ctx: PathContext, shape: number, rx: number, ry: number
 
 /** Distance from the center to the smoothed outline (blobPath) in direction `angle` (radians, SVG y-down).
  *  Connectors use it to start and end just outside the outline an idea actually has, not a stand-in ellipse. */
-export function blobRadius(shape: number, rx: number, ry: number, angle: number): number {
+/** The outline as a polygon: the midpoint-quadratic curve sampled 8 times per segment. */
+function blobPolygon(shape: number, rx: number, ry: number): number[][] {
   const pts = BLOB_SHAPES[((shape % BLOB_SHAPES.length) + BLOB_SHAPES.length) % BLOB_SHAPES.length].map(([x, y]) => [x * rx, y * ry]);
   const mid = (a: number[], b: number[]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  // Sample the midpoint-quadratic curve into a polygon, then cast a ray from the center.
   const poly: number[][] = [];
   for (let i = 0; i < pts.length; i++) {
     const p0 = mid(pts[(i - 1 + pts.length) % pts.length], pts[i]), c = pts[i], p1 = mid(pts[i], pts[(i + 1) % pts.length]);
     for (let k = 0; k < 8; k++) { const t = k / 8, u = 1 - t; poly.push([u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]]); }
   }
+  return poly;
+}
+
+/** The shape's profile for label wrapping (idea.ts ShapeProfile): for an idea of half-size rx × ry, how far a centered
+ *  line at height y (from the center) can reach before it meets the outline — the nearer of the outline's left and
+ *  right edges at that height, 0 outside it. Labels wrap inside the real shape, so a new shape needs no new label rule. */
+const profiles = new Map<string, (y: number) => number>();
+export function blobProfile(shape: number): (rx: number, ry: number) => (y: number) => number {
+  return (rx, ry) => {
+    const key = `${shape}|${rx}|${ry}`, hit = profiles.get(key);
+    if (hit) return hit;
+    const poly = blobPolygon(shape, rx, ry);
+    const at = new Map<number, number>(); // the same heights come up again and again while wrapping
+    const fn = (y: number) => {
+      const seen = at.get(y);
+      if (seen !== undefined) return seen;
+      let left = 0, right = 0;
+      for (let i = 0; i < poly.length; i++) {
+        const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % poly.length];
+        if ((ay <= y && by > y) || (by <= y && ay > y)) { const x = ax + ((y - ay) / (by - ay)) * (bx - ax); if (x < left) left = x; if (x > right) right = x; }
+      }
+      const half = Math.max(0, Math.min(-left, right));
+      if (at.size < 256) at.set(y, half);
+      return half;
+    };
+    if (profiles.size > 2048) profiles.clear();
+    profiles.set(key, fn);
+    return fn;
+  };
+}
+
+export function blobRadius(shape: number, rx: number, ry: number, angle: number): number {
+  // Cast a ray from the center to the sampled outline.
+  const poly = blobPolygon(shape, rx, ry);
   const dx = Math.cos(angle), dy = Math.sin(angle);
   let best = 0;
   for (let i = 0; i < poly.length; i++) {
