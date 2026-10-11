@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.6 — 2026-10-11
 
 **Conforms to design system 0.3.2** (inclusive palettes).
 
