@@ -186,14 +186,16 @@ interface Node {
   data: {
     label: string;
     summary?: string;
-    color?: string;    // any valid CSS color
+    color?: string;    // an accent ("teal", "sun", …) or any CSS color ("#b7e7f3")
   };
 }
 ```
 
 | Attribute | Value | When to use |
 |---|---|---|
-| `Node.data.color` | Any valid CSS color (`#ff0000`, `red`, `hsl(...)`) | Visually distinguish nodes by category, priority, or state. |
+| `Node.data.color` | An **accent** - `teal`, `harbor`, `iris`, `berry`, `coral`, `amber`, `sun` or `stone` (any case) - or any other CSS color (`#b7e7f3`, `red`, `hsl(...)`). Omit it to let renderers vary siblings. | Visually distinguish sibling ideas. Prefer accents. |
+
+**Accents or your own colors.** An accent is drawn in the reader's palette and theme: every renderer has a fill and a ring for each accent in Standard, Focus, Color-safe and High contrast, light and dark, so the map stays readable for every eye. Any other color is yours: it's drawn exactly as given, with a slightly darker ring, in every palette - it doesn't change with the reader's settings. With no color, renderers give siblings different accents in turn (by their order in the layer). Generators should write accents; the bindings export them as `ACCENTS` (`from visualli import ACCENTS`, `import { ACCENTS } from '@visualli/bindings'`), read from the design system's color rule.
 
 ---
 

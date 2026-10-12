@@ -5,6 +5,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import * as DS_COLOR from '../../../../../design-system/geometry/color';
 import { TOPICS, TOKENS, ideaColor, ideaStyle, topicFromName, parseVisualliFile, convertLayerToFlatNodes } from '../src/index';
 
 describe('topic names', () => {
@@ -69,5 +71,28 @@ describe('matches the design system (geometry/color.ts)', () => {
       const want = DS.topicFor(c, i);
       expect(ideaColor(c, i)).toEqual(want ? { topic: want, custom: null } : { topic: null, custom: DS.customColor(c) });
     }
+  });
+});
+
+// The bindings' accents (bindings/typescript/src/accents.ts, and the same block in bindings/python/visualli.py) are
+// generated from the design system's TOPIC_ORDER by `make generate`; the schema documents them. None may drift.
+describe('accents in the bindings and the schema', () => {
+  const read = (p: string) => readFileSync(resolve(__dirname, '../../../../..', p), 'utf8');
+  it('the TypeScript bindings export exactly the design system\'s accents, in order, and resolve names like the renderer', async () => {
+    const { ACCENTS, accentOf } = await import('../../../../../bindings/typescript/src/accents');
+    expect([...ACCENTS]).toEqual([...DS_COLOR.TOPIC_ORDER]);
+    for (const a of ACCENTS) expect(accentOf(` ${a.toUpperCase()} `)).toBe(topicFromName(` ${a.toUpperCase()} `));
+    expect(accentOf('#b7e7f3')).toBeNull();
+  });
+  it('the Python bindings declare the same accents', () => {
+    const py = read('bindings/python/visualli.py');
+    const tuple = /^ACCENTS: tuple\[Accent, \.\.\.\] = \(([^)]*)\)$/m.exec(py);
+    expect(tuple && [...tuple[1].matchAll(/"([a-z]+)"/g)].map((m) => m[1])).toEqual([...DS_COLOR.TOPIC_ORDER]);
+  });
+  it('the schema names every accent for data.color', () => {
+    const schema = JSON.parse(read('visualli.schema.json'));
+    const desc: string = JSON.stringify(schema).match(/"color":\{"type":"string","description":"([^"]*)"/)![1];
+    const listed = /one of ([a-z, ]+) \(any case\)/.exec(desc)![1].split(/,\s*/);
+    expect(listed).toEqual([...DS_COLOR.TOPIC_ORDER]);
   });
 });

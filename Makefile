@@ -7,7 +7,7 @@ VENV ?= .venv
 help:
 	@echo "Available commands:"
 	@echo "  make install         - Create Python 3.11+ venv and install dependencies"
-	@echo "  make generate        - Regenerate Python and TypeScript bindings"
+	@echo "  make generate        - Regenerate Python and TypeScript bindings (models + accents)"
 	@echo "  make update-version  - Propagate version from VERSION file to all files AND regenerate bindings"
 	@echo "  make docs-serve      - Run the MkDocs dev server for the docs/"
 	@echo "  make docs-build      - Build the MkDocs site to docs/site/"
@@ -52,6 +52,8 @@ generate:
 	@echo "⏳ Generating TypeScript Interfaces..."
 	@json2ts visualli.schema.json bindings/typescript/src/types.ts
 	@echo "✅ TypeScript interfaces generated at bindings/typescript/src/types.ts"
+	@echo "⏳ Generating accents (from design-system/geometry/color.ts)..."
+	@node scripts/gen-bindings-accents.mjs
 
 update-version:
 	@$(VENV)/bin/python scripts/update_version.py

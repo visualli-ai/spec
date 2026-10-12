@@ -24,12 +24,12 @@ All props accepted by `<VisualliRenderer />`.
 | `reveal` | `'gradual' \| 'instant'` | `'gradual'` | How a layer arrives. `gradual`: ideas bloom in one by one, then connectors draw, as the design system's motion describes. `instant`: everything fades in together (what `reducedMotion` does). |
 | `controlsPosition` | `'top-right' \| 'bottom-right'` | `'top-right'` | Where the zoom / fit controls sit. `top-right` is the design system's placement (`.vi-map__ctrls`, opposite the depth trail); `bottom-right` moves them to the bottom corner, above the touch sheet while it's open. |
 | `layout` | `'auto' \| 'touch' \| 'pointer'` | `'auto'` | Interaction layout. `auto` follows the reader's input and the map's size: touch devices get the design system's bottom-sheet peek and larger controls, pointer devices the floating peek on hover. Narrow maps (< 560px) collapse the depth trail. Force one with `touch` or `pointer`. |
-| `chromaticImmersion` | `boolean` | `false` | When enabled, child layers are tinted with their parent idea's topic color (at the design system's `immersion-alpha`), creating visual hierarchy. |
+| `chromaticImmersion` | `boolean` | `true` | Child layers are tinted with the fill of the idea you stepped into (its accent or custom color, at the design system's `immersion-alpha`), so you always know whose inside you are in. Pass `false` to turn it off. |
 | `width` | `string \| number` | `'100%'` | Canvas width. CSS strings (`'100%'`, `'800px'`) or numbers (pixels). |
 | `height` | `string \| number` | `'100%'` | Canvas height. CSS strings (`'100vh'`, `'600px'`) or numbers (pixels). |
 
 !!! info "Rendered by the Visualli design system"
-    Colors, fonts, outlines, rings and connectors come from the [design system](https://github.com/visualli-ai/spec/tree/main/design-system) vendored in this repository. A `.visualli` file's free-form node colors are matched to the nearest of the design system's eight topics (teal, harbor, iris, berry, coral, amber, sun, stone), so every idea is drawn with its topic's fill and ring color in every theme.
+    Colors, fonts, outlines, rings and connectors come from the [design system](https://github.com/visualli-ai/spec/tree/main/design-system) vendored in this repository. A node's `color` that names one of the design system's eight accents (teal, harbor, iris, berry, coral, amber, sun, stone) is drawn with that accent's fill and ring in the reader's palette and theme; any other color (e.g. a hex) is drawn exactly as given, with a slightly darker ring, in every theme - it isn't matched to an accent. Ideas without a color take the accents in turn.
 
 ## 🚀 Performance
 
