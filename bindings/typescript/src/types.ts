@@ -75,6 +75,9 @@ export interface Node {
      * A short description or summary of the node content
      */
     summary: string;
+    /**
+     * The idea's color. Either an accent - one of teal, harbor, iris, berry, coral, amber, sun, stone (any case) - which every renderer draws in the reader's palette and theme (Standard, Focus, Color-safe and High contrast, light and dark), or any other CSS color such as a hex ('#b7e7f3'), drawn exactly as given in every palette. Omit it and renderers give siblings different accents in turn. The accents are exported by the bindings (ACCENTS).
+     */
     color?: string;
   };
   [k: string]: unknown;

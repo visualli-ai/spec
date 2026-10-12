@@ -40,3 +40,15 @@ function processFragment(fragment: VisualliFragment) {
   }
 }
 ```
+
+### Accents
+
+A node's `data.color` is either an **accent** - drawn in the reader's palette and theme by every renderer - or any other CSS color, drawn exactly as given. Generators should use accents. They come from the Visualli design system's color rule (never typed out here):
+
+```typescript
+import { ACCENTS, type Accent, accentOf } from '@visualli/bindings';
+
+ACCENTS;               // ['teal', 'harbor', 'iris', 'berry', 'coral', 'amber', 'sun', 'stone']
+accentOf(' Sun ');     // 'sun'  - names are matched in any case, spaces ignored
+accentOf('#b7e7f3');   // null   - a custom color: drawn as given, doesn't follow the reader's palette
+```
