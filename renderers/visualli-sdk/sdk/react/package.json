@@ -1,6 +1,6 @@
 {
   "name": "@visualli/react",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "React canvas renderer for .visualli files \u2014 built on @visualli/core",
   "repository": {
     "type": "git",
@@ -36,8 +36,8 @@
     "react-konva": "^18.2.10"
   },
   "dependencies": {
-    "@visualli/bindings": "0.2.7",
-    "@visualli/core": "0.2.7",
+    "@visualli/bindings": "0.2.8",
+    "@visualli/core": "0.2.8",
     "zustand": "^4.5.2",
     "react-use-measure": "^1.1.2"
   },
