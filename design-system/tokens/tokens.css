@@ -1,4 +1,4 @@
-/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.3.4). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
+/* Spec tokens for all 8 themes — generated from the Visualli design system (v0.3.6). Do not edit here: changes come in through PRs from the private design system. MIT license, see ../LICENSE. */
 :root, [data-theme="light"] {
   --font-display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-ui: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -63,6 +63,7 @@
   --duration-base: 240ms;
   --duration-zoom: 500ms;
   --duration-reveal: 420ms;
+  --duration-autoplay: 7000ms;
   --stagger-reveal: 70ms;
   --ease-zoom: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
@@ -265,6 +266,7 @@
   --duration-base: 0ms;
   --duration-zoom: 0ms;
   --duration-reveal: 0ms;
+  --duration-autoplay: 0ms;
   --stagger-reveal: 0ms;
   }
 @media (prefers-reduced-motion: reduce) {
@@ -274,6 +276,7 @@
   --duration-base: 0ms;
   --duration-zoom: 0ms;
   --duration-reveal: 0ms;
+  --duration-autoplay: 0ms;
   --stagger-reveal: 0ms;
   }
 }
