@@ -94,6 +94,23 @@ export function fitView(bounds: FrameBox, width: number, height: number): { scal
   return { scale, center: { x: (bounds.x0 + bounds.x1) / 2, y: (bounds.y0 + bounds.y1) / 2 } };
 }
 
+/** Insets: room the host's chrome takes at each edge of the map (a docked Vault, a top bar, the Composer). */
+export type FrameInsets = { top?: number; right?: number; bottom?: number; left?: number };
+/** The smallest free area a map is ever fitted into, however much the insets take. */
+export const FIT_ROOM = { minWidth: 200, minHeight: 160 } as const;
+
+/** Fit to view inside insets. The map's canvas fills its whole frame - so the canvas itself and its chromatic immersion
+ *  run behind the host's chrome (a docked Vault floats over the tinted canvas) - while the layer is fitted into the
+ *  free area (the frame less the insets, never below FIT_ROOM) and centred in it. `screen`: where on the canvas the
+ *  world `center` goes (screen = world × scale + translation); `room`: the free area's size. With no insets this is
+ *  fitView, centred on the canvas. */
+export function fitViewInset(bounds: FrameBox, width: number, height: number, insets: FrameInsets = {}): { scale: number; center: { x: number; y: number }; screen: { x: number; y: number }; room: { width: number; height: number } } {
+  const top = insets.top ?? 0, right = insets.right ?? 0, bottom = insets.bottom ?? 0, left = insets.left ?? 0;
+  const w = Math.max(FIT_ROOM.minWidth, width - left - right), h = Math.max(FIT_ROOM.minHeight, height - top - bottom);
+  const { scale, center } = fitView(bounds, w, h);
+  return { scale, center, screen: { x: left + w / 2, y: top + h / 2 }, room: { width: w, height: h } };
+}
+
 /** Where the peek card sits (pointer): beside the idea — right of it if it fits, else left — and level with it. */
 export const PEEK_PLACEMENT = {
   /** Gap between the idea's outermost ring and the card. */ gap: 16,

@@ -1,16 +1,16 @@
 {
   "name": "visualli-spec-design-system",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "generatedFrom": "visualli.ai/design-system",
   "license": "MIT",
-  "tokens": 70,
+  "tokens": 71,
   "cssRules": 165,
   "files": {
     "LICENSE": "cd144bfc4c664b91",
     "NOTICE.md": "bcca09f4761fb367",
-    "README.md": "ef5dff47da5a79d1",
-    "css/base.css": "43a75aebcdcd8adb",
-    "css/spec.css": "a932ff97a09e1b87",
+    "README.md": "c7657518782317c0",
+    "css/base.css": "36fddafe0f140086",
+    "css/spec.css": "ef49665379490a34",
     "fonts/Caveat-Variable.ttf": "635e030f2a6ed255",
     "fonts/fonts.css": "a1b6396db6bb3641",
     "geometry/blob.ts": "81f87be44c5d63dc",
@@ -20,11 +20,11 @@
     "geometry/detail.ts": "05015f0f5571b434",
     "geometry/geometry.json": "17e62697c25dae37",
     "geometry/idea.ts": "2dfc83ae5c259358",
-    "geometry/interaction.ts": "156371f367b2fb28",
+    "geometry/interaction.ts": "f98cff739b5e9a40",
     "geometry/motion.ts": "fd4d3b4155b1b6ef",
     "index.css": "89993ebe1474fca7",
-    "tokens/tokens.css": "14283bed6bb25c41",
-    "tokens/tokens.embed.css": "c3e6d97ed1ae6c7f",
-    "tokens/tokens.json": "2b1acad5903f99df"
+    "tokens/tokens.css": "3fac27238b8e04f1",
+    "tokens/tokens.embed.css": "a99abaaba19bf72b",
+    "tokens/tokens.json": "9723189e96ca2be7"
   }
 }

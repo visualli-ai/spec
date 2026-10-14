@@ -2,7 +2,7 @@
 
 Everything a `.visualli` viewer needs to look and move **exactly** like Visualli: the spec tokens for all 8 themes, the CSS of the spec components, the node / ring / connector geometry, and the fonts.
 
-> Generated from the Visualli design system (v0.3.4). **Don't edit files here** — changes arrive as pull requests from the design system, so the spec and the Visualli apps can never drift apart.
+> Generated from the Visualli design system (v0.3.6). **Don't edit files here** — changes arrive as pull requests from the design system, so the spec and the Visualli apps can never drift apart.
 
 ## Use it
 
@@ -16,7 +16,7 @@ Comfort attributes on `<html>`: `data-motion="reduced"`, `data-type="readable"`,
 | Path | What |
 | --- | --- |
 | `index.css` | Loads fonts, tokens and component CSS in order |
-| `tokens/tokens.css` · `tokens.json` | 70 spec tokens for every theme, plus the canvas type styles (`.vi-text-node-label`, `.vi-text-edge-label`, …), set on the page (`:root`, `[data-theme]`) for full-page viewers |
+| `tokens/tokens.css` · `tokens.json` | 71 spec tokens for every theme, plus the canvas type styles (`.vi-text-node-label`, `.vi-text-edge-label`, …), set on the page (`:root`, `[data-theme]`) for full-page viewers |
 | `tokens/tokens.embed.css` | The same tokens scoped to the map (`.vi-map`): for renderers embedded in another page. The theme comes from `data-theme` on the map or any ancestor; the map's own wins |
 | `css/spec.css` | Map, nodes, connectors, peek, term cards, depth trail and canvas controls — every rule scoped to `.vi-*`, so it never restyles the page around a map |
 | `css/base.css` | Optional page defaults for a full-page viewer: `body`, one focus ring and reduced motion for the whole page |

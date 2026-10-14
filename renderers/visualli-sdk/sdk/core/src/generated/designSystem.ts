@@ -2,7 +2,7 @@
 // Change the design system instead; the next `npm run build` regenerates this file.
 
 /** Version of the design system these modules were generated from. */
-export const DESIGN_SYSTEM_VERSION = "0.3.4" as const;
+export const DESIGN_SYSTEM_VERSION = "0.3.6" as const;
 
 export const THEME_NAMES = [
   "light",
@@ -82,6 +82,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -154,6 +155,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -226,6 +228,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -298,6 +301,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -370,6 +374,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -442,6 +447,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -514,6 +520,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -586,6 +593,7 @@ export const TOKENS: Readonly<Record<ThemeName, Readonly<Record<string, string>>
     "duration-base": "240ms",
     "duration-zoom": "500ms",
     "duration-reveal": "420ms",
+    "duration-autoplay": "7000ms",
     "stagger-reveal": "70ms",
     "ease-zoom": "cubic-bezier(0.2, 0.8, 0.2, 1)",
     "ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -634,6 +642,7 @@ export const METRICS = {
   "durationBase": 240,
   "durationZoom": 500,
   "durationReveal": 420,
+  "durationAutoplay": 7000,
   "staggerReveal": 70,
   "zChrome": 10,
   "zCard": 20,
@@ -646,6 +655,7 @@ export const METRICS_REDUCED_MOTION = {
   "durationBase": 0,
   "durationZoom": 0,
   "durationReveal": 0,
+  "durationAutoplay": 0,
   "staggerReveal": 0
 } as const;
 
