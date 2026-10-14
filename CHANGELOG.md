@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.10 — 2026-10-14
+
+**Conforms to design system 0.3.6.**
+
+### Added
+- **`VisualliCanvas` `insets`.** Room the host's chrome takes at each edge (a docked panel, a top bar, a composer). The canvas - and its chromatic immersion - fills the whole frame, so the chrome floats over the map; fitting and centring use the free area: the first fit, the resize refit, *Fit map to view*, the view a layer returns to and the step-inside zoom. The canvas refits when the insets change (a panel docked or folded). Give it instead of starting the canvas after your chrome.
+- **`calculateFitView(nodes, width, height, containers, insets)`** and `fitViewInset`, `FIT_ROOM`, `FrameInsets` from `@visualli/core`: the design system's fit inside insets. Without insets the fit is unchanged.
+
+## 0.2.9 — 2026-10-14
+
+**Conforms to design system 0.3.6.**
+
+### Changed
+- **Design system 0.3.6** (sync #52): the spec design system and the generated geometry now include `fitViewInset` and `FIT_ROOM` (interaction.ts). The SDK uses them from 0.2.10.
+
 ## 0.2.8 — 2026-10-11
 
 ### Added

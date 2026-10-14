@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import type Konva from 'konva';
-import { MOTION, cssEase, swapDelay, type FlatNode } from '@visualli/core';
+import { MOTION, cssEase, swapDelay, type FlatNode, type FrameInsets } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
 /** A viewport to return to: centre and zoom. */
 export interface AnimatorViewport { centerX: number; centerY: number; zoomLevel: number }
@@ -36,6 +36,8 @@ export interface LayerChoreographyOptions {
   onComplete: () => void;
   /** 'start' before anything moves, 'end' after the new layer has settled (pause hit-testing, GPU hints). */
   onLifecycle?: (phase: 'start' | 'end') => void;
+  /** The host's insets (VisualliCanvas `insets`): the child layer is fitted into the free area. */
+  insets?: FrameInsets;
 }
 
 export interface LayerChoreography {
@@ -144,7 +146,7 @@ export function useLayerChoreography(o: LayerChoreographyOptions): LayerChoreogr
     const stage = stageRef.current;
     const zoom = stage?.scaleX() ?? 1;
     const origin = stage ? `${targetNode.x * zoom + stage.x()}px ${targetNode.y * zoom + stage.y()}px` : '50% 50%';
-    const fit = calculateFitView(childNodes as FlatNode[], stage?.width() ?? 800, stage?.height() ?? 600);
+    const fit = calculateFitView(childNodes as FlatNode[], stage?.width() ?? 800, stage?.height() ?? 600, [], opts.current.insets);
     leave(canvasWrapperRef.current, 'in', origin, { centerX: fit.centerX, centerY: fit.centerY, zoomLevel: fit.zoomLevel }, () => opts.current.onSwapLayer(childLayerId));
   }, [stageRef, canvasWrapperRef, leave]);
 
