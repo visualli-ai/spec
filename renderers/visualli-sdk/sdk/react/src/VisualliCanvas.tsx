@@ -35,6 +35,7 @@ import {
   IMMERSION,
   pointerModeFor,
 } from '@visualli/core';
+import type { FrameInsets } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
 import { useViewportStore }    from './stores/useViewportStore';
@@ -175,6 +176,12 @@ export interface VisualliCanvasProps {
   }) => React.ReactNode;
   navigationStackTop?: string;
   navigationStackLeft?: string;
+  /**
+   * Room the host's chrome takes at each edge (px): a docked panel, a top bar, a composer. The canvas - and its
+   * chromatic immersion - still fills the whole frame, so the chrome floats over the map; fitting and centring use
+   * the free area (the design system's fitViewInset). Give it instead of starting the canvas after your chrome.
+   */
+  insets?: FrameInsets;
   
   className?: string;
   style?: React.CSSProperties;
@@ -183,7 +190,7 @@ export interface VisualliCanvasProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function VisualliCanvas(props: VisualliCanvasProps) {
-  const { chromaticImmersion = IMMERSION.defaultOn, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
+  const { insets, chromaticImmersion = IMMERSION.defaultOn, onNodeClick, onLayerChange, onNodeHover, renderOverlay, renderNodeContent, navigationStackTop, navigationStackLeft, className = '', style } = props;
   // The host's hover callback, read through a ref so the stage's pointer handlers stay stable when it changes.
   const onNodeHoverRef = useRef(onNodeHover);
   onNodeHoverRef.current = onNodeHover;
@@ -406,6 +413,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // call the most current version without re-creating the animation pipeline.
   const fitToScreenRef = useRef<() => void>(() => {});
 
+  // The host's insets, kept in a ref for the fits below; the canvas refits when they change (a panel docked or folded)
+  // the way it does when it resizes.
+  const insetsRef = useRef(insets);
+  insetsRef.current = insets;
+  const insetsKey = insets ? `${insets.top ?? 0},${insets.right ?? 0},${insets.bottom ?? 0},${insets.left ?? 0}` : '';
+
   const fitToScreen = useCallback(() => {
     if (flatNodes.length === 0) return;
     if (isTransitioningRef.current) return; // animation is controlling viewport
@@ -414,7 +427,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     const cw = canvasSizeRef.current.width  || containerRef.current?.getBoundingClientRect().width  || 800;
     const ch = canvasSizeRef.current.height || containerRef.current?.getBoundingClientRect().height || 600;
     // Every layer, the root included, fits the same way (the design system's fit; never beyond VIEW.fitMax).
-    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch, containers);
+    const { centerX, centerY, zoomLevel } = calculateFitView(flatNodes, cw, ch, containers, insetsRef.current);
     // Zoom limits (VIEW) apply relative to the fit, as in the design system's map.
     useViewportStore.getState().setFit(zoomLevel, centerX, centerY);
     setCenter(centerX, centerY);
@@ -438,12 +451,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     if (flatNodes.length === 0 || isTransitioningRef.current) return; // a layer change fits when it completes
     const s = useViewportStore.getState();
     const oldFit = { centerX: s.fitCenterX, centerY: s.fitCenterY, zoomLevel: s.fitScale };
-    const newFit = calculateFitView(flatNodes, canvasWidth, canvasHeight, containers);
+    const newFit = calculateFitView(flatNodes, canvasWidth, canvasHeight, containers, insetsRef.current);
     const { centerX, centerY, zoomLevel } = refitView(s, oldFit, newFit);
     s.setFit(newFit.zoomLevel, newFit.centerX, newFit.centerY);
     setCenter(centerX, centerY);
     setZoom(zoomLevel);
-  }, [canvasWidth, canvasHeight]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canvasWidth, canvasHeight, insetsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Layer transitions ─────────────────────────────────────────────────────
 
@@ -454,6 +467,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     stageRef,
     canvasWrapperRef,
     reducedMotion: design.comfort.reducedMotion || props.reveal === 'instant',
+    insets,
     onSwapLayer: (childLayerId) => {
       const childLayer = doc?.layers.get(childLayerId);
       if (!childLayer || !doc) return;
@@ -516,7 +530,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     // rather than the arbitrary zoom that happened to trigger the navigation.
     const cw = canvasSizeRef.current.width  || 800;
     const ch = canvasSizeRef.current.height || 600;
-    const fitVp = calculateFitView(flatNodes, cw, ch, containers);
+    const fitVp = calculateFitView(flatNodes, cw, ch, containers, insetsRef.current);
     parentViewports.current.push({ centerX: fitVp.centerX, centerY: fitVp.centerY, zoomLevel: fitVp.zoomLevel });
 
     stepTargetRef.current = { paint: { topic: node.topic, custom: node.custom }, label: node.title };

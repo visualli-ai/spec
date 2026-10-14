@@ -1,5 +1,5 @@
 import type { VisualliDocument, VisualliLayer, FlatNode, MindMapConnection } from '../types/index.js';
-import { fitView, layerBounds, type FrameBox } from '../generated/geometry/interaction.js';
+import { fitView, fitViewInset, layerBounds, type FrameBox, type FrameInsets } from '../generated/geometry/interaction.js';
 import { containerHull } from '../generated/geometry/container.js';
 
 // ── Connection helpers ────────────────────────────────────────────────────────
@@ -122,14 +122,25 @@ export function getContainersForLayer(
   });
 }
 
-/** Fit to view: centre and zoom for a layer in one call (the design system's fitView). */
+/**
+ * Fit to view: centre and zoom for a layer in one call (the design system's fitView). With `insets` (room the host's
+ * chrome takes at each edge - a docked panel, a top bar, a composer), the canvas still fills its whole frame but the
+ * layer fits the free area and sits centred in it (the design system's fitViewInset); the viewport centre returned is
+ * the world point at the middle of the canvas, as the viewport store keeps it.
+ */
 export function calculateFitView(
   nodes: FlatNode[],
   canvasWidth: number,
   canvasHeight: number,
   containers: ReadonlyArray<{ nodeIds: string[] }> = [],
+  insets?: FrameInsets,
 ): FitResult {
   if (nodes.length === 0) return { centerX: 0, centerY: 0, zoomLevel: 1 };
-  const { scale, center } = fitView(layerFrame(nodes, containers), canvasWidth, canvasHeight);
-  return { centerX: center.x, centerY: center.y, zoomLevel: scale };
+  if (!insets) {
+    const { scale, center } = fitView(layerFrame(nodes, containers), canvasWidth, canvasHeight);
+    return { centerX: center.x, centerY: center.y, zoomLevel: scale };
+  }
+  const { scale, center, screen } = fitViewInset(layerFrame(nodes, containers), canvasWidth, canvasHeight, insets);
+  // screen = (world − centre) × scale + canvas / 2, so the frame's centre lands on `screen` (the free area's middle).
+  return { centerX: center.x - (screen.x - canvasWidth / 2) / scale, centerY: center.y - (screen.y - canvasHeight / 2) / scale, zoomLevel: scale };
 }

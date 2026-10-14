@@ -26,8 +26,8 @@ export type { Hull, Box as LabelBox, LabelPlacement, LabelSide, Pt } from './gen
 // How terms, the peek, the touch sheet, zoom, fit and the depth trail behave, and which colour an idea gets: the design
 // system's geometry/interaction.ts and geometry/color.ts, verbatim. (Idea size and label growth, geometry/idea.ts, come
 // through rendering/ideaSize.)
-export { TERM, PEEK, SHEET, VIEW, GESTURE, FRAME, PEEK_PLACEMENT, TRAIL, pointerModeFor, hoverOpensTerm, pinchZoom, zoomAround, layerBounds, fitView, peekPosition } from './generated/geometry/interaction.js';
-export type { FrameBox } from './generated/geometry/interaction.js';
+export { TERM, PEEK, SHEET, VIEW, GESTURE, FRAME, PEEK_PLACEMENT, TRAIL, pointerModeFor, hoverOpensTerm, pinchZoom, zoomAround, layerBounds, fitView, fitViewInset, FIT_ROOM, peekPosition } from './generated/geometry/interaction.js';
+export type { FrameBox, FrameInsets } from './generated/geometry/interaction.js';
 // Level of detail: what an idea draws at the size it's seen, and when shadows are skipped (geometry/detail.ts, verbatim).
 export { DETAIL, ideaDetail, shadowsShown } from './generated/geometry/detail.js';
 export type { IdeaDetail } from './generated/geometry/detail.js';

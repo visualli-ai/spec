@@ -66,6 +66,29 @@ describe('fit to view', () => {
   });
 });
 
+describe('fit inside the host\'s insets (the design system\'s fitViewInset)', () => {
+  const doc = docOf([{ id: 'a', label: 'Encoding', x: -260, y: -90 }, { id: 'b', label: 'Sleep', x: 240, y: 120 }, { id: 'c', label: 'Retrieval practice', x: 30, y: 210 }]);
+  const nodes = convertLayerToFlatNodes(doc.rootLayer!, doc);
+  const half = (n: typeof nodes[number]) => ({ x: n.x, y: n.y, rx: n.width / 2, ry: n.height / 2 });
+  const insets = { top: 64, right: 0, bottom: 150, left: 304 }; // a docked Vault, the toolbar, the Composer
+
+  it('fits the free area at the design system\'s scale and puts the frame\'s centre in its middle', () => {
+    const want = DS_VIEW.fitViewInset(DS_VIEW.layerBounds(nodes.map(half)), 1440, 900, insets);
+    const got = calculateFitView(nodes, 1440, 900, [], insets);
+    expect(got.zoomLevel).toBe(want.scale);
+    // Where the frame's centre lands on the canvas (worldToScreen: (world − centre) × zoom + canvas / 2).
+    expect((want.center.x - got.centerX) * got.zoomLevel + 1440 / 2).toBeCloseTo(304 + (1440 - 304) / 2, 6);
+    expect((want.center.y - got.centerY) * got.zoomLevel + 900 / 2).toBeCloseTo(64 + (900 - 64 - 150) / 2, 6);
+  });
+  it('without insets it is the plain fit, unchanged', () => {
+    expect(calculateFitView(nodes, 1440, 900, [], undefined)).toEqual(calculateFitView(nodes, 1440, 900));
+    const zero = calculateFitView(nodes, 1440, 900, [], {});
+    const plain = calculateFitView(nodes, 1440, 900);
+    expect(zero.zoomLevel).toBeCloseTo(plain.zoomLevel, 9);
+    expect(zero.centerX).toBeCloseTo(plain.centerX, 9);
+  });
+});
+
 describe('fit on a phone-width canvas', () => {
   // A layer of five ideas (an AI-generated map), its file storing sizes far smaller than its labels need.
   const honeybee = parseVisualliFile([meta, JSON.stringify({
