@@ -56,6 +56,7 @@ import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
 import { refitView } from './utils/refit';
+import { keepPlace } from './utils/keepPlace';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './hooks/useLayerChoreography';
 import { useDesign } from './design/useDesign';
@@ -244,11 +245,21 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const stepTargetRef                     = useRef<{ paint: IdeaPaint; label: string } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false);
+  const navStackRef = useRef<NavStackEntry[]>([]); // the latest trail, read by the document effect below
+  navStackRef.current = navStack;
 
   useEffect(() => {
     if (!doc) return;
     const rootId = getRootLayerId(doc);
     if (!rootId) return;
+    // A reload of the same map keeps the reader's place when every layer in their trail still exists; the new
+    // content is framed with one refit. No onLayerChange: the reader didn't change layer.
+    const kept = keepPlace(navStackRef.current, doc.layers);
+    if (kept) {
+      setNavStack(kept);
+      requestAnimationFrame(() => { fitToScreenRef.current(); });
+      return;
+    }
     const rootLayer = doc.layers.get(rootId)!;
     setCurrentLayerId(rootId);
     // The trail starts with the map's title (the design system's DepthTrail).
