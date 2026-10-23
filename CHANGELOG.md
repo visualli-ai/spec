@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.11 — 2026-10-23
+
+**Conforms to design system 0.3.6.**
+
+### Fixed
+- **`VisualliCanvas` keeps the reader's place when the document changes.** Reloading the same map with new content (for example, ideas added under a node) no longer throws the reader back to the root layer. If every layer in the current trail still exists in the new document, the trail is rebuilt from the same layer ids (new layer objects, same labels and colours), the current layer stays, and the view refits once to frame the new content; `onLayerChange` isn't called. If any layer is missing, or on the first load, the canvas starts at the root as before. No new props.
+
 ## 0.2.10 — 2026-10-14
 
 **Conforms to design system 0.3.6.**
