@@ -70,7 +70,7 @@ export function zoomAround(t0: { x: number; y: number }, s0: number, s1: number,
 
 /** Framing a layer (fit to view): its ideas with room around them, and its container hulls with room for the name pill. */
 export const FRAME = {
-  /** Room beyond each idea's outline (at least `minPadX` / `minPadY` from its centre). */ clearX: 50, clearY: 46, minPadX: 150, minPadY: 120,
+  /** Room beyond each idea's outermost ring (RINGS[2].scale, 1.3 × its half size): its stroke, hover lift and a little air. */ ring: 0.3, clearX: 16, clearY: 16,
   /** Room beyond each container hull for its dashed line and the name pill straddling it. */ hullX: 24, hullY: 40,
 } as const;
 export type FrameBox = { x0: number; y0: number; x1: number; y1: number };
@@ -79,11 +79,11 @@ export type FrameBox = { x0: number; y0: number; x1: number; y1: number };
 export function layerBounds(ideas: ReadonlyArray<{ x: number; y: number; rx: number; ry: number }>, hulls: ReadonlyArray<FrameBox> = []): FrameBox {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const n of ideas) {
-    const px = Math.max(FRAME.minPadX, n.rx + FRAME.clearX), py = Math.max(FRAME.minPadY, n.ry + FRAME.clearY);
+    const px = n.rx * (1 + FRAME.ring) + FRAME.clearX, py = n.ry * (1 + FRAME.ring) + FRAME.clearY;
     x0 = Math.min(x0, n.x - px); x1 = Math.max(x1, n.x + px); y0 = Math.min(y0, n.y - py); y1 = Math.max(y1, n.y + py);
   }
   for (const h of hulls) { x0 = Math.min(x0, h.x0 - FRAME.hullX); x1 = Math.max(x1, h.x1 + FRAME.hullX); y0 = Math.min(y0, h.y0 - FRAME.hullY); y1 = Math.max(y1, h.y1 + FRAME.hullY); }
-  if (!Number.isFinite(x0)) return { x0: -FRAME.minPadX, y0: -FRAME.minPadY, x1: FRAME.minPadX, y1: FRAME.minPadY };
+  if (!Number.isFinite(x0)) return { x0: -150, y0: -120, x1: 150, y1: 120 };
   return { x0, y0, x1, y1 };
 }
 
