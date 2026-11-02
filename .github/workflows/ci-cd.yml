@@ -16,7 +16,7 @@ permissions:
 jobs:
   verify-and-build:
     name: Verify and Build All
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +24,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11.0"
-          check-latest: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
