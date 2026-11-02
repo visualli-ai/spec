@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.12 — 2026-11-02
+
+**Conforms to design system 0.3.6** (the fit change below arrived with sync #56).
+
+### Changed
+- **Fit to view leaves no excess space.** An idea is framed by its outermost ring plus 16px (`FRAME.ring`, `clearX`, `clearY`) instead of a fixed 50/46px beyond its outline with a 150/120px minimum from its centre, so layers fill more of the canvas. Container hulls keep their room for the dashed line and the name pill; `fitMax` and `FIT_ROOM` are unchanged.
+
 ## 0.2.11 — 2026-10-23
 
 **Conforms to design system 0.3.6.**
