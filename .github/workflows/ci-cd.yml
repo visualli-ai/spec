@@ -99,7 +99,7 @@ jobs:
     name: Publish Python Bindings (PyPI)
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pypi
     permissions:
       contents: read
@@ -121,7 +121,7 @@ jobs:
     name: Publish TypeScript Bindings (NPM)
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: main
     permissions:
       contents: read
@@ -153,7 +153,7 @@ jobs:
     name: Publish SDK Packages (@visualli/core, @visualli/react)
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: main
     permissions:
       contents: read
@@ -199,7 +199,7 @@ jobs:
     name: Publish Docs to Cloudflare Pages
     needs: verify-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: main
     steps:
       - uses: actions/checkout@v4
