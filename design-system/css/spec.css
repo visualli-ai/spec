@@ -134,6 +134,9 @@ button.vi-node { cursor: pointer; }
 .vi-anchor-card__note { margin: var(--space-2) 0 0; font: 400 var(--vi-fs-cap)/16px var(--font-ui); color: var(--ink-muted); }
 .vi-anchor-card__acts { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px dashed var(--line); }
 .vi-fact--sheet .vi-anchor-card__acts .vi-fact__link { min-height: 44px; }
+.vi-fact--sheet[data-term-open] .vi-fact__title, .vi-fact--sheet[data-term-open] .vi-fact__foot, .vi-fact--sheet[data-term-open] .vi-anchor-card__eyebrow { display: none; }
+.vi-fact--sheet[data-term-open] .vi-fact__head { justify-content: flex-end; }
+.vi-fact[data-edge-node] { display: none; }
 [data-type="readable"] .vi-anchor-card__word { font-family: var(--font-ui); }
 [data-motion="reduced"] .vi-anchor-card { animation: vi-fade 120ms; }
 @media (prefers-reduced-motion: reduce) {
