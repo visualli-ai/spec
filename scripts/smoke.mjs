@@ -190,6 +190,28 @@ try {
   check('no product features in the UI', !/Go deeper|Map it|Export|Sources|Chat/i.test(text));
   check('no console / page errors', errors.length === 0, errors.join(' | ').slice(0, 300));
 
+  // showControls={false} hides the zoom / fit strip only: wheel and keyboard zoom still change the view.
+  const bare = await ctx.newPage();
+  await bare.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=light&controls=hidden`);
+  await bare.evaluate(() => window.__bench.ready);
+  await bare.waitForTimeout(800);
+  check('showControls={false} draws no zoom controls', (await bare.locator('.vi-map__ctrls, .vi-ctrls').count()) === 0);
+  // Zoom without the strip's percentage: zooming about the pointer scales the root idea's distance from it.
+  const AT = { x: 300, y: 300 };
+  const spread = () => bare.evaluate(([x, y]) => { const h = window.__bench.hubScreen(); return Math.hypot(h.x - x, h.y - y); }, [AT.x, AT.y]);
+  const sp0 = await spread();
+  await bare.mouse.move(AT.x, AT.y);
+  for (let i = 0; i < 3; i++) { await bare.mouse.wheel(0, -400); await sleep(60); }
+  await sleep(600);
+  const sp1 = await spread();
+  check('…and the wheel still zooms', sp1 > sp0 * 1.1, `${sp0.toFixed(0)}px -> ${sp1.toFixed(0)}px from the pointer`);
+  await bare.mouse.click(30, 400);
+  await bare.keyboard.press('ControlOrMeta+0');
+  await sleep(400);
+  const sp2 = await spread();
+  check('…and ⌘/Ctrl + 0 still fits', Math.abs(sp2 - sp0) < 2, `${sp2.toFixed(0)}px (fitted ${sp0.toFixed(0)}px)`);
+  await bare.close();
+
   // A map loaded from a URL (visualliFile) renders a placeholder until the file arrives; its canvas must still follow
   // its container afterwards (it used to stay at the 1920 × 1080 default), including the compact phone layout.
   const phone = await (await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage();

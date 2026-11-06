@@ -85,6 +85,8 @@ export interface VisualliRendererProps {
   app?: boolean;
   /** Where the zoom / fit controls sit: 'top-right' (default, the design system's placement) or 'bottom-right'. */
   controlsPosition?: 'top-right' | 'bottom-right';
+  /** Show the zoom / fit controls (default true). `false` hides only the strip; wheel, pinch and keyboard zoom stay. */
+  showControls?: boolean;
 
   /**
    * Enable chromatic immersion background effect.
@@ -335,6 +337,7 @@ export default function VisualliRenderer({
   respectForcedColors,
   layout,
   controlsPosition,
+  showControls,
   app,
   width = '100%',
   height = '100%',
@@ -394,6 +397,7 @@ export default function VisualliRenderer({
         respectForcedColors={respectForcedColors}
         layout={layout}
         controlsPosition={controlsPosition}
+        showControls={showControls}
         app={app}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}

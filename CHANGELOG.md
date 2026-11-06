@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.13 — 2026-11-06
+
+**Conforms to design system 0.3.6** (no design-system change: its `VisualMap` already has `showControls`).
+
+### Added
+- **`showControls` on `VisualliCanvas` and `VisualliRenderer`.** `true` by default; `false` hides only the zoom / fit controls strip (`.vi-map__ctrls`), for small embeds where it takes too much room, such as the design system's inline MCP card. Wheel, pinch and keyboard zoom (⌘/Ctrl + = − 0) keep working. The playground takes `?controls=hidden`, and `npm run smoke` checks the strip is gone while the wheel and ⌘/Ctrl + 0 still work.
+
 ## 0.2.12 — 2026-11-02
 
 **Conforms to design system 0.3.6** (the fit change below arrived with sync #56).

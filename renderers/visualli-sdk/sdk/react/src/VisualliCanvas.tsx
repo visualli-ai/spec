@@ -158,6 +158,11 @@ export interface VisualliCanvasProps {
    * there they rise above the touch peek sheet while it's open.
    */
   controlsPosition?: 'top-right' | 'bottom-right';
+  /**
+   * Show the zoom / fit controls. Default true. `false` hides only the strip — for a small embed where it takes too
+   * much room (the design system's inline MCP card has none); wheel, pinch and keyboard zoom keep working.
+   */
+  showControls?: boolean;
   /** Where the bundled Caveat font is served from (directory URL). Defaults to the copy in the npm package, via jsDelivr. */
   fontBaseUrl?: DesignSystemAssets['fontBaseUrl'];
   /** Set false when you load Kalam and Atkinson Hyperlegible yourself. */
@@ -1118,15 +1123,18 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       {/* Depth trail (top-left) */}
       <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Canvas controls: the design system's placement (top-right); 'bottom-right' only on request */}
-      <div
-        className="vi-map__ctrls"
-        style={props.controlsPosition === 'bottom-right'
-          ? { top: 'auto', bottom: pinnedNode && touchMode ? `calc(var(--space-4) + ${sheetHeight}px)` : 'var(--space-4)' }
-          : undefined}
-      >
-        <ZoomControls onFit={fitToScreen} touch={touchMode} />
-      </div>
+      {/* Canvas controls: the design system's placement (top-right); 'bottom-right' only on request; hidden with
+          showControls={false} (the gestures and keys stay) */}
+      {props.showControls !== false && (
+        <div
+          className="vi-map__ctrls"
+          style={props.controlsPosition === 'bottom-right'
+            ? { top: 'auto', bottom: pinnedNode && touchMode ? `calc(var(--space-4) + ${sheetHeight}px)` : 'var(--space-4)' }
+            : undefined}
+        >
+          <ZoomControls onFit={fitToScreen} touch={touchMode} />
+        </div>
+      )}
 
       {/* Custom overlay from the consuming app */}
       {renderOverlay?.({ isDark, theme: design.theme, containerWidth: canvasSizeRef.current.width || 0, containerHeight: canvasSizeRef.current.height || 0 })}
