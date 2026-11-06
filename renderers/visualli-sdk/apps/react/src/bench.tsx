@@ -22,7 +22,9 @@ const params = new URLSearchParams(location.search);
 const N = Number(params.get('n') ?? 500);
 const THEME = params.get('theme') ?? 'light';
 // ?doc=example renders docs/assets/example.visualli (used by scripts/screenshots.mjs).
-const CONTROLS = (params.get('controls') ?? undefined) as 'top-right' | 'bottom-right' | undefined;
+// ?controls=bottom-right moves the zoom / fit controls; ?controls=hidden hides them (showControls={false}).
+const HIDE_CONTROLS = params.get('controls') === 'hidden';
+const CONTROLS = (HIDE_CONTROLS ? undefined : params.get('controls') ?? undefined) as 'top-right' | 'bottom-right' | undefined;
 const USE_EXAMPLE = params.get('doc') === 'example';
 // ?doc=file: the example loaded from its URL (visualliFile), as an embed does — the canvas renders before the file arrives.
 const FROM_FILE = params.get('doc') === 'file';
@@ -150,8 +152,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     fontBaseUrl="/fonts"
     controlsPosition={CONTROLS}
     app
-    // `theme` is the new prop; older SDK builds only know `isDark`.
-    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark' } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
+    // `theme` is the new prop; older SDK builds only know `isDark` (and not `showControls`).
+    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark', ...(HIDE_CONTROLS ? { showControls: false } : {}) } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
     style={{ width: '100vw', height: '100vh' }}
     onLayerChange={() => { const t = performance.now(); layerResolvers.splice(0).forEach(r => r(t)); }}
   />,
