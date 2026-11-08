@@ -22,6 +22,8 @@
   --node-ink: #182140;
   --edge: #2a3048;
   --edge-label: #4f5671;
+  --info: #2f5a87;
+  --info-soft: #e2edf8;
   --topic-teal: #87f2f8;
   --topic-teal-ring: #00949c;
   --topic-harbor: #bcdbff;
@@ -95,6 +97,8 @@
   --node-ink: #182140;
   --edge: #2a3048;
   --edge-label: #4f5671;
+  --info: #2f5a87;
+  --info-soft: #e2edf8;
   --topic-teal: #87f2f8;
   --topic-teal-ring: #00949c;
   --topic-harbor: #bcdbff;
@@ -162,6 +166,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #c9cddc;
   --edge-label: #b3b8cc;
+  --info: #7cc8f2;
+  --info-soft: #13283a;
   --topic-teal-ring: #0fc5cd;
   --topic-harbor-ring: #73aceb;
   --topic-iris-ring: #b691e1;
@@ -190,6 +196,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #c9cddc;
   --edge-label: #b3b8cc;
+  --info: #7cc8f2;
+  --info-soft: #13283a;
   --topic-teal-ring: #0fc5cd;
   --topic-harbor-ring: #73aceb;
   --topic-iris-ring: #b691e1;
@@ -258,6 +266,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #a9aec0;
   --edge-label: #b3b8cc;
+  --info: #7cc8f2;
+  --info-soft: #13283a;
   --topic-teal: #bce8ea;
   --topic-teal-ring: #71bdc1;
   --topic-harbor: #c9d9ec;
@@ -292,6 +302,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #a9aec0;
   --edge-label: #b3b8cc;
+  --info: #7cc8f2;
+  --info-soft: #13283a;
   --topic-teal: #bce8ea;
   --topic-teal-ring: #71bdc1;
   --topic-harbor: #c9d9ec;
@@ -310,6 +322,8 @@
   --topic-stone-ring: #b4a999;
   }
 .vi-map[data-theme="colorsafe-light"] {
+  --info: #603376;
+  --info-soft: #efe6f6;
   --topic-teal: #bbeec1;
   --topic-teal-ring: #389754;
   --topic-harbor: #9bc9ef;
@@ -328,6 +342,8 @@
   --topic-stone-ring: #898284;
   }
 :where([data-theme="colorsafe-light"]) .vi-map {
+  --info: #603376;
+  --info-soft: #efe6f6;
   --topic-teal: #bbeec1;
   --topic-teal-ring: #389754;
   --topic-harbor: #9bc9ef;
@@ -362,6 +378,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #c9cddc;
   --edge-label: #b3b8cc;
+  --info: #daa4f6;
+  --info-soft: #2a1c33;
   --topic-teal: #bbeec1;
   --topic-teal-ring: #69c27e;
   --topic-harbor: #9bc9ef;
@@ -396,6 +414,8 @@
   --selection: rgba(18, 199, 211, 0.32);
   --edge: #c9cddc;
   --edge-label: #b3b8cc;
+  --info: #daa4f6;
+  --info-soft: #2a1c33;
   --topic-teal: #bbeec1;
   --topic-teal-ring: #69c27e;
   --topic-harbor: #9bc9ef;
@@ -427,6 +447,8 @@
   --node-ink: #000000;
   --edge: #000000;
   --edge-label: #1f2433;
+  --info: #471f61;
+  --info-soft: #ffffff;
   --topic-teal-ring: #006b70;
   --topic-harbor-ring: #0e599d;
   --topic-iris-ring: #683b92;
@@ -452,6 +474,8 @@
   --node-ink: #000000;
   --edge: #000000;
   --edge-label: #1f2433;
+  --info: #471f61;
+  --info-soft: #ffffff;
   --topic-teal-ring: #006b70;
   --topic-harbor-ring: #0e599d;
   --topic-iris-ring: #683b92;
@@ -481,6 +505,8 @@
   --node-ink: #000000;
   --edge: #ffffff;
   --edge-label: #e6e8f0;
+  --info: #d5a5d6;
+  --info-soft: #000000;
   --topic-teal-ring: #64eff7;
   --topic-harbor-ring: #b0d5fe;
   --topic-iris-ring: #dcbfff;
@@ -510,6 +536,8 @@
   --node-ink: #000000;
   --edge: #ffffff;
   --edge-label: #e6e8f0;
+  --info: #d5a5d6;
+  --info-soft: #000000;
   --topic-teal-ring: #64eff7;
   --topic-harbor-ring: #b0d5fe;
   --topic-iris-ring: #dcbfff;
