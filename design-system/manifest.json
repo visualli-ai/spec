@@ -3,14 +3,14 @@
   "version": "0.3.6",
   "generatedFrom": "visualli.ai/design-system",
   "license": "MIT",
-  "tokens": 71,
-  "cssRules": 168,
+  "tokens": 73,
+  "cssRules": 171,
   "files": {
     "LICENSE": "cd144bfc4c664b91",
     "NOTICE.md": "bcca09f4761fb367",
-    "README.md": "c7657518782317c0",
+    "README.md": "23e878c4fc5151de",
     "css/base.css": "36fddafe0f140086",
-    "css/spec.css": "88047f9337ef90a7",
+    "css/spec.css": "36a0cf7de75992f1",
     "fonts/Caveat-Variable.ttf": "635e030f2a6ed255",
     "fonts/fonts.css": "a1b6396db6bb3641",
     "geometry/blob.ts": "81f87be44c5d63dc",
@@ -23,8 +23,8 @@
     "geometry/interaction.ts": "1b508993e634919c",
     "geometry/motion.ts": "fd4d3b4155b1b6ef",
     "index.css": "89993ebe1474fca7",
-    "tokens/tokens.css": "3fac27238b8e04f1",
-    "tokens/tokens.embed.css": "a99abaaba19bf72b",
-    "tokens/tokens.json": "9723189e96ca2be7"
+    "tokens/tokens.css": "b93ff27e5eab4cce",
+    "tokens/tokens.embed.css": "6100ade43672063a",
+    "tokens/tokens.json": "7ca0b60a275c88b8"
   }
 }

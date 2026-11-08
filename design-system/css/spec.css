@@ -161,6 +161,9 @@ button.vi-node { cursor: pointer; }
 .vi-map.is-instant .vi-node, .vi-map.is-instant .vi-node__rings { transition: none; }
 .vi-map.is-detail-body .vi-node:not(.is-selected):not(:focus-visible):not(:hover) :is(.vi-node__rings, .vi-node__label), .vi-map.is-detail-speck .vi-node:not(.is-selected):not(:focus-visible):not(:hover) :is(.vi-node__rings, .vi-node__label) { display: none; }
 .vi-map.is-detail-body .vi-node:not(.is-selected):not(:focus-visible):not(:hover) .vi-node__body, .vi-map.is-detail-speck .vi-node:not(.is-selected):not(:focus-visible):not(:hover) .vi-node__body, .vi-map.no-shadows .vi-node__body { filter: none; }
+.vi-iconbtn.is-live { background: var(--info-soft); color: var(--info); box-shadow: inset 0 0 0 1px var(--info); }
+.vi-iconbtn.is-live:hover:not(:disabled) { background: var(--info-soft); color: var(--info); box-shadow: inset 0 0 0 2px var(--info); }
+[data-theme^="contrast"] .vi-iconbtn.is-live { box-shadow: inset 0 0 0 2px var(--info); }
 @keyframes vi-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
 @keyframes vi-fade { from { opacity: 0; } }
 @keyframes vi-bloom { from { opacity: 0; transform: translate(calc(-50% + var(--vi-dx)), calc(-50% + var(--vi-dy))) scale(var(--vi-bloom-from, .55)); } }

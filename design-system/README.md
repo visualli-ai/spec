@@ -16,7 +16,7 @@ Comfort attributes on `<html>`: `data-motion="reduced"`, `data-type="readable"`,
 | Path | What |
 | --- | --- |
 | `index.css` | Loads fonts, tokens and component CSS in order |
-| `tokens/tokens.css` · `tokens.json` | 71 spec tokens for every theme, plus the canvas type styles (`.vi-text-node-label`, `.vi-text-edge-label`, …), set on the page (`:root`, `[data-theme]`) for full-page viewers |
+| `tokens/tokens.css` · `tokens.json` | 73 spec tokens for every theme, plus the canvas type styles (`.vi-text-node-label`, `.vi-text-edge-label`, …), set on the page (`:root`, `[data-theme]`) for full-page viewers |
 | `tokens/tokens.embed.css` | The same tokens scoped to the map (`.vi-map`): for renderers embedded in another page. The theme comes from `data-theme` on the map or any ancestor; the map's own wins |
 | `css/spec.css` | Map, nodes, connectors, peek, term cards, depth trail and canvas controls — every rule scoped to `.vi-*`, so it never restyles the page around a map |
 | `css/base.css` | Optional page defaults for a full-page viewer: `body`, one focus ring and reduced motion for the whole page |
