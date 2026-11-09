@@ -1,6 +1,6 @@
 // Benchmark driver for the Visualli SDK.
 //
-//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--dpr 1] [--no-build] [--channel chrome] [--out file.json]
+//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--layers 1000,10000] [--dpr 1] [--no-build] [--channel chrome] [--out file.json]
 //
 // To compare a change with main, use scripts/bench-compare.mjs (npm run bench:compare): numbers are only meaningful as
 // a before/after pair measured in the same session on the same machine (see bench/results/README.md).
@@ -11,6 +11,9 @@
 //   zoom       real wheel events (in / out)
 //   transition clicking the root node (layer zoom-in) -- also reports the
 //              click -> layer-ready latency
+// And for each layer count (--layers; 'none' skips them) it opens a map of that many small layers (8 ideas each, every
+// idea opening the next layer) and records: parsing the file, stepping inside from the root, stepping deeper three
+// times (median), and backing out with Escape - the click / key -> layer-ready latency each time.
 // Results are written to bench/results/<label>.json (or --out) and printed as a table.
 
 import { startPreview } from './lib/preview.mjs';
@@ -28,6 +31,7 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => {
 }, []));
 const label = args.label ?? 'run';
 const sizes = String(args.sizes ?? '500,2000,10000').split(',').map(Number);
+const layerCounts = args.layers === 'none' ? [] : String(args.layers ?? '1000,10000').split(',').map(Number).filter((x) => x > 0);
 const dpr = Number(args.dpr ?? 1);
 const theme = args.theme ?? 'light';
 
@@ -52,6 +56,7 @@ const settled = async (page) => {
   else await sleep(1500);
 };
 const results = [];
+const layerResults = [];
 const browser = await chromium.launch({ ...(args.channel ? { channel: String(args.channel) } : {}), args: ['--enable-precise-memory-info'] });
 
 try {
@@ -110,6 +115,47 @@ try {
     await ctx.close();
     console.error(`n=${n} done`);
   }
+
+  // ── many layers, few ideas each ──
+  for (const layers of layerCounts) {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: dpr });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', e => errors.push(String(e)));
+    await page.goto(`http://127.0.0.1:${port}/bench.html?layers=${layers}&theme=${theme}`);
+    await page.evaluate(() => window.__bench.ready);
+    await page.waitForSelector('canvas');
+    // A bench page without the many-layers map (an older base) renders its default map instead: nothing to measure.
+    if (await page.evaluate(() => window.__bench.layers) !== layers) { await ctx.close(); console.error(`layers=${layers}: not supported by this bench page, skipped`); continue; }
+    await settled(page);
+    const row = { layers, dpr, parseMs: await page.evaluate(() => window.__bench.parseMs) };
+    /** Click (or press) and time it until the next layer is on screen, then let it settle. */
+    const timed = async (act) => {
+      const t0 = await page.evaluate(() => window.__bench.now());
+      await page.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+      await act();
+      const t = await page.evaluate(() => window.__bench.changed);
+      await settled(page);
+      await sleep(300);
+      return Math.round(t - t0);
+    };
+    const click = async (p) => { await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.up(); };
+    row.stepInMs = await timed(async () => click(await page.evaluate(() => window.__bench.hubScreen())));
+    const deeper = [];
+    for (let i = 0; i < 3; i++) {
+      const p = await page.evaluate(() => window.__bench.childScreen());
+      if (!p) break;
+      deeper.push(await timed(() => click(p)));
+    }
+    deeper.sort((a, b) => a - b);
+    row.deeperMs = deeper.length ? deeper[Math.floor((deeper.length - 1) / 2)] : NaN;
+    await page.focus('.vi-map');
+    row.backMs = await timed(() => page.keyboard.press('Escape'));
+    row.errors = errors;
+    layerResults.push(row);
+    await ctx.close();
+    console.error(`layers=${layers} done`);
+  }
 } finally {
   await browser.close();
   await server.stop();
@@ -117,8 +163,12 @@ try {
 
 const outFile = args.out ? resolve(String(args.out)) : resolve(root, 'bench/results', `${label}.json`);
 mkdirSync(dirname(outFile), { recursive: true });
-writeFileSync(outFile, JSON.stringify({ label, dpr, theme, date: new Date().toISOString(), chromium: browser.version?.() ?? '', results }, null, 2));
+writeFileSync(outFile, JSON.stringify({ label, dpr, theme, date: new Date().toISOString(), chromium: browser.version?.() ?? '', results, layerResults }, null, 2));
 
 const f = x => (x ? `${x.fps.toFixed(1)} fps / p95 ${x.p95.toFixed(1)}ms` : 'n/a');
 console.log(`\n${label} (dpr ${dpr}, ${theme})\n| nodes | layer ready | transition | pan | zoom |\n|---|---|---|---|---|`);
 for (const r of results) console.log(`| ${r.n} | ${r.layerReadyMs} ms | ${f(r.transition)} | ${f(r.pan)} | ${f(r.zoom)} |`);
+if (layerResults.length) {
+  console.log(`\n| layers | parse | step inside | step deeper | back out |\n|---|---|---|---|---|`);
+  for (const r of layerResults) console.log(`| ${r.layers} | ${r.parseMs.toFixed(0)} ms | ${r.stepInMs} ms | ${r.deeperMs} ms | ${r.backMs} ms |`);
+}

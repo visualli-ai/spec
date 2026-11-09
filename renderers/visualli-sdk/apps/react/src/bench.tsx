@@ -7,6 +7,10 @@
 //   __bench.hubScreen()      screen position of the root node (to click it)
 //   __bench.layerReady       promise factory, resolves on the next layer change
 //   __bench.start()/stop()   requestAnimationFrame frame-time recorder
+//   __bench.childScreen()    screen position of an idea in the current layer that has a layer inside (to step deeper)
+//
+// ?layers=L renders the other shape a map can take: not many ideas on one layer, but many layers - L layers of
+// LAYER_IDEAS ideas each, every idea opening the next layer breadth-first (a wide, deep tree). __bench.layers is L.
 //
 // Only the public @visualli/react API is used, so the same page benchmarks any
 // version of the SDK (baseline vs. changed).
@@ -34,6 +38,9 @@ const COMFORT_FLAGS = (params.get('comfort') ?? '').split(',').filter(Boolean);
 // ?comfort=readable,large,reduced
 const COMFORT = { readableType: COMFORT_FLAGS.includes('readable'), largerText: COMFORT_FLAGS.includes('large'), reducedMotion: COMFORT_FLAGS.includes('reduced') };
 const REVEAL = (params.get('reveal') ?? undefined) as 'gradual' | 'instant' | undefined;
+// ?layers=L: a map of many small layers (buildLayersDoc) instead of one big one.
+const LAYERS = params.has('layers') ? Number(params.get('layers')) : 0;
+const LAYER_IDEAS = 8;
 
 // ── Synthetic document ───────────────────────────────────────────────────────
 
@@ -84,6 +91,32 @@ function buildDoc(n: number): string {
   return lines.concat(extra).join('\n');
 }
 
+/** Many layers, few ideas each: a root with one hub idea, then `layers - 1` layers of LAYER_IDEAS ideas, every idea
+ *  opening the next layer breadth-first until there are `layers` in all - so most ideas carry rings, and the deepest
+ *  layers are about log8(layers) steps down. Ideas in a layer are joined in a ring by connectors. */
+function buildLayersDoc(layers: number): string {
+  const lines: string[] = [JSON.stringify({ type: 'meta', version: '0.1.1', title: `bench-layers-${layers}`, created: '2026-01-01', lastModified: '2026-01-01' })];
+  const rootLayer = uid('layer', 0), hub = uid('node', 0);
+  lines.push(JSON.stringify({ type: 'layer', id: rootLayer, level: 0, layout: 'radial', parentLayerId: null, parentNodeId: null, connections: [], containers: [],
+    nodes: [{ id: hub, position: { x: 0, y: 0 }, data: { label: 'Hub', summary: 'Benchmark root', color: COLORS[0] } }] }));
+  // Parents waiting for a layer of their own: [parent layer, parent idea, level of the new layer].
+  const queue: Array<[string, string, number]> = [[rootLayer, hub, 1]];
+  let made = 1, nodeSeq = 1;
+  while (made < layers && queue.length) {
+    const [parentLayerId, parentNodeId, level] = queue.shift()!;
+    const id = uid('layer', made++);
+    const nodes = [], connections = [];
+    for (let i = 0; i < LAYER_IDEAS; i++) {
+      const nid = uid('node', nodeSeq++);
+      nodes.push({ id: nid, position: { x: 0, y: 0 }, data: { label: `${WORDS[i % WORDS.length]} ${level}.${made}.${i}`, summary: 'Synthetic node', color: COLORS[i % COLORS.length] } });
+      if (i > 0) connections.push({ id: uid('conn', nodeSeq), from: nodes[i - 1]!.id, to: nid, data: { style: 'solid' } });
+      queue.push([id, nid, level + 1]);
+    }
+    lines.push(JSON.stringify({ type: 'layer', id, level, layout: 'radial', parentLayerId, parentNodeId, connections, containers: [], nodes }));
+  }
+  return lines.join('\n');
+}
+
 // ── Frame recorder ───────────────────────────────────────────────────────────
 
 let rec: { stamps: number[]; raf: number } | null = null;
@@ -110,17 +143,31 @@ let resolveReady: () => void = () => {};
 const ready = new Promise<void>(r => { resolveReady = r; });
 
 const t0 = performance.now();
-const doc = parseVisualliFile(USE_EXAMPLE ? exampleString : NO_PARENT ? buildNoParentDoc() : buildDoc(N));
+const source = USE_EXAMPLE ? exampleString : NO_PARENT ? buildNoParentDoc() : LAYERS ? buildLayersDoc(LAYERS) : buildDoc(N);
+const tParse = performance.now();
+const doc = parseVisualliFile(source);
 const buildMs = performance.now() - t0;
+/** Parsing the .visualli text alone (no synthetic building). */
+const parseMs = performance.now() - tParse;
 
 (window as unknown as { __bench: unknown }).__bench = {
-  n: N, buildMs, ready,
+  n: N, layers: LAYERS, buildMs, parseMs, ready,
   start, stop,
   hubScreen() {
     const s = useViewportStore.getState();
     const p = s.worldToScreen(0, 0);
     const el = document.querySelector('canvas')!.getBoundingClientRect();
     return { x: el.left + p.x, y: el.top + p.y };
+  },
+  /** Screen position of an idea in the current layer that has a layer inside (to step deeper), or null. */
+  childScreen() {
+    for (const n of useNodeStore.getState().nodes.values()) {
+      if (!n.branchCount) continue;
+      const p = useViewportStore.getState().worldToScreen(n.x, n.y);
+      const el = document.querySelector('canvas')!.getBoundingClientRect();
+      return { x: el.left + p.x, y: el.top + p.y };
+    }
+    return null;
   },
   /** Screen position of the idea with this title in the current layer (for hover / click tests). */
   nodeScreen(title: string) {

@@ -1,7 +1,9 @@
 // Before / after performance comparison for the Visualli SDK.
 //
 //   npm run bench:compare                                  # main vs this checkout
-//   npm run bench:compare -- --base <git ref> [--runs 3] [--sizes 500,2000,10000] [--dpr 1] [--channel chrome]
+//   npm run bench:compare -- --base <git ref> [--runs 3] [--sizes 500,2000,10000] [--layers 1000,10000] [--dpr 1] [--channel chrome]
+//
+// Two map shapes: one big layer (--sizes, ideas on it) and many small layers (--layers, 8 ideas each; 'none' skips).
 //
 // Benchmark numbers only mean something as a pair measured in the same session on the same machine, so this script
 // measures both sides back to back: it checks the base ref out into a temporary git worktree, builds both, and runs
@@ -25,6 +27,7 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => {
 const base = String(args.base ?? 'origin/main');
 const runs = Math.max(1, Number(args.runs ?? 3));
 const sizes = String(args.sizes ?? '500,2000,10000');
+const layers = String(args.layers ?? '1000,10000');
 const dpr = String(args.dpr ?? 1);
 const channel = args.channel ? ['--channel', String(args.channel)] : [];
 
@@ -55,11 +58,13 @@ function linkNodeModules(dir) {
   for (const e of readdirSync(join(src, '@visualli'))) symlinkSync(readlinkSync(join(src, '@visualli', e)), join(dir, 'node_modules/@visualli', e));
 }
 
-// Older refs may predate the benchmark page: give them this checkout's (it only uses VisualliCanvas's public props).
+// Older refs may predate the benchmark page, or its many-layers map: give them this checkout's (it only uses
+// VisualliCanvas's public props), so both sides measure the same maps.
 function ensureBenchPage(dir) {
   const app = 'renderers/visualli-sdk/apps/react';
-  if (existsSync(join(dir, app, 'src/bench.tsx'))) return false;
-  for (const f of ['bench.html', 'src/bench.tsx', 'vite.config.ts']) copyFileSync(join(root, app, f), join(dir, app, f));
+  const page = join(dir, app, 'src/bench.tsx');
+  if (existsSync(page) && readFileSync(page, 'utf8').includes('buildLayersDoc')) return false;
+  for (const f of ['bench.html', 'src/bench.tsx', 'vite.config.ts']) if (f === 'src/bench.tsx' || !existsSync(join(dir, app, f))) copyFileSync(join(root, app, f), join(dir, app, f));
   return true;
 }
 
@@ -70,7 +75,7 @@ const bench = (dir, file) => {
   // This checkout's bench driver, run inside each tree (it resolves the app relative to its own location).
   const driver = join(dir, 'scripts/.bench-driver.mjs');
   copyFileSync(join(root, 'scripts/bench.mjs'), driver);
-  try { run('node', [driver, '--no-build', '--sizes', sizes, '--dpr', dpr, '--out', file, ...channel], dir); }
+  try { run('node', [driver, '--no-build', '--sizes', sizes, '--layers', layers, '--dpr', dpr, '--out', file, ...channel], dir); }
   finally { rmSync(driver, { force: true }); }
   return JSON.parse(readFileSync(file, 'utf8'));
 };
@@ -105,7 +110,7 @@ try {
   const lines = [
     `### Performance: ${base} (${baseSha}) → this branch (${headSha}${dirty ? ' + uncommitted' : ''})`,
     '',
-    `${first.chromium ? `Chrome ${first.chromium}, ` : ''}headless, 1280×800, devicePixelRatio ${dpr}, ${runs} alternating run(s) per side, medians. Only this pair is comparable; absolute numbers depend on the machine.${borrowedPage ? ' The base had no benchmark page; it used this branch\'s.' : ''}`,
+    `${first.chromium ? `Chrome ${first.chromium}, ` : ''}headless, 1280×800, devicePixelRatio ${dpr}, ${runs} alternating run(s) per side, medians. Only this pair is comparable; absolute numbers depend on the machine.${borrowedPage ? ' The base\'s benchmark page was missing or older; it used this branch\'s, so both sides measure the same maps.' : ''}`,
     '',
     '| ideas | metric | before | after | change |',
     '|---|---|---|---|---|',
@@ -120,7 +125,26 @@ try {
       lines.push(`| ${n} | ${name} | ${fmt(b)} | ${fmt(h)} | ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%${flag} |`);
     }
   }
-  lines.push('', 'Changes within ±5% are noise. Layer ready: lower is better; fps: higher is better (60 is the display\'s limit).');
+  // Many layers, few ideas each (8 per layer, every idea opening the next layer).
+  const layerCounts = layers === 'none' ? [] : layers.split(',').map(Number).filter((x) => x > 0);
+  const pickL = (side, n, get) => median(sides[side].map((r) => get((r.layerResults ?? []).find((x) => x.layers === n))));
+  const layerMetrics = [
+    ['parse the file', (r) => r?.parseMs],
+    ['step inside', (r) => r?.stepInMs],
+    ['step deeper', (r) => r?.deeperMs],
+    ['back out', (r) => r?.backMs],
+  ];
+  if (layerCounts.length) lines.push('', '| layers (8 ideas each) | metric | before | after | change |', '|---|---|---|---|---|');
+  for (const n of layerCounts) {
+    for (const [name, get] of layerMetrics) {
+      const b = pickL('base', n, get), h = pickL('head', n, get);
+      if (!Number.isFinite(b) || !Number.isFinite(h)) { lines.push(`| ${n} | ${name} | ${Number.isFinite(b) ? `${Math.round(b)} ms` : 'n/a'} | ${Number.isFinite(h) ? `${Math.round(h)} ms` : 'n/a'} | |`); continue; }
+      const pct = ((h - b) / b) * 100;
+      const flag = Math.abs(pct) < 5 ? '' : pct < 0 ? ' (better)' : ' ⚠ worse';
+      lines.push(`| ${n} | ${name} | ${Math.round(b)} ms | ${Math.round(h)} ms | ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%${flag} |`);
+    }
+  }
+  lines.push('', 'Changes within ±5% are noise. Layer ready and every ms row: lower is better; fps: higher is better (60 is the display\'s limit).');
   console.log('\n' + lines.join('\n'));
 } finally {
   spawnSync('git', ['worktree', 'remove', '--force', baseDir], { cwd: root, stdio: 'ignore' });
