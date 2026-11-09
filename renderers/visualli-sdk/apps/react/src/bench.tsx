@@ -141,6 +141,10 @@ const buildMs = performance.now() - t0;
     });
   },
   view() { const s = useViewportStore.getState(); return { centerX: s.centerX, centerY: s.centerY, zoomLevel: s.zoomLevel }; },
+  /** Whether the view is the layer's fit (zoom and centre), as the canvas decides it. */
+  fitted() { const s = useViewportStore.getState(); return Math.abs(s.zoomLevel - s.fitScale) < 1e-6 && Math.abs(s.centerX - s.fitCenterX) < 0.5 && Math.abs(s.centerY - s.fitCenterY) < 0.5; },
+  /** Every onLayerPathChange the canvas made: the path and how it happened (SDK builds without the prop leave it empty). */
+  paths: [] as { path: string[]; via: string }[],
   canvasRect() { const r = document.querySelector('canvas')!.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
   nextLayerChange() { return new Promise<number>(r => layerResolvers.push(r)); },
   now: () => performance.now(),
@@ -153,7 +157,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     controlsPosition={CONTROLS}
     app
     // `theme` is the new prop; older SDK builds only know `isDark` (and not `showControls`).
-    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark', ...(HIDE_CONTROLS ? { showControls: false } : {}) } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
+    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark', ...(HIDE_CONTROLS ? { showControls: false } : {}), onLayerPathChange: (path: string[], via: string) => { (window as unknown as { __bench: { paths: { path: string[]; via: string }[] } }).__bench.paths.push({ path, via }); } } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
     style={{ width: '100vw', height: '100vh' }}
     onLayerChange={() => { const t = performance.now(); layerResolvers.splice(0).forEach(r => r(t)); }}
   />,

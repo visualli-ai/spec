@@ -6,7 +6,8 @@
 //     term cards, depth trail and controls (the design system's own CSS)
 //   • Stage-level hit detection via RBush spatial index (no Konva hit-canvas)
 //   • 8 themes + comfort settings (readable type, larger text, reduced motion)
-//   • Step inside / back out by idea, peek, depth trail, Escape or Backspace — zoom and pinch never navigate
+//   • Step inside / back out by idea, peek, depth trail, Escape or Backspace, and back out by double-clicking or
+//     double-tapping the empty canvas (the design system's BACK) — zoom and pinch never navigate
 //   • Layer transitions with the design system's motion (CSS-transform driven, no canvas redraws while animating)
 //   • A visually hidden DOM mirror of the visible ideas for screen readers / Tab
 //
@@ -27,6 +28,7 @@ import {
   TRAIL,
   RBushSpatialIndex,
   GESTURE,
+  BACK,
   pinchZoom,
   zoomAround,
   VIEW,
@@ -35,7 +37,7 @@ import {
   IMMERSION,
   pointerModeFor,
 } from '@visualli/core';
-import type { FrameInsets } from '@visualli/core';
+import type { FrameInsets, LayerVia } from '@visualli/core';
 
 import { useNodeStore }        from './stores/useNodeStore';
 import { useViewportStore }    from './stores/useViewportStore';
@@ -55,8 +57,11 @@ import { ZoomControls, PeekCard, PeekSheet } from './components/Overlays';
 import { A11yLayer } from './components/A11yLayer';
 
 import { getChildLayerForNode, calculateFitView, getConnectionsForLayer, getContainersForLayer } from './utils/layerNavigation';
+import type { NavStackEntry as TrailEntry } from './components/NavigationStack';
 import { refitView } from './utils/refit';
 import { keepPlace } from './utils/keepPlace';
+import { resolveLayerPath } from './utils/layerPath';
+import { isDoubleTap, type TapMark } from './utils/backGesture';
 import type { ContainerGroup } from './components/KonvaContainerLayer';
 import type { AnimatorViewport } from './hooks/useLayerChoreography';
 import { useDesign } from './design/useDesign';
@@ -147,19 +152,38 @@ export interface VisualliCanvasProps {
    */
   layout?: 'auto' | 'touch' | 'pointer';
   /**
-   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
-   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
-   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   * How touch is shared with the page (the design system's GESTURE). 'page' (default): the map takes every touch
+   * gesture - one finger pans it, two pinch - and the browser never scrolls or zooms under it (`touch-action: none`).
+   * 'cooperative': for a map inside a scrolling page - one finger scrolls the page, two fingers move and pinch the map
+   * (`.vi-map.is-cooperative`, `touch-action: pan-x pan-y`).
+   */
+  gestures?: 'page' | 'cooperative';
+  /**
+   * @deprecated use `gestures`. One finger now pans every map by default, as `app` used to switch on. `app={false}`
+   * still means a map inside a scrolling page (`gestures="cooperative"`); `app` (true) changes nothing.
    */
   app?: boolean;
   /**
-   * Where the zoom / fit controls sit. Default 'top-right', the design system's placement (`.vi-map__ctrls`,
+   * The layer to show, as the ids of the layers from the root down (the root may be left out). The map follows it
+   * whenever it changes - a browser Back, a link to a layer - stepping in or out with the usual motion when it's one
+   * step away, otherwise going straight there. A path that no longer fits the map stops at the deepest layer that
+   * still exists. Leave it out and the map keeps its own place.
+   */
+  layerPath?: string[];
+  /**
+   * Called after every change of layer (not the layer the map opens on), with the path from the root and how it
+   * happened: 'step-in' (an idea or Step inside), 'trail', 'gesture' (double-click, double-tap, the canvas's Back
+   * menu), 'key' (Escape, Backspace) or 'host' (`layerPath` changed). Keep browser history in step with it.
+   */
+  onLayerPathChange?: (path: string[], via: LayerVia) => void;
+  /**
+   * Where the zoom controls sit. Default 'top-right', the design system's placement (`.vi-map__ctrls`,
    * opposite the depth trail). 'bottom-right' moves them to the bottom corner for hosts that need the top edge;
    * there they rise above the touch peek sheet while it's open.
    */
   controlsPosition?: 'top-right' | 'bottom-right';
   /**
-   * Show the zoom / fit controls. Default true. `false` hides only the strip — for a small embed where it takes too
+   * Show the zoom controls (− and +). Default true. `false` hides only the strip — for a small embed where it takes too
    * much room (the design system's inline MCP card has none); wheel, pinch and keyboard zoom keep working.
    */
   showControls?: boolean;
@@ -252,11 +276,46 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const isTransitioningRef = useRef(false);
   const navStackRef = useRef<NavStackEntry[]>([]); // the latest trail, read by the document effect below
   navStackRef.current = navStack;
+  // How the next change of layer happens, reported with onLayerPathChange ('host' unless a reader's action sets it).
+  const viaRef = useRef<LayerVia>('host');
+  // The trail last reported to onLayerPathChange (null: nothing yet - the layer the map opens on isn't a change).
+  const reportedPathRef = useRef<string | null>(null);
+  const layerPathRef = useRef(props.layerPath);
+  layerPathRef.current = props.layerPath;
+  const onLayerPathChangeRef = useRef(props.onLayerPathChange);
+  onLayerPathChangeRef.current = props.onLayerPathChange;
+  /** The trail and the parent layers' fit views for a path of layer ids (resolveLayerPath), to go straight there. */
+  const trailFor = (d: VisualliDocument, ids: string[]): { stack: TrailEntry[]; viewports: AnimatorViewport[] } => {
+    const cw = canvasSizeRef.current.width || 800, ch = canvasSizeRef.current.height || 600;
+    const stack: TrailEntry[] = ids.map((id, i) => {
+      const layer = d.layers.get(id)!;
+      return i === 0
+        ? { layerId: id, layer, label: d.meta?.title || 'Home', paint: { topic: TRAIL.rootTopic } }
+        : { layerId: id, layer, label: layerLabel(d, layer, id), paint: layerPaint(d, layer) };
+    });
+    // Backing out lands on each parent's fit view, as after stepping inside (handleNavigate keeps the same).
+    const viewports = ids.slice(0, -1).map((id) => {
+      const fitNodes = (() => { try { return getNodesForLayer(d, id, sizing); } catch { return [] as FlatNode[]; } })();
+      const v = calculateFitView(fitNodes, cw, ch, getContainersForLayer(d, id) as ContainerGroup[], insetsRef.current);
+      return { centerX: v.centerX, centerY: v.centerY, zoomLevel: v.zoomLevel };
+    });
+    return { stack, viewports };
+  };
 
   useEffect(() => {
     if (!doc) return;
     const rootId = getRootLayerId(doc);
     if (!rootId) return;
+    // The host's layerPath (a link to a layer, a reload) opens the map there, without motion and without a report.
+    const asked = layerPathRef.current?.length ? resolveLayerPath(doc.layers, rootId, layerPathRef.current) : null;
+    if (asked && asked.length > 1) {
+      const { stack, viewports } = trailFor(doc, asked);
+      reportedPathRef.current = asked.join('\u0000');
+      setCurrentLayerId(asked[asked.length - 1]!);
+      setNavStack(stack);
+      parentViewports.current = viewports;
+      return;
+    }
     // A reload of the same map keeps the reader's place when every layer in their trail still exists; the new
     // content is framed with one refit. No onLayerChange: the reader didn't change layer.
     const kept = keepPlace(navStackRef.current, doc.layers);
@@ -266,11 +325,12 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       return;
     }
     const rootLayer = doc.layers.get(rootId)!;
+    reportedPathRef.current = rootId; // a new map opens at its root: not a change of layer
     setCurrentLayerId(rootId);
     // The trail starts with the map's title (the design system's DepthTrail).
     setNavStack([{ layerId: rootId, layer: rootLayer, label: doc.meta?.title || 'Home', paint: { topic: TRAIL.rootTopic } }]);
     parentViewports.current = [];
-  }, [doc]);
+  }, [doc]); // eslint-disable-line react-hooks/exhaustive-deps -- runs per document; trailFor reads the latest size and sizing
 
   // ── Active layer → FlatNodes ──────────────────────────────────────────────
   // Ideas are sized for their labels (the design system's idea.ts) with the real label face, so sizes are taken once
@@ -517,29 +577,30 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     },
   });
 
-  const handleNavigate = useCallback((nodeId: string) => {
+  /** Step inside an idea's layer. Returns whether it started. */
+  const handleNavigate = useCallback((nodeId: string, via: LayerVia = 'step-in'): boolean => {
     if (!doc || !currentLayerId) {
-      return;
+      return false;
     }
     if (isTransitioningRef.current || isAnimating()) {
-      return;
+      return false;
     }
 
     const childLayer = getChildLayerForNode(doc, nodeId, currentLayerId);
     if (!childLayer) {
-      return;
+      return false;
     }
     const childLayerId = [...doc.layers.entries()].find(([, l]) => l === childLayer)?.[0];
     if (!childLayerId) {
-      return;
+      return false;
     }
     const childNodes = (() => { try { return getNodesForLayer(doc, childLayerId, sizing); } catch { return []; } })();
     if (childNodes.length === 0) {
-      return;
+      return false;
     }
 
     const node = nodes.get(nodeId);
-    if (!node) return;
+    if (!node) return false;
 
     // Save the FIT viewport for this layer (not the current scroll position).
     // This ensures navigating back always returns to a clean, properly-zoomed view
@@ -552,20 +613,68 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     stepTargetRef.current = { paint: { topic: node.topic, custom: node.custom }, label: node.title };
     setIsTransitioning(true);
     isTransitioningRef.current = true;
+    viaRef.current = via;
 
     diveInto(node, childLayerId, childNodes);
+    return true;
   }, [doc, currentLayerId, nodes, isAnimating, diveInto, sizing, flatNodes, containers]);
 
-  const handleNavigateBack = useCallback((targetIndex: number) => {
-    if (targetIndex >= navStack.length - 1) return;
-    if (isTransitioningRef.current || isAnimating()) return;
+  /** Back out to the trail entry at `targetIndex`. Returns whether it started. */
+  const handleNavigateBack = useCallback((targetIndex: number, via: LayerVia = 'trail'): boolean => {
+    if (targetIndex >= navStack.length - 1) return false;
+    if (isTransitioningRef.current || isAnimating()) return false;
     const savedVp = parentViewports.current[targetIndex];
-    if (!savedVp) return;
+    if (!savedVp) return false;
     navBackTargetRef.current = targetIndex;
     setIsTransitioning(true);
     isTransitioningRef.current = true;
+    viaRef.current = via;
     backOut(savedVp);
+    return true;
   }, [navStack.length, isAnimating, backOut]);
+
+  // The depth trail's back (a stable callback, so the memoised trail doesn't redraw on every pan or zoom).
+  const navigateBackByTrail = useCallback((targetIndex: number) => { handleNavigateBack(targetIndex, 'trail'); }, [handleNavigateBack]);
+
+  // ── The layer path, for hosts (layerPath / onLayerPathChange) ─────────────
+  // Every change of layer is reported once, with how it happened; the layer the map opens on is not a change.
+  const pathKey = navStack.map((e) => e.layerId).join('\u0000');
+  useEffect(() => {
+    if (!pathKey) return;
+    if (reportedPathRef.current === null) { reportedPathRef.current = pathKey; return; }
+    if (reportedPathRef.current === pathKey) return;
+    reportedPathRef.current = pathKey;
+    const via = viaRef.current;
+    viaRef.current = 'host';
+    onLayerPathChangeRef.current?.(navStackRef.current.map((e) => e.layerId), via);
+  }, [pathKey]);
+
+  // The host moved the map (layerPath changed): one step in or any steps out with the usual motion, otherwise
+  // straight there. Waits for a running transition to end, then compares again.
+  const layerPathKey = props.layerPath ? props.layerPath.join('\u0000') : null;
+  useEffect(() => {
+    const asked = layerPathRef.current;
+    if (!asked || !doc || isTransitioningRef.current) return;
+    const rootId = getRootLayerId(doc);
+    const have = navStackRef.current.map((e) => e.layerId);
+    if (!rootId || have.length === 0) return;
+    const want = resolveLayerPath(doc.layers, rootId, asked.length ? asked : [rootId]);
+    if (want.join('\u0000') === have.join('\u0000')) return;
+    const startsWith = (a: string[], b: string[]) => b.every((id, i) => a[i] === id);
+    if (want.length < have.length && startsWith(have, want) && handleNavigateBack(want.length - 1, 'host')) return;
+    if (want.length === have.length + 1 && startsWith(want, have)) {
+      const nodeId = doc.layers.get(want[want.length - 1]!)?.parentNodeId;
+      if (nodeId && handleNavigate(nodeId, 'host')) return;
+    }
+    const { stack, viewports } = trailFor(doc, want);
+    const last = stack[stack.length - 1]!;
+    viaRef.current = 'host';
+    setHoveredNode(null);
+    parentViewports.current = viewports;
+    setNavStack(stack);
+    setCurrentLayerId(last.layerId);
+    onLayerChange?.(last.layerId, last.layer);
+  }, [layerPathKey, doc, isTransitioning]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Stage-level hit detection ─────────────────────────────────────────────
   const toWorldCoords = useCallback((stage: Konva.Stage, pointer: { x: number; y: number }) => {
@@ -647,6 +756,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const touchMode = props.layout === 'touch' ? true : props.layout === 'pointer' ? false : autoTouch;
   const touchModeRef = useRef(touchMode);
   touchModeRef.current = touchMode;
+  // How touch is shared with the page; app={false} (deprecated) still meant a map inside a scrolling page.
+  const gestures = props.gestures ?? (props.app === false ? 'cooperative' : 'page');
   const lastTouchAtRef = useRef(0);
   const emptyTapRef = useRef<{ x: number; y: number } | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
@@ -679,6 +790,27 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   // Close the sheet when the layer changes.
   useEffect(() => { setPinnedId(null); }, [currentLayerId]);
 
+  // ── Back a layer by gesture (the design system's BACK, VI-040) ────────────
+  // Double-click the empty canvas (mouse, pen) or double-tap it (touch). Never on an idea, the peek, the trail or the
+  // controls. At the top layer there's nothing above: the map gives a small bump (none with reduced motion).
+  const lastTapRef = useRef<TapMark | null>(null);          // the last touch tap on the empty canvas
+  const lastReleaseEmptyTapRef = useRef(false);              // the last mouse release was a click on the empty canvas
+  const [bump, setBump] = useState(false);
+  const bumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current); }, []);
+  const goBackByGesture = () => {
+    if (isTransitioningRef.current || isAnimating()) return;
+    const depth = navStackRef.current.length;
+    if (depth > 1) { handleNavigateBack(depth - 2, 'gesture'); return; }
+    if (design.comfort.reducedMotion) return;
+    if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current);
+    setBump(true);
+    bumpTimerRef.current = setTimeout(() => { bumpTimerRef.current = null; setBump(false); }, BACK.bumpMs);
+  };
+  // Read through a ref by the memoised stage handlers, so they always go back from the current trail.
+  const goBackRef = useRef(goBackByGesture);
+  goBackRef.current = goBackByGesture;
+
   // ── Stage event handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     if (isEmulatedMouse(e.evt)) return;
@@ -703,6 +835,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
         stageDragCommittedRef.current = false;
         setPressedNodeId(nodeId);
         setHoveredNode(null);
+        lastTapRef.current = null; // a press on an idea is never half of a double-tap on the canvas
+        lastReleaseEmptyTapRef.current = false;
         return;
       }
     }
@@ -803,13 +937,25 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       stageDragCommittedRef.current = false;
       return;
     }
-    // A tap (not a pan) on empty canvas dismisses the sheet.
+    // A tap (not a pan) on empty canvas dismisses the sheet; two touch taps close together go back a layer (BACK).
     const tap = emptyTapRef.current;
     emptyTapRef.current = null;
-    if (tap && pinnedIdRef.current) {
+    const isTouchUp = e.evt.type.startsWith('touch');
+    let emptyTap = false;
+    if (tap) {
       const end = clientOf(e.evt);
-      if (!Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < GESTURE.panSlop) setPinnedId(null);
+      emptyTap = !Number.isFinite(end.x) || Math.hypot(end.x - tap.x, end.y - tap.y) < GESTURE.panSlop;
+      if (emptyTap) {
+        const closed = !!pinnedIdRef.current;
+        if (closed) setPinnedId(null);
+        if (isTouchUp) {
+          const at = { t: performance.now(), x: Number.isFinite(end.x) ? end.x : tap.x, y: Number.isFinite(end.y) ? end.y : tap.y };
+          if (isDoubleTap(lastTapRef.current, at)) { lastTapRef.current = null; goBackRef.current(); }
+          else lastTapRef.current = { ...at, closed };
+        }
+      } else lastTapRef.current = null; // a pan in between: the next tap starts afresh
     }
+    if (!isTouchUp) lastReleaseEmptyTapRef.current = emptyTap;
     isCanvasPanningRef.current = false;
     rendererHandleMouseUp(e);
   }, [toWorldCoords, handleDragEnd, nodes, handleNavigate, onNodeClick, rendererHandleMouseUp]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -999,7 +1145,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
     }
     if (e.altKey || e.shiftKey) return;
     if (e.key === 'Escape' && pinnedIdRef.current) { e.preventDefault(); setPinnedId(null); }
-    else if ((e.key === 'Escape' || e.key === 'Backspace') && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2); }
+    else if ((e.key === 'Escape' || e.key === 'Backspace') && navStack.length > 1) { e.preventDefault(); handleNavigateBack(navStack.length - 2, 'key'); }
   }, [navStack.length, handleNavigateBack, setZoom, viewport.zoomLevel, fitToScreen]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1025,7 +1171,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   return (
     <div
       ref={containerRef}
-      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''}${pinching ? ' is-pinching' : ''}${props.app ? ' is-app' : ''} ${className}`}
+      className={`vi-map${touchMode ? ' is-touch' : ''}${compact ? ' is-compact' : ''}${medium ? ' is-medium' : ''}${pinching ? ' is-pinching' : ''}${props.app ? ' is-app' : ''}${gestures === 'cooperative' ? ' is-cooperative' : ''}${bump ? ' is-bump' : ''} ${className}`}
       {...design.attrs}
       data-reveal={instantReveal ? 'instant' : undefined}
       role="group"
@@ -1037,6 +1183,14 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       onPointerMoveCapture={onPinchMove}
       onPointerUpCapture={onPinchUp}
       onPointerCancelCapture={onPinchUp}
+      onDoubleClick={(e) => {
+        // Mouse and pen only: a touch double-tap is handled on the taps themselves (above), never the browser's dblclick.
+        if (performance.now() - lastTouchAtRef.current < 700 || !lastReleaseEmptyTapRef.current) return;
+        const t = e.target as HTMLElement;
+        // The canvas itself only - never the trail, the controls, the peek or the Back menu over it.
+        if (t.tagName !== 'CANVAS' || !canvasWrapperRef.current?.contains(t)) return;
+        goBackByGesture();
+      }}
       style={{ position: 'relative', overflow: 'hidden', userSelect: 'none', width: '100%', height: '100%', outline: 'none', ...(motionVars() as React.CSSProperties), ...(mapWidth ? { ['--vi-map-w' as string]: `${mapWidth}px` } : {}), ...style }}
       onMouseMove={handleCanvasMouseMove}
       onMouseLeave={() => {
@@ -1049,8 +1203,9 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       {/* Chromatic immersion tint */}
       <div className="vi-map__immersion" style={{ background: immersionFill ?? 'transparent' }} aria-hidden="true" />
 
-      {/* Konva canvas — opacity driven imperatively during transitions. Held back until the fonts are ready. */}
-      <div ref={canvasWrapperRef} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
+      {/* Konva canvas — opacity driven imperatively during transitions. Held back until the fonts are ready. While the
+          top layer bumps it is the design system's lens (.vi-map.is-bump .vi-map__lens scales it, around the centre). */}
+      <div ref={canvasWrapperRef} className={bump ? 'vi-map__lens' : undefined} style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto', ...(bump ? { transformOrigin: '50% 50%' } : {}) }}>
         {fontsReady && (
           <KonvaStage
             ref={stageRef}
@@ -1113,7 +1268,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
             role="menuitem"
             className="vi-iconbtn vi-iconbtn--surface"
             style={{ width: 'auto', padding: '6px var(--space-4)', boxShadow: 'var(--shadow-pop)' }}
-            onClick={() => { setCanvasContextMenu(null); handleNavigateBack(navStack.length - 2); }}
+            onClick={() => { setCanvasContextMenu(null); handleNavigateBack(navStack.length - 2, 'gesture'); }}
           >
             Back
           </button>
@@ -1121,10 +1276,11 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       )}
 
       {/* Depth trail (top-left) */}
-      <NavigationStack stack={navStack} onNavigateBack={handleNavigateBack} top={navigationStackTop} left={navigationStackLeft} />
+      <NavigationStack stack={navStack} onNavigateBack={navigateBackByTrail} top={navigationStackTop} left={navigationStackLeft} />
 
-      {/* Canvas controls: the design system's placement (top-right); 'bottom-right' only on request; hidden with
-          showControls={false} (the gestures and keys stay) */}
+      {/* Canvas controls: − and + only, as the design system's (no Fit button: people read its frame as full screen;
+          every layer opens fitted, and ⌘ / Ctrl + 0 still fits). Top-right; 'bottom-right' only on request; hidden
+          with showControls={false} (the gestures and keys stay) */}
       {props.showControls !== false && (
         <div
           className="vi-map__ctrls"
@@ -1132,7 +1288,7 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
             ? { top: 'auto', bottom: pinnedNode && touchMode ? `calc(var(--space-4) + ${sheetHeight}px)` : 'var(--space-4)' }
             : undefined}
         >
-          <ZoomControls onFit={fitToScreen} touch={touchMode} />
+          <ZoomControls touch={touchMode} />
         </div>
       )}
 
