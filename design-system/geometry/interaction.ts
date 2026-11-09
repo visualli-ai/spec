@@ -41,19 +41,30 @@ export const GESTURE = {
   /** Two fingers pinch to zoom the map's contents — ideas, connectors, containers and their labels — around the
    *  point between the fingers, within VIEW's limits. Controls, the depth trail, the peek, chat and the page never scale. */ pinchZoom: true,
   /** Moving both fingers pans the contents. */ twoFingerPan: true,
+  /** One finger on the empty canvas pans the contents too, on every surface (VI-040). A host whose map sits inside a
+   *  scrolling page can pass `gestures="cooperative"` to give one finger back to the page (two fingers then move the map). */ oneFingerPan: true,
   /** The pointers that pinch (PointerEvent.pointerType). */ pointers: ['touch'] as readonly string[],
-  /** Where the map is the page (an app: AppShell, the mobile app), it takes every touch gesture (touch-action: none),
-   *  so the browser never zooms the page. Embedded on a scrolling page (website, docs), one finger still scrolls the
-   *  page (touch-action: pan-x pan-y); two fingers that land together pinch the map. */ appTouchAction: 'none', embeddedTouchAction: 'pan-x pan-y',
-  /** Press and move on the empty canvas to pan the contents (mouse and pen; touch pans with two fingers, so one finger
-   *  still scrolls an embedded page). A press that moves less than `panSlop` px is a click. */ dragPan: true,
-  panPointers: ['mouse', 'pen'] as readonly string[], panSlop: 6,
+  /** The map takes every touch gesture (touch-action: none), so the browser never zooms or scrolls under it. With
+   *  `gestures="cooperative"` one finger scrolls the page (touch-action: pan-x pan-y); two fingers move the map. */ appTouchAction: 'none', embeddedTouchAction: 'pan-x pan-y',
+  /** Press and move on the empty canvas to pan the contents - mouse, pen and one finger. A press that moves less than
+   *  `panSlop` px is a click or a tap. */ dragPan: true,
+  panPointers: ['mouse', 'pen', 'touch'] as readonly string[], panSlop: 6,
   /** Moving an idea starts once the press has moved this far (px), by pointerModeFor: a mouse ('hover') sooner, a finger
    *  or pen ('touch') later, so taps still work. */
   ideaDragSlop: { hover: 4, touch: 10 },
-  /** Zoom never navigates: stepping inside and backing out stay explicit (tap an idea / Step inside, the depth trail,
-   *  Escape or Backspace). */ zoomNavigates: false,
 } as const;
+
+/** Going back a layer without the trail (VI-040): double-click empty canvas (not while editing - there it adds an idea)
+ *  or double-tap it. Never on an idea, a card, the trail or a control. At the top layer the
+ *  map gives a small bump instead. A double-tap whose first tap closed a peek doesn't also go back. */
+export const BACK = {
+  /** Two taps this close in time (ms) and place (px) are a double-tap. */ doubleTapMs: 300, doubleTapPx: 32,
+  /** The bump at the top layer (ms). */ bumpMs: 320,
+} as const;
+
+/** How the map changed layer, reported with onLayerPathChange so a host can keep browser history in step:
+ *  'step-in' (an idea's rings or Step inside), 'trail', 'gesture' (double-click, double-tap), 'key' (Escape, Backspace), 'host' (the host set layerPath). */
+export type LayerVia = 'step-in' | 'trail' | 'gesture' | 'key' | 'host';
 
 /** The zoom after a pinch: the zoom at the start, scaled by how far the fingers spread, within VIEW's limits. */
 export function pinchZoom(startZoom: number, startDistance: number, distance: number): number {
