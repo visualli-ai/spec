@@ -135,14 +135,24 @@ export function splitTerms(text: string, anchors: ReadonlyArray<SemanticAnchor>)
   return out;
 }
 
+export function isSafeUrl(url?: string | null): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url, 'http://dummy.invalid');
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export const TermCard = ({ anchor, inSheet = false }: { anchor: SemanticAnchor; inSheet?: boolean }) => (
   <span className={`vi-anchor-card${inSheet ? ' is-in-sheet' : ''}`} role="note">
     <span className="vi-anchor-card__eyebrow">Term</span>
     <span className="vi-anchor-card__word" style={{ display: 'block' }}>{anchor.word}</span>
     <p className="vi-anchor-card__desc">{anchor.description}</p>
-    {anchor.knowMoreUrl && (
+    {isSafeUrl(anchor.knowMoreUrl) && (
       <span className="vi-anchor-card__acts">
-        <a className="vi-fact__link" href={anchor.knowMoreUrl} target="_blank" rel="noopener noreferrer">{TERM.learnMoreLabel} <ExternalIcon /></a>
+        <a className="vi-fact__link" href={anchor.knowMoreUrl!} target="_blank" rel="noopener noreferrer">{TERM.learnMoreLabel} <ExternalIcon /></a>
       </span>
     )}
   </span>
