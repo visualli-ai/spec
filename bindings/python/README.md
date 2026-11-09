@@ -18,25 +18,30 @@ pip install .
 
 ## Usage
 
-These models are purely for data validation and structure definition. They do not include file parsing logic.
+Use the validated Pydantic models to build, manipulate, and validate Visualli entities:
 
 ```python
-from visualli import Layer, Node
+from visualli import Layer, Node, load_visualli, dump_visualli
 
-# Create valid objects
+# Load and validate an existing .visualli file
+entities = load_visualli("path/to/diagram.visualli")
+
+# Or create valid objects programmatically
 layer = Layer(
+    type="layer",
     id="layer-123",
     level=0,
     nodes=[
         Node(
             id="node-1",
             position={"x": 0, "y": 0},
-            data={"label": "Central Idea"}
+            data={"label": "Central Idea", "summary": "Core topic"}
         )
     ]
 )
 
-print(layer.model_dump_json(indent=2))
+# Dump entities to a JSONL file
+dump_visualli([layer], "output.visualli")
 ```
 
 ### Accents
