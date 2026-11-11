@@ -264,11 +264,16 @@ export function convertVisualliToFlatNodes(doc: VisualliDocument, opts: ConvertO
     }
   }
 
-  // Build children index
+  // Build children index in linear time O(N)
   for (const node of map.values()) {
     node.childrenIds = [];
-    for (const candidate of map.values()) {
-      if (candidate.parentId === node.id) node.childrenIds.push(candidate.id);
+  }
+  for (const node of map.values()) {
+    if (node.parentId) {
+      const parent = map.get(node.parentId);
+      if (parent) {
+        (parent.childrenIds ??= []).push(node.id);
+      }
     }
   }
 
