@@ -1,7 +1,7 @@
 // Before / after performance comparison for the Visualli SDK.
 //
 //   npm run bench:compare                                  # main vs this checkout
-//   npm run bench:compare -- --base <git ref> [--runs 3] [--sizes 500,2000,10000] [--layers 1000,10000] [--dpr 1] [--channel chrome]
+//   npm run bench:compare -- --base <git ref> [--runs 3] [--sizes 500,2000,10000] [--layers 1000] [--dpr 1] [--channel chrome] [--raw]
 //
 // Two map shapes: one big layer (--sizes, ideas on it) and many small layers (--layers, 8 ideas each; 'none' skips).
 //
@@ -27,7 +27,7 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => {
 const base = String(args.base ?? 'origin/main');
 const runs = Math.max(1, Number(args.runs ?? 3));
 const sizes = String(args.sizes ?? '500,2000,10000');
-const layers = String(args.layers ?? '1000,10000');
+const layers = String(args.layers ?? '1000'); // at most 1,000 (bench.mjs skips larger counts)
 const dpr = String(args.dpr ?? 1);
 const channel = args.channel ? ['--channel', String(args.channel)] : [];
 
@@ -106,6 +106,11 @@ try {
     ['pan', 'fps', (r) => r?.pan?.fps, true],
     ['zoom', 'fps', (r) => r?.zoom?.fps, true],
   ];
+  // --raw: every run's number for the latency rows, so a noisy median can be read for what it is.
+  if (args.raw) {
+    for (const n of sizes.split(',').map(Number)) for (const side of ['base', 'head']) console.error(`raw ${side} n=${n} layer ready: ${sides[side].map((r) => r.results.find((x) => x.n === n)?.layerReadyMs).join(', ')} ms`);
+    for (const n of (layers === 'none' ? [] : layers.split(',').map(Number))) for (const side of ['base', 'head']) console.error(`raw ${side} layers=${n} step inside / deeper / back: ${sides[side].map((r) => { const x = (r.layerResults ?? []).find((y) => y.layers === n); return x ? `${x.stepInMs}/${x.deeperMs}/${x.backMs}` : 'n/a'; }).join(', ')} ms`);
+  }
   const first = sides.head[0];
   const lines = [
     `### Performance: ${base} (${baseSha}) → this branch (${headSha}${dirty ? ' + uncommitted' : ''})`,

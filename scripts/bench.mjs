@@ -1,6 +1,6 @@
 // Benchmark driver for the Visualli SDK.
 //
-//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--layers 1000,10000] [--dpr 1] [--no-build] [--channel chrome] [--out file.json]
+//   node scripts/bench.mjs --label baseline [--sizes 500,2000,10000] [--layers 1000] [--dpr 1] [--no-build] [--channel chrome] [--out file.json]
 //
 // To compare a change with main, use scripts/bench-compare.mjs (npm run bench:compare): numbers are only meaningful as
 // a before/after pair measured in the same session on the same machine (see bench/results/README.md).
@@ -31,7 +31,10 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => {
 }, []));
 const label = args.label ?? 'run';
 const sizes = String(args.sizes ?? '500,2000,10000').split(',').map(Number);
-const layerCounts = args.layers === 'none' ? [] : String(args.layers ?? '1000,10000').split(',').map(Number).filter((x) => x > 0);
+// Many-layers maps stop at MAX_LAYERS: beyond it the run takes minutes and measures the same paths.
+const MAX_LAYERS = 1000;
+const layerCounts = args.layers === 'none' ? [] : String(args.layers ?? MAX_LAYERS).split(',').map(Number).filter((x) => x > 0 && x <= MAX_LAYERS);
+if (args.layers && args.layers !== 'none' && String(args.layers).split(',').some((x) => Number(x) > MAX_LAYERS)) console.error(`--layers: counts above ${MAX_LAYERS} are skipped`);
 const dpr = Number(args.dpr ?? 1);
 const theme = args.theme ?? 'light';
 
@@ -44,8 +47,19 @@ if (!args['no-build']) await sh('npm', ['run', 'build'], { cwd: root });
 await sh('npx', ['vite', 'build', '--outDir', 'dist-bench'], { cwd: appDir });
 
 // A free port and a check that the server serves this tree's build (scripts/lib/preview.mjs).
-const server = await startPreview(appDir);
-const { port } = server;
+let server = await startPreview(appDir);
+/** Open a bench page. On a long comparison `vite preview` has gone away between runs (connection refused): start it
+ *  again on a fresh port and retry once, instead of losing the whole run. */
+const open = async (page, query) => {
+  try { await page.goto(`${server.url}/bench.html?${query}`); }
+  catch (e) {
+    if (!/ERR_CONNECTION_REFUSED/.test(String(e?.message))) throw e;
+    console.error('vite preview stopped answering; restarting it');
+    await server.stop();
+    server = await startPreview(appDir);
+    await page.goto(`${server.url}/bench.html?${query}`);
+  }
+};
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // The arrival animation is not part of the pan / zoom numbers: wait until it's over (data-vi-reveal="idle"). Renderers
@@ -65,7 +79,7 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(String(e)));
-    await page.goto(`http://127.0.0.1:${port}/bench.html?n=${n}&theme=${theme}`);
+    await open(page, `n=${n}&theme=${theme}`);
     await page.evaluate(() => window.__bench.ready);
     await page.waitForSelector('canvas');
     await settled(page);
@@ -122,7 +136,7 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(String(e)));
-    await page.goto(`http://127.0.0.1:${port}/bench.html?layers=${layers}&theme=${theme}`);
+    await open(page, `layers=${layers}&theme=${theme}`);
     await page.evaluate(() => window.__bench.ready);
     await page.waitForSelector('canvas');
     // A bench page without the many-layers map (an older base) renders its default map instead: nothing to measure.
