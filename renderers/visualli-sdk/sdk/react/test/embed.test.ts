@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { SPEC_COMPONENT_CSS, SPEC_TOKENS_CSS } from '../src/generated/specCss';
 import { GESTURE, IMMERSION } from '@visualli/core';
+import { isSafeUrl } from '../src/components/Overlays';
 
 /** Every selector in a stylesheet (rule preludes, including those inside @media), skipping @keyframes steps. */
 function selectors(css: string): string[] {
@@ -37,5 +38,27 @@ describe('spec defaults the renderer follows', () => {
   it('gesture thresholds come from the design system', () => {
     expect(GESTURE.panSlop).toBeGreaterThan(0);
     expect(GESTURE.ideaDragSlop.hover).toBeLessThan(GESTURE.ideaDragSlop.touch);
+  });
+});
+
+describe('security: URL protocol validation for semantic anchors', () => {
+  it('allows safe http and https URLs', () => {
+    expect(isSafeUrl('https://example.com')).toBe(true);
+    expect(isSafeUrl('http://example.com/page?query=1#hash')).toBe(true);
+    expect(isSafeUrl('https://spec.visualli.ai')).toBe(true);
+  });
+
+  it('rejects dangerous protocols (javascript:, data:, vbscript:, etc.)', () => {
+    expect(isSafeUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeUrl('javascript:/*--></title></style></textarea>*/<svg/onload=alert(1)>')).toBe(false);
+    expect(isSafeUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
+    expect(isSafeUrl('vbscript:msgbox("XSS")')).toBe(false);
+    expect(isSafeUrl('file:///etc/passwd')).toBe(false);
+  });
+
+  it('rejects empty, null, and undefined values', () => {
+    expect(isSafeUrl('')).toBe(false);
+    expect(isSafeUrl(null)).toBe(false);
+    expect(isSafeUrl(undefined)).toBe(false);
   });
 });
