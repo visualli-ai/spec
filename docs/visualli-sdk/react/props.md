@@ -41,6 +41,7 @@ Step inside an idea by clicking or tapping it (or *Step inside* on its peek). Go
 |---|---|---|---|
 | `layerPath` | `string[]` | — | The layer to show, as the ids of the layers from the root down (the root may be left out). The map follows it whenever it changes - stepping in or out with the usual motion when it's one step away, otherwise going straight there; a path that no longer fits the map stops at the deepest layer that still exists. Leave it out and the map keeps its own place. |
 | `onLayerPathChange` | `(path: string[], via) => void` | — | Called after every change of layer (not the layer the map opens on) with the path from the root and how it happened: `'step-in'`, `'trail'`, `'gesture'` (double-click, double-tap, the canvas's Back menu), `'key'` (Escape, Backspace) or `'host'` (`layerPath` changed). Use the two together to keep the browser's history in step with the map. |
+| `backGestures` | `boolean` | `true` | Go back a layer by double-clicking or double-tapping the empty canvas. Pass `false` while your app gives those gestures another meaning - an edit mode, for example: then neither goes back and the top layer doesn't bump. The trail, Escape, Backspace and the canvas's Back menu still go back. |
 
 ## 🚀 Performance
 

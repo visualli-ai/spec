@@ -128,6 +128,21 @@ try {
     check('phone: no page errors', errors.length === 0, errors.join(' | ').slice(0, 200));
     await ctx.close();
   }
+  {
+    // backGestures={false} (a host's edit mode): a double-tap on the empty canvas doesn't go back.
+    const { ctx, page } = await open({ width: 390, height: 844 }, { touch: true }, 'example&backGestures=off');
+    const hub = await pos(page, 'The Water Cycle');
+    await tap(page, hub.x, hub.y);
+    await page.waitForSelector('.vi-fact--sheet', { timeout: 3000 });
+    await layerChange(page);
+    await page.tap('.vi-fact--sheet .vi-fact__step');
+    await awaitLayer(page);
+    const d = await page.locator('.vi-trail li').count();
+    await tap(page, 20, 300); await tap(page, 20, 300);
+    await page.waitForTimeout(1800);
+    check('phone: backGestures={false} - a double-tap on the empty canvas stays on the layer', d === 2 && (await page.locator('.vi-trail li').count()) === 2, `${d} -> ${await page.locator('.vi-trail li').count()}`);
+    await ctx.close();
+  }
   // ── tablet (touch, wide) ──
   {
     const { ctx, page } = await open({ width: 820, height: 1180 }, { touch: true });

@@ -234,6 +234,31 @@ try {
   check('…and ⌘/Ctrl + 0 still fits', Math.abs(sp2 - sp0) < 2, `${sp2.toFixed(0)}px (fitted ${sp0.toFixed(0)}px)`);
   await bare.close();
 
+  // backGestures={false} (a host's edit mode): double-click doesn't go back or bump; the keys still go back.
+  const editing = await ctx.newPage();
+  await editing.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=light&backGestures=off`);
+  await editing.evaluate(() => window.__bench.ready);
+  await editing.waitForSelector('canvas', { timeout: 8000 });
+  await editing.waitForTimeout(800);
+  const trailOf = () => editing.locator('.vi-trail li').count();
+  await editing.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+  await editing.locator('.vi-sr button[data-node-id]').first().focus();
+  await editing.keyboard.press('Enter');
+  await editing.evaluate(() => window.__bench.changed);
+  await editing.waitForTimeout(1800);
+  await editing.mouse.dblclick(30, 400);
+  await editing.waitForTimeout(1500);
+  check('backGestures={false}: double-clicking the empty canvas stays on the layer', (await trailOf()) === 2, `trail ${await trailOf()}`);
+  await editing.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+  await editing.focus('.vi-map');
+  await editing.keyboard.press('Escape');
+  await editing.evaluate(() => window.__bench.changed);
+  await editing.waitForTimeout(1800);
+  check('…while Escape still goes back', (await trailOf()) === 1);
+  await editing.mouse.dblclick(30, 400);
+  check('…and the top layer doesn\'t bump', !(await editing.evaluate(() => document.querySelector('.vi-map').classList.contains('is-bump'))));
+  await editing.close();
+
   // A map loaded from a URL (visualliFile) renders a placeholder until the file arrives; its canvas must still follow
   // its container afterwards (it used to stay at the 1920 × 1080 default), including the compact phone layout.
   const phone = await (await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage();

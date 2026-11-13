@@ -177,6 +177,13 @@ export interface VisualliCanvasProps {
    */
   onLayerPathChange?: (path: string[], via: LayerVia) => void;
   /**
+   * Go back a layer by double-clicking or double-tapping the empty canvas (the design system's BACK). Default true.
+   * Pass false while the host gives those gestures another meaning - an edit mode, for example, as the design system's
+   * map does while editing: then neither goes back, and the top layer doesn't bump. The trail, Escape, Backspace and
+   * the canvas's Back menu still go back.
+   */
+  backGestures?: boolean;
+  /**
    * Where the zoom controls sit. Default 'top-right', the design system's placement (`.vi-map__ctrls`,
    * opposite the depth trail). 'bottom-right' moves them to the bottom corner for hosts that need the top edge;
    * there they rise above the touch peek sheet while it's open.
@@ -798,7 +805,10 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
   const [bump, setBump] = useState(false);
   const bumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current); }, []);
+  const backGesturesRef = useRef(props.backGestures !== false);
+  backGesturesRef.current = props.backGestures !== false;
   const goBackByGesture = () => {
+    if (!backGesturesRef.current) return; // the host turned the gestures off (an edit mode)
     if (isTransitioningRef.current || isAnimating()) return;
     const depth = navStackRef.current.length;
     if (depth > 1) { handleNavigateBack(depth - 2, 'gesture'); return; }
@@ -948,7 +958,8 @@ export default function VisualliCanvas(props: VisualliCanvasProps) {
       if (emptyTap) {
         const closed = !!pinnedIdRef.current;
         if (closed) setPinnedId(null);
-        if (isTouchUp) {
+        if (isTouchUp && !backGesturesRef.current) lastTapRef.current = null; // gestures off: taps never pair up
+        else if (isTouchUp) {
           const at = { t: performance.now(), x: Number.isFinite(end.x) ? end.x : tap.x, y: Number.isFinite(end.y) ? end.y : tap.y };
           if (isDoubleTap(lastTapRef.current, at)) { lastTapRef.current = null; goBackRef.current(); }
           else lastTapRef.current = { ...at, closed };
