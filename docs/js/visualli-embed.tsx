@@ -28,6 +28,7 @@ function VisualliEmbed() {
       <VisualliRenderer 
         visualliFile={source} 
         theme="light" 
+        gestures="cooperative"
         width="100%" 
         height="100%" 
       />

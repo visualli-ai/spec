@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.15 — 2026-11-13
+
+**Conforms to design system 0.3.7** (no design-system change: the design system's map already turns the gesture off while editing).
+
+### Added
+- **`backGestures` on `VisualliCanvas` and `VisualliRenderer`.** `true` by default. Pass `false` while the host gives double-click or double-tap another meaning, such as an edit mode: then neither goes back a layer and the top layer doesn't bump, as the design system's map behaves while editing. The trail, Escape, Backspace and the canvas's Back menu still go back. Covers mouse, pen and touch alike (a host can't stop the touch double-tap from outside without blocking taps on the canvas).
+
+## 0.2.14 — 2026-11-09
+
+**Conforms to design system 0.3.7** (sync #61: `BACK`, the new `GESTURE` and the spec CSS for one-finger pan and the top-layer bump).
+
+### Added
+- **Go back a layer by double-click or double-tap (VI-040).** On the empty canvas, a **double-click** (mouse, pen) or a **double-tap** (touch) goes back one layer, as the trail, Escape and Backspace do. Never on an idea, the peek, the trail or the controls. A double-tap whose first tap closed the touch sheet doesn't also go back. At the top layer the map gives a small bump instead (none with reduced motion). Thresholds come from the design system's `BACK` (two taps within 300ms and 32px; 320ms bump), now exported from `@visualli/core` with `LayerVia`. Zooming still never changes layer.
+- **`layerPath` and `onLayerPathChange` on `VisualliCanvas` and `VisualliRenderer`.** `layerPath` (layer ids from the root down) sets the layer: the map opens there and follows it when it changes - one step with the usual motion, otherwise straight there; a stale path stops at the deepest layer that still exists. `onLayerPathChange(path, via)` reports every change of layer (not the one the map opens on) with how it happened: `'step-in'`, `'trail'`, `'gesture'`, `'key'` or `'host'`. Together they let a host keep the browser's history in step with the map.
+- **`gestures: 'page' | 'cooperative'` on `VisualliCanvas` and `VisualliRenderer`.** `'cooperative'` gives one finger back to a scrolling page (two fingers move and pinch the map).
+
+### Changed
+- **One finger pans every map by default (behaviour change for embeds).** From design system 0.3.7 the map takes every touch gesture (`touch-action: none`) unless it's `gestures="cooperative"`. Before, one finger scrolled the page unless `app` was set. **A map inside a scrolling page (an article, a docs page) should now pass `gestures="cooperative"`.** `app` is deprecated: `app={false}` still means `cooperative`, `app` (true) changes nothing. The docs embed and the loader use `cooperative`.
+- **The zoom controls are − and + only.** The *Fit map to view* button is gone: people read its corner frame as full screen. Every layer still opens fitted, and ⌘ / Ctrl + 0 still fits. `ZoomControls` still draws Fit when it's given `onFit`; `VisualliCanvas` no longer passes it.
+
 ## 0.2.13 — 2026-11-06
 
 **Conforms to design system 0.3.6** (no design-system change: its `VisualMap` already has `showControls`).

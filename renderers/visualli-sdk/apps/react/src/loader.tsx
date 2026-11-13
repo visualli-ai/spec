@@ -29,6 +29,7 @@ function Embed({ source }: { source?: string }) {
       theme={theme}
       comfort={{ reducedMotion: 'system' }}
       fontBaseUrl={fontBaseUrl}
+      gestures="cooperative" // a map inside a docs page: one finger keeps scrolling the page
       width="100%"
       height="500px"
     />
