@@ -41,6 +41,8 @@ const REVEAL = (params.get('reveal') ?? undefined) as 'gradual' | 'instant' | un
 // ?layers=L: a map of many small layers (buildLayersDoc) instead of one big one.
 const LAYERS = params.has('layers') ? Number(params.get('layers')) : 0;
 const LAYER_IDEAS = 8;
+// ?backGestures=off: double-click and double-tap don't go back (a host's edit mode).
+const BACK_GESTURES_OFF = params.get('backGestures') === 'off';
 
 // ── Synthetic document ───────────────────────────────────────────────────────
 
@@ -204,7 +206,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     controlsPosition={CONTROLS}
     app
     // `theme` is the new prop; older SDK builds only know `isDark` (and not `showControls`).
-    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark', ...(HIDE_CONTROLS ? { showControls: false } : {}), onLayerPathChange: (path: string[], via: string) => { (window as unknown as { __bench: { paths: { path: string[]; via: string }[] } }).__bench.paths.push({ path, via }); } } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
+    {...({ theme: THEME, comfort: COMFORT, reveal: REVEAL, isDark: THEME.endsWith('dark') || THEME === 'dark', ...(HIDE_CONTROLS ? { showControls: false } : {}), ...(BACK_GESTURES_OFF ? { backGestures: false } : {}), onLayerPathChange: (path: string[], via: string) => { (window as unknown as { __bench: { paths: { path: string[]; via: string }[] } }).__bench.paths.push({ path, via }); } } as Partial<React.ComponentProps<typeof VisualliCanvas>>)}
     style={{ width: '100vw', height: '100vh' }}
     onLayerChange={() => { const t = performance.now(); layerResolvers.splice(0).forEach(r => r(t)); }}
   />,

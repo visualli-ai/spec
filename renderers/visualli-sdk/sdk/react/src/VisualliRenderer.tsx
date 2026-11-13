@@ -89,6 +89,8 @@ export interface VisualliRendererProps {
   layerPath?: string[];
   /** Called after every change of layer with the path from the root and how it happened (VisualliCanvas). */
   onLayerPathChange?: (path: string[], via: LayerVia) => void;
+  /** Go back a layer by double-clicking or double-tapping the empty canvas. Default true; false while the host gives those gestures another meaning (VisualliCanvas). */
+  backGestures?: boolean;
   /** Where the zoom / fit controls sit: 'top-right' (default, the design system's placement) or 'bottom-right'. */
   controlsPosition?: 'top-right' | 'bottom-right';
   /** Show the zoom / fit controls (default true). `false` hides only the strip; wheel, pinch and keyboard zoom stay. */
@@ -348,6 +350,7 @@ export default function VisualliRenderer({
   gestures,
   layerPath,
   onLayerPathChange,
+  backGestures,
   width = '100%',
   height = '100%',
   useWorker = true,
@@ -411,6 +414,7 @@ export default function VisualliRenderer({
         gestures={gestures}
         layerPath={layerPath}
         onLayerPathChange={onLayerPathChange}
+        backGestures={backGestures}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}

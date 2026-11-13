@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.15 — 2026-11-13
+
+**Conforms to design system 0.3.7** (no design-system change: the design system's map already turns the gesture off while editing).
+
+### Added
+- **`backGestures` on `VisualliCanvas` and `VisualliRenderer`.** `true` by default. Pass `false` while the host gives double-click or double-tap another meaning, such as an edit mode: then neither goes back a layer and the top layer doesn't bump, as the design system's map behaves while editing. The trail, Escape, Backspace and the canvas's Back menu still go back. Covers mouse, pen and touch alike (a host can't stop the touch double-tap from outside without blocking taps on the canvas).
+
 ## 0.2.14 — 2026-11-09
 
 **Conforms to design system 0.3.7** (sync #61: `BACK`, the new `GESTURE` and the spec CSS for one-finger pan and the top-layer bump).
