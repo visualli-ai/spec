@@ -16,7 +16,7 @@
 //  • Delegates all canvas/navigation/zoom logic to VisualliCanvas
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { VisualliDocument, Comfort, ThemeInput, TopicName } from '@visualli/core';
+import type { VisualliDocument, Comfort, ThemeInput, TopicName, LayerVia } from '@visualli/core';
 import { blobPath, parseVisualliFile, shapeForLevel, IMMERSION } from '@visualli/core';
 import VisualliCanvas from './VisualliCanvas';
 import { useDesign } from './design/useDesign';
@@ -78,11 +78,19 @@ export interface VisualliRendererProps {
 
   /** Where the zoom / fit controls sit: the design system's 'bottom-right' (default) or the pre-0.2 'top-right'. */
   /**
-   * The map is the page (an app such as Visualli's web app): it takes every touch gesture, so the browser never
-   * zooms or scrolls the page — the design system's `.vi-map.is-app` (`touch-action: none`). Leave it off when the
-   * map is embedded in a scrolling page: one finger then still scrolls the page, two fingers pinch the map.
+   * How touch is shared with the page. 'page' (default): one finger pans the map, two pinch, and the browser never
+   * scrolls or zooms under it. 'cooperative': for a map inside a scrolling page - one finger scrolls the page, two
+   * fingers move and pinch the map.
    */
+  gestures?: 'page' | 'cooperative';
+  /** @deprecated use `gestures`. `app={false}` still means `gestures="cooperative"`; `app` (true) changes nothing. */
   app?: boolean;
+  /** The layer to show, as layer ids from the root down; the map follows it when it changes (VisualliCanvas). */
+  layerPath?: string[];
+  /** Called after every change of layer with the path from the root and how it happened (VisualliCanvas). */
+  onLayerPathChange?: (path: string[], via: LayerVia) => void;
+  /** Go back a layer by double-clicking or double-tapping the empty canvas. Default true; false while the host gives those gestures another meaning (VisualliCanvas). */
+  backGestures?: boolean;
   /** Where the zoom / fit controls sit: 'top-right' (default, the design system's placement) or 'bottom-right'. */
   controlsPosition?: 'top-right' | 'bottom-right';
   /** Show the zoom / fit controls (default true). `false` hides only the strip; wheel, pinch and keyboard zoom stay. */
@@ -339,6 +347,10 @@ export default function VisualliRenderer({
   controlsPosition,
   showControls,
   app,
+  gestures,
+  layerPath,
+  onLayerPathChange,
+  backGestures,
   width = '100%',
   height = '100%',
   useWorker = true,
@@ -399,6 +411,10 @@ export default function VisualliRenderer({
         controlsPosition={controlsPosition}
         showControls={showControls}
         app={app}
+        gestures={gestures}
+        layerPath={layerPath}
+        onLayerPathChange={onLayerPathChange}
+        backGestures={backGestures}
         fontBaseUrl={fontBaseUrl}
         loadWebFonts={loadWebFonts}
         chromaticImmersion={chromaticImmersion}
