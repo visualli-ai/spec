@@ -111,6 +111,19 @@ try {
     await page.tap('.vi-fact--sheet .vi-fact__close');
     await page.waitForTimeout(300);
     check('phone: close button closes the sheet', (await page.locator('.vi-fact--sheet').count()) === 0);
+    // Go back a layer by double-tapping the empty canvas (VI-040, the design system's BACK).
+    const trailLen = () => page.locator('.vi-trail li').count();
+    const d0 = await trailLen();
+    p = await pos(page, 'Dew & Frost');
+    await tap(page, p.x, p.y);
+    await page.waitForSelector('.vi-fact--sheet');
+    await tap(page, 20, 300); await tap(page, 20, 300);
+    await page.waitForTimeout(1800);
+    check('phone: a double-tap whose first tap closed the sheet doesn\'t go back', (await trailLen()) === d0 && (await page.locator('.vi-fact--sheet').count()) === 0, `${d0} -> ${await trailLen()}`);
+    await page.waitForTimeout(400);
+    await tap(page, 20, 300); await tap(page, 20, 300);
+    await page.waitForTimeout(1800);
+    check('phone: double-tapping the empty canvas goes back a layer', (await trailLen()) === d0 - 1, `${d0} -> ${await trailLen()}`);
     check('phone: touch targets are at least 40px', await page.evaluate(() => [...document.querySelectorAll('.vi-ctrls button')].every(b => b.getBoundingClientRect().width >= 40)));
     check('phone: no page errors', errors.length === 0, errors.join(' | ').slice(0, 200));
     await ctx.close();
@@ -225,7 +238,7 @@ try {
       return o;
     };
     const view = page => page.evaluate(() => window.__bench.view());
-    const fitted = page => page.evaluate(() => document.querySelector('[aria-label="Fit map to view"]').disabled);
+    const fitted = page => page.evaluate(() => window.__bench.fitted());
     const same = (a, b) => Math.abs(a.zoomLevel - b.zoomLevel) < 1e-6 && Math.abs(a.centerX - b.centerX) < 0.5 && Math.abs(a.centerY - b.centerY) < 0.5;
     const phone = await stepIn({ width: 400, height: 800 });
     const want = await view(phone.page);

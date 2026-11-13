@@ -12,6 +12,17 @@ The SDK's benchmark (`scripts/bench.mjs`) opens a synthetic map in headless Chro
 
 Frame rates are `requestAnimationFrame` rates; 60 fps is the display's limit.
 
+A map can also be big the other way: **few ideas per layer, but many layers**. For a map of 1,000 layers (8 ideas each,
+every idea opening the next layer breadth-first, so most ideas carry rings and the deepest layers are five steps down;
+`--layers` takes smaller counts too, never more than 1,000) it measures:
+
+| metric | what it is | better |
+|---|---|---|
+| **parse the file** | `parseVisualliFile` on the whole map (ms) | lower |
+| **step inside** | click on the root's idea → its layer on screen (ms) | lower |
+| **step deeper** | click on an idea with a layer inside → that layer on screen, three times, median (ms) | lower |
+| **back out** | Escape → the parent layer on screen (ms) | lower |
+
 ## Compare, don't collect
 
 Absolute numbers depend on the machine, the browser, whether it renders on the GPU and what else the machine is doing:
@@ -24,9 +35,9 @@ npm run bench:compare
 ```
 
 It checks `origin/main` out into a temporary worktree, builds both sides, runs them alternately (3 runs each by default)
-and prints the medians with the change. Options: `--base <git ref>`, `--runs 5`, `--sizes 500,2000`, `--dpr 2` (a Retina
+and prints the medians with the change. Options: `--base <git ref>`, `--runs 5`, `--sizes 500,2000`, `--layers 1000` (at most 1,000; `none` skips the many-layers map), `--dpr 2` (a Retina
 screen: four times the pixels to paint), `--channel chrome` (the installed Chrome, when Playwright's Chromium isn't
-installed). Changes within ±5% are noise; anything flagged *worse* needs a look before merging.
+installed). Changes within ±5% are noise; anything flagged *worse* needs a look before merging. `--raw` prints every run's latency numbers: *layer ready* in particular is bimodal (a run lands on one frame boundary or a later one, about 40 ms apart at 500 ideas), so a flag there needs the raw runs, or an A/A run (`--base HEAD`: the same code on both sides) to compare with.
 
 `npm run bench` measures only this checkout (one table, written to `bench/results/<label>.json`, which git ignores).
 
