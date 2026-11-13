@@ -185,3 +185,60 @@ def accent_of(color: str | None) -> Accent | None:
         return None
     c = color.strip().lower()
     return c if c in ACCENTS else None  # type: ignore[return-value]
+
+
+# ── JSONL File Helpers ────────────────────────────────────────────────────────
+import json
+from pathlib import Path
+from typing import Sequence, TextIO, Union
+
+VisualliEntity = Union[Meta, Extension, Layer]
+
+
+def loads_visualli(content: str) -> list[VisualliEntity]:
+    """Parse and validate a .visualli JSONL string into a list of Visualli entities."""
+    entities: list[VisualliEntity] = []
+    for line_num, line in enumerate(content.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            data = json.loads(stripped)
+        except json.JSONDecodeError as err:
+            raise ValueError(f"Line {line_num} contains invalid JSON: {err}") from err
+        item = VisualliSpec.model_validate(data).root
+        entities.append(item)
+    return entities
+
+
+def load_visualli(source: Union[str, Path, TextIO]) -> list[VisualliEntity]:
+    """Load and validate a .visualli JSONL file from a file path, Path object, or file-like buffer."""
+    if isinstance(source, (str, Path)):
+        with open(source, "r", encoding="utf-8") as f:
+            return loads_visualli(f.read())
+    return loads_visualli(source.read())
+
+
+def dumps_visualli(entities: Sequence[Union[VisualliEntity, BaseModel]]) -> str:
+    """Serialize a sequence of Visualli entities to a .visualli JSONL string."""
+    lines: list[str] = []
+    for entity in entities:
+        if isinstance(entity, BaseModel):
+            lines.append(entity.model_dump_json(exclude_none=True))
+        else:
+            lines.append(json.dumps(entity))
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def dump_visualli(
+    entities: Sequence[Union[VisualliEntity, BaseModel]],
+    target: Union[str, Path, TextIO],
+) -> None:
+    """Write a sequence of Visualli entities to a .visualli JSONL file or file-like buffer."""
+    output = dumps_visualli(entities)
+    if isinstance(target, (str, Path)):
+        with open(target, "w", encoding="utf-8") as f:
+            f.write(output)
+    else:
+        target.write(output)
+
