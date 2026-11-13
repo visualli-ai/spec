@@ -114,6 +114,11 @@ The low-level canvas component used internally by `VisualliRenderer`. Use this i
 | `chromaticImmersion` | `boolean` | Enable chromatic background |
 | `onNodeClick` | `(node: FlatNode) => void` | Callback fired on node click |
 | `onLayerChange` | `(id: string, layer: VisualliLayer) => void` | Callback fired on layer navigation |
+| `gestures` | `'page' \| 'cooperative'` | How touch is shared with the page. `page` (default): one finger pans the map, two pinch. `cooperative`: for a map inside a scrolling page - one finger scrolls the page, two move the map |
+| `app` | `boolean` | **Deprecated** — one finger now pans every map by default; `app={false}` still means `gestures="cooperative"` |
+| `layerPath` | `string[]` | The layer to show, as layer ids from the root down; the map follows it when it changes (e.g. browser Back) |
+| `backGestures` | `boolean` | Default `true`: double-click / double-tap on the empty canvas goes back a layer. `false` while the host gives those gestures another meaning (an edit mode) |
+| `onLayerPathChange` | `(path: string[], via: LayerVia) => void` | After every change of layer: the path from the root and how it happened (`'step-in'`, `'trail'`, `'gesture'`, `'key'`, `'host'`) |
 
 #### Example
 

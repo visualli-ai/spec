@@ -124,8 +124,10 @@ try {
   // ── controls ──
   await page.mouse.move(5, 5);
   const pct0 = parseInt(await page.textContent('.vi-ctrls__pct'));
-  // As the design system's controls: zoom is shown relative to the layer's fit, and Fit is disabled while fitted.
-  check('a fitted layer reads 100%, with Fit disabled', pct0 === 100 && await page.isDisabled('button[aria-label="Fit map to view"]'), `${pct0}%`);
+  // As the design system's controls: − and + only (no Fit button), zoom shown relative to the layer's fit.
+  check('a fitted layer reads 100%', pct0 === 100 && await page.evaluate(() => window.__bench.fitted()), `${pct0}%`);
+  check('the controls are − and + only (no Fit button)', (await page.locator('.vi-ctrls button').count()) === 2 && (await page.locator('button[aria-label="Fit map to view"]').count()) === 0);
+  const fitByKey = async () => { await page.focus('.vi-map'); await page.keyboard.press('ControlOrMeta+0'); };
   await page.click('button[aria-label="Zoom in"]');
   await page.waitForTimeout(200);
   const pct1 = parseInt(await page.textContent('.vi-ctrls__pct'));
@@ -134,7 +136,7 @@ try {
   await page.waitForTimeout(200);
   const pct2 = parseInt(await page.textContent('.vi-ctrls__pct'));
   check('zoom out lowers it', pct2 < pct1, `${pct1}% -> ${pct2}%`);
-  await page.click('button[aria-label="Fit map to view"]');
+  await fitByKey();
   await page.waitForTimeout(300);
   const pctFit = parseInt(await page.textContent('.vi-ctrls__pct'));
   check('fit returns to 100%', pctFit === 100, `${pct2}% -> ${pctFit}%`);
@@ -151,7 +153,7 @@ try {
   await sleep(1200);
   check('zooming far in stays on the layer', (await depth()) === before, `${parseInt(await page.textContent('.vi-ctrls__pct'))}%`);
   check('…and stops at the design system\'s zoom ceiling (VIEW.zoomMax of the fit)', parseInt(await page.textContent('.vi-ctrls__pct')) === 500);
-  await page.click('button[aria-label="Fit map to view"]');
+  await fitByKey();
   await sleep(300);
 
   // ⌘ / Ctrl + = zooms in, ⌘ / Ctrl + 0 fits (the design system's keyboard zoom)
@@ -185,6 +187,26 @@ try {
   await awaitLayer();
   check('Backspace steps back out', (await page.locator('.vi-trail li').count()) === 1);
 
+  // ── go back by gesture (VI-040, the design system's BACK) ──
+  await layerChange();
+  await page.locator('.vi-sr button[data-node-id]').first().focus();
+  await page.keyboard.press('Enter');
+  await awaitLayer();
+  check('(stepped back inside for the gesture checks)', (await page.locator('.vi-trail li').count()) === 2);
+  check('the empty canvas point is the canvas itself', await page.evaluate(() => document.elementFromPoint(30, 400)?.tagName === 'CANVAS'));
+  await layerChange();
+  await page.mouse.dblclick(30, 400);
+  await awaitLayer();
+  check('double-clicking the empty canvas goes back a layer', (await page.locator('.vi-trail li').count()) === 1);
+  await page.mouse.dblclick(30, 400);
+  const bumped = await page.evaluate(() => document.querySelector('.vi-map').classList.contains('is-bump'));
+  await sleep(600);
+  check('…and at the top layer it bumps instead', bumped && (await page.locator('.vi-trail li').count()) === 1 && !(await page.evaluate(() => document.querySelector('.vi-map').classList.contains('is-bump'))));
+  const paths = await page.evaluate(() => window.__bench.paths);
+  const vias = paths.map((p) => p.via);
+  check('onLayerPathChange reports each change with how it happened', ['step-in', 'trail', 'key', 'gesture'].every((v) => vias.includes(v)) && paths[paths.length - 1].via === 'gesture' && paths[paths.length - 1].path.length === 1, vias.join(','));
+  check('…but not the layer the map opened on', paths.length > 0 && paths[0].path.length > 1, JSON.stringify(paths[0]));
+
   // ── read-only: none of the product features exist ──
   const text = (await page.textContent('body')) ?? '';
   check('no product features in the UI', !/Go deeper|Map it|Export|Sources|Chat/i.test(text));
@@ -211,6 +233,31 @@ try {
   const sp2 = await spread();
   check('…and ⌘/Ctrl + 0 still fits', Math.abs(sp2 - sp0) < 2, `${sp2.toFixed(0)}px (fitted ${sp0.toFixed(0)}px)`);
   await bare.close();
+
+  // backGestures={false} (a host's edit mode): double-click doesn't go back or bump; the keys still go back.
+  const editing = await ctx.newPage();
+  await editing.goto(`http://127.0.0.1:${port}/bench.html?doc=example&theme=light&backGestures=off`);
+  await editing.evaluate(() => window.__bench.ready);
+  await editing.waitForSelector('canvas', { timeout: 8000 });
+  await editing.waitForTimeout(800);
+  const trailOf = () => editing.locator('.vi-trail li').count();
+  await editing.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+  await editing.locator('.vi-sr button[data-node-id]').first().focus();
+  await editing.keyboard.press('Enter');
+  await editing.evaluate(() => window.__bench.changed);
+  await editing.waitForTimeout(1800);
+  await editing.mouse.dblclick(30, 400);
+  await editing.waitForTimeout(1500);
+  check('backGestures={false}: double-clicking the empty canvas stays on the layer', (await trailOf()) === 2, `trail ${await trailOf()}`);
+  await editing.evaluate(() => { window.__bench.changed = window.__bench.nextLayerChange(); });
+  await editing.focus('.vi-map');
+  await editing.keyboard.press('Escape');
+  await editing.evaluate(() => window.__bench.changed);
+  await editing.waitForTimeout(1800);
+  check('…while Escape still goes back', (await trailOf()) === 1);
+  await editing.mouse.dblclick(30, 400);
+  check('…and the top layer doesn\'t bump', !(await editing.evaluate(() => document.querySelector('.vi-map').classList.contains('is-bump'))));
+  await editing.close();
 
   // A map loaded from a URL (visualliFile) renders a placeholder until the file arrives; its canvas must still follow
   // its container afterwards (it used to stay at the 1920 × 1080 default), including the compact phone layout.
