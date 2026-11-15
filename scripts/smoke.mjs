@@ -88,6 +88,17 @@ try {
   // Evaporation has no colour in the file and is the first idea of its layer: the first topic in sibling order, teal.
   check('peek takes the idea\'s own colour', /--vi-fact-fill:\s*var\(--topic-teal\)/.test(await page.getAttribute('.vi-peek', 'style') ?? ''), await page.getAttribute('.vi-peek', 'style') ?? '');
 
+  // ── the peek renders Markdown: bullets and bold, and plain text as before ──
+  await page.evaluate(() => window.__bench.setDescription('Evaporation', '- **Sun** heats oceans, lakes and rivers\n- Liquid water turns to **vapour**\n- Vapour **rises** into the atmosphere'));
+  await page.mouse.move(5, 5);
+  await sleep(200);
+  await hover('Evaporation');
+  check('a Markdown description shows as a list in the peek', (await page.locator('.vi-peek .vi-fact__body ul > li').count()) === 3);
+  check('…with its bold words in <strong>', (await page.locator('.vi-peek .vi-fact__body li > strong').count()) === 3);
+  check('…and no literal markers', !/\*\*|^- /m.test(await page.innerText('.vi-peek .vi-fact__body')));
+  await page.mouse.move(5, 5);
+  await sleep(200);
+
   // ── step inside via the peek button, find a term ──
   await hover('Condensation');
   await layerChange();

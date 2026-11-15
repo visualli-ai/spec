@@ -98,6 +98,8 @@ The primary component for rendering `.visualli` documents. Manages the full docu
 
 > **Note:** Provide either `visualliFile` or `visualliString`, not both.
 
+An idea's `description` is shown in its peek as Markdown (bullets, bold, ...); plain text renders as before. See the props docs, *Peek text*.
+
 ### `VisualliCanvas` (Advanced)
 
 The low-level canvas component used internally by `VisualliRenderer`. Use this if you need direct control over the rendering pipeline or already have a parsed `VisualliDocument`.

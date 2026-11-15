@@ -33,6 +33,12 @@ All props accepted by `<VisualliRenderer />`.
 !!! info "Rendered by the Visualli design system"
     Colors, fonts, outlines, rings and connectors come from the [design system](https://github.com/visualli-ai/spec/tree/main/design-system) vendored in this repository. A node's `color` that names one of the design system's eight accents (teal, harbor, iris, berry, coral, amber, sun, stone) is drawn with that accent's fill and ring in the reader's palette and theme; any other color (e.g. a hex) is drawn exactly as given, with a slightly darker ring, in every theme - it isn't matched to an accent. Ideas without a color take the accents in turn.
 
+## 📝 Peek text
+
+An idea's `description` is shown in its peek as **Markdown**: bullets, bold and the rest render as such, in the floating card and in the touch sheet. One line of plain text shows as plain text. Semantic-anchor terms work inside it, bullets and bold text included. The file format doesn't change: a description is still a string.
+
+The text may come from a model or a web page, so the peek treats it as untrusted: raw HTML is shown as text, images are not loaded, and links open in a new tab. Passing `renderNodeContent` replaces the whole body. To draw the same Markdown inside your own body, use `<PeekMarkdown text={summary} renderText={...} />` (exported from `@visualli/react`; `renderText` is called for each text node).
+
 ## 🧭 Navigation
 
 Step inside an idea by clicking or tapping it (or *Step inside* on its peek). Go back a layer with the depth trail, Escape or Backspace, or by **double-clicking** (mouse) or **double-tapping** (touch) the empty canvas. At the top layer a double-click or double-tap gives a small bump instead. Zooming never changes layer.

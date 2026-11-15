@@ -68,6 +68,8 @@ export { default as KonvaContainerLabelLayer } from './components/KonvaContainer
 export { default as NavigationStack }     from './components/NavigationStack';
 export { default as ZoomControls }        from './components/ZoomControls';
 export { PeekCard, TermCard, DepthTrail, splitTerms, paintVars } from './components/Overlays';
+export { PeekMarkdown } from './components/PeekMarkdown';
+export type { PeekMarkdownProps } from './components/PeekMarkdown';
 export { A11yLayer } from './components/A11yLayer';
 export type { NavStackEntry }             from './components/NavigationStack';
 export type { PeekCardProps, TrailEntry, DepthTrailProps, IdeaPaint } from './components/Overlays';
