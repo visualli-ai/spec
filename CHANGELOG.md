@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.16 — 2026-11-15
+
+**Conforms to design system 0.3.7** (no design-system change: the peek's Markdown styles arrive with the next design-system sync; until then lists and bold use the browser's defaults inside the peek).
+
+### Added
+- **The peek renders Markdown.** A description that holds Markdown (bullets, bold, ...) now shows as such in the peek card and in the touch sheet, on every surface that draws the SDK's peek. One line of plain text renders as plain text, as before, and semantic-anchor terms still work, inside bullets and bold text too. The file format is unchanged: a description is still a string. Untrusted text is safe: raw HTML is shown as text, images are dropped, a `javascript:` link loses its href and links open in a new tab with `rel="noopener noreferrer nofollow"`. A host that passes `renderNodeContent` still replaces the whole body.
+- **`PeekMarkdown`** is exported from `@visualli/react` (`<PeekMarkdown text renderText? />`; `renderText` is called for each text node, which is how the peek places its terms).
+
+### Dependencies
+- New: `markdown-to-jsx` (MIT, React elements, no `innerHTML`).
+
 ## 0.2.15 — 2026-11-13
 
 **Conforms to design system 0.3.7** (no design-system change: the design system's map already turns the gesture off while editing).

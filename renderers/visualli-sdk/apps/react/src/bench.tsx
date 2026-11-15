@@ -8,6 +8,7 @@
 //   __bench.layerReady       promise factory, resolves on the next layer change
 //   __bench.start()/stop()   requestAnimationFrame frame-time recorder
 //   __bench.childScreen()    screen position of an idea in the current layer that has a layer inside (to step deeper)
+//   __bench.setDescription() give the idea with a title a new description (the smoke test's Markdown peek)
 //
 // ?layers=L renders the other shape a map can take: not many ideas on one layer, but many layers - L layers of
 // LAYER_IDEAS ideas each, every idea opening the next layer breadth-first (a wide, deep tree). __bench.layers is L.
@@ -170,6 +171,13 @@ const parseMs = performance.now() - tParse;
       return { x: el.left + p.x, y: el.top + p.y };
     }
     return null;
+  },
+  /** Give the idea with this title a new description, as an edit would (the peek shows it on the next hover). */
+  setDescription(title: string, description: string) {
+    for (const n of useNodeStore.getState().nodes.values()) {
+      if (n.title === title) { useNodeStore.getState().updateNode(n.id, { description }); return true; }
+    }
+    return false;
   },
   /** Screen position of the idea with this title in the current layer (for hover / click tests). */
   nodeScreen(title: string) {

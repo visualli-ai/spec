@@ -6,9 +6,10 @@
 // as the --topic-* custom properties of the active theme; a custom colour is used
 // as given (the design system's colour rule).
 
-import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SHEET, TERM, TRAIL, VIEW, blobPath, hoverOpensTerm, shapeOfLevel, type FlatNode, type SemanticAnchor } from '@visualli/core';
 import { useViewportStore } from '../stores/useViewportStore';
+import { PeekMarkdown } from './PeekMarkdown';
 
 // ── Icons (stroke = currentColor) ─────────────────────────────────────────────
 
@@ -221,7 +222,6 @@ export interface PeekCardProps {
 }
 
 export const PeekCard = memo(function PeekCard({ node, anchors, onStepInside, onClose, renderContent }: PeekCardProps) {
-  const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
   const { fill, ring } = paintVars(node);
   const style = { ['--vi-fact-fill' as string]: fill, ['--vi-fact-ring' as string]: ring } as React.CSSProperties;
   return (
@@ -231,10 +231,12 @@ export const PeekCard = memo(function PeekCard({ node, anchors, onStepInside, on
         {onClose && <button type="button" className="vi-iconbtn vi-iconbtn--sm vi-fact__close" aria-label="Close" onClick={onClose}><CloseIcon /></button>}
       </div>
       <div className="vi-fact__body">
-        {renderContent ? renderContent(node.description ?? '') : parts.map((p, i) =>
-          typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
-            <TermAnchor key={i} anchor={p} />
-          ))}
+        {renderContent ? renderContent(node.description ?? '') : (
+          <PeekMarkdown text={node.description ?? ''} renderText={(run) => splitTerms(run, anchors).map((p, i) =>
+            typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
+              <TermAnchor key={i} anchor={p} />
+            ))} />
+        )}
       </div>
       {onStepInside && (
         <div className="vi-fact__foot">
@@ -267,7 +269,6 @@ export interface PeekSheetProps extends Omit<PeekCardProps, 'onClose'> {
  */
 export const PeekSheet = memo(function PeekSheet({ node, anchors, onStepInside, onClose, renderContent, expanded, onToggleExpanded, height }: PeekSheetProps) {
   const [term, setTerm] = useState<SemanticAnchor | null>(null);
-  const parts = useMemo(() => splitTerms(node.description ?? '', anchors), [node.description, anchors]);
   const startY = useRef<number | null>(null);
   const swiped = useRef(false);
   const { fill, ring } = paintVars(node);
@@ -305,12 +306,14 @@ export const PeekSheet = memo(function PeekSheet({ node, anchors, onStepInside, 
             <button type="button" className="vi-iconbtn vi-iconbtn--md vi-fact__close" aria-label="Close" onClick={onClose}><CloseIcon /></button>
           </div>
           <div className="vi-fact__body">
-            {renderContent ? renderContent(node.description ?? '') : parts.map((p, i) =>
-              typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
-                <span key={i} className="vi-anchor" data-semantic-tooltip="true">
-                  <button type="button" className="vi-term" onClick={() => setTerm(p)}>{p.word}</button>
-                </span>
-              ))}
+            {renderContent ? renderContent(node.description ?? '') : (
+              <PeekMarkdown text={node.description ?? ''} renderText={(run) => splitTerms(run, anchors).map((p, i) =>
+                typeof p === 'string' ? <React.Fragment key={i}>{p}</React.Fragment> : (
+                  <span key={i} className="vi-anchor" data-semantic-tooltip="true">
+                    <button type="button" className="vi-term" onClick={() => setTerm(p)}>{p.word}</button>
+                  </span>
+                ))} />
+            )}
           </div>
           {onStepInside && (
             <div className="vi-fact__foot">
