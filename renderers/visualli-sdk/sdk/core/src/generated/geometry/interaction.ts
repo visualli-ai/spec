@@ -62,6 +62,15 @@ export const BACK = {
   /** The bump at the top layer (ms). */ bumpMs: 320,
 } as const;
 
+/** The zoom buttons (− % +) are for screens with a mouse or trackpad. On a touch-only screen (a phone, a tablet
+ *  without a trackpad) people pinch to zoom, so the buttons stay out of the way: the spec CSS hides `.vi-map__ctrls`
+ *  under `@media not all and (any-pointer: fine)`, and the design system's VisualMap reads the same query.
+ *  A screen with any fine pointer (a touchscreen laptop, a tablet with a trackpad) keeps them. Pinch, wheel and keys
+ *  zoom everywhere. */
+export const CONTROLS = {
+  /** Where the zoom buttons show: a screen with at least one fine pointer. */ zoomButtonsMedia: '(any-pointer: fine)',
+} as const;
+
 /** How the map changed layer, reported with onLayerPathChange so a host can keep browser history in step:
  *  'step-in' (an idea's rings or Step inside), 'trail', 'gesture' (double-click, double-tap), 'key' (Escape, Backspace), 'host' (the host set layerPath). */
 export type LayerVia = 'step-in' | 'trail' | 'gesture' | 'key' | 'host';

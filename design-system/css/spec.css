@@ -55,6 +55,15 @@ button.vi-node { cursor: pointer; }
 [data-theme^="contrast"] .vi-fact { box-shadow: none; }
 .vi-fact__title { font: 700 22px/26px var(--font-hand); margin-bottom: var(--space-1); }
 .vi-fact__body { color: var(--ink); }
+.vi-fact__body p { margin: 0; }
+.vi-fact__body p + p { margin-top: var(--space-2); }
+.vi-fact__body ul, .vi-fact__body ol { margin: 0; padding-left: var(--space-4); list-style-position: outside; }
+.vi-fact__body ul { list-style-type: disc; }
+.vi-fact__body ol { list-style-type: decimal; }
+.vi-fact__body li + li { margin-top: var(--space-1); }
+.vi-fact__body li::marker { color: var(--ink-muted); }
+.vi-fact__body strong { font-weight: 700; }
+.vi-fact__body a { color: var(--link); }
 .vi-fact__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px dashed var(--line); }
 .vi-fact__acts { display: inline-flex; gap: var(--space-3); align-items: center; flex: none; }
 .vi-fact__link { color: var(--link); font: 600 var(--vi-fs-cap)/16px var(--font-ui); }
@@ -92,7 +101,7 @@ button.vi-node { cursor: pointer; }
 .vi-map__fact { position: absolute; }
 .vi-map.is-idle .vi-map__world { transition: transform var(--duration-base) var(--ease-standard); }
 .vi-map.is-panning, .vi-map.is-panning .vi-node { cursor: grabbing; }
-.vi-map__hint { position: absolute; left: var(--space-4); right: var(--space-4); margin: 0; text-align: center; color: var(--ink-muted); pointer-events: none; z-index: var(--z-chrome); animation: vi-fade var(--duration-base) var(--ease-standard); }
+.vi-map__hint { position: absolute; left: var(--space-4); right: var(--space-4); margin: 0; text-align: center; text-wrap: balance; color: var(--ink-muted); pointer-events: none; z-index: var(--z-chrome); animation: vi-fade var(--duration-base) var(--ease-standard); }
 .vi-fact__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
 .vi-fact__back { display: inline-flex; align-items: center; gap: 2px; border: 0; background: none; padding: 2px 0; margin-bottom: var(--space-1); color: var(--link); font: 600 var(--vi-fs-cap)/16px var(--font-ui); cursor: pointer; }
 .vi-term { border: 0; background: none; padding: 0; font: inherit; color: var(--link); text-decoration: underline; text-decoration-style: dotted; text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: pointer; }
@@ -112,6 +121,9 @@ button.vi-node { cursor: pointer; }
 }
 .vi-map__trail { position: absolute; top: var(--space-4); left: var(--space-4); z-index: var(--z-chrome); }
 .vi-map__ctrls { position: absolute; top: var(--space-4); right: var(--space-4); z-index: var(--z-chrome); }
+@media not all and (any-pointer: fine) {
+  .vi-map__ctrls:not(.vi-map__ctrls--reset) { display: none; }
+}
 [data-reveal="instant"] .vi-map.is-reveal .vi-map__slot, [data-motion="reduced"] .vi-map.is-reveal .vi-map__slot { animation: vi-fade var(--vi-reduced-fade, 120ms) backwards; animation-delay: 0ms !important; }
 [data-reveal="instant"] .vi-map.is-reveal .vi-edge, [data-reveal="instant"] .vi-map.is-reveal .vi-edge__line, [data-motion="reduced"] .vi-map.is-reveal .vi-edge, [data-motion="reduced"] .vi-map.is-reveal .vi-edge__line { animation: none; stroke-dashoffset: 0; }
 @media (prefers-reduced-motion: reduce) {
